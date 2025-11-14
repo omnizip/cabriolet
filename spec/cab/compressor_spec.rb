@@ -14,7 +14,7 @@ RSpec.describe Cabriolet::CAB::Compressor do
 
   def create_test_file(filename, content)
     path = File.join(temp_dir, filename)
-    File.write(path, content)
+    File.binwrite(path, content)
     path
   end
 

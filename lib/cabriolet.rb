@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "cabriolet/version"
-require_relative "cabriolet/errors"
+require_relative "cabriolet/platform"
 require_relative "cabriolet/constants"
 
 # Cabriolet is a pure Ruby library for extracting Microsoft Cabinet (.CAB) files,

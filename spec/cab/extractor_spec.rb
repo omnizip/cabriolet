@@ -247,6 +247,8 @@ RSpec.describe Cabriolet::CAB::Extractor do
       end
 
       it "sets executable permissions for executable files" do
+        skip "Unix permissions not supported on Windows" unless Cabriolet::Platform.supports_unix_permissions?
+
         Dir.mktmpdir do |tmpdir|
           cabinet = decompressor.open(normal_2files_1folder)
 
@@ -341,7 +343,7 @@ RSpec.describe Cabriolet::CAB::Extractor do
           expect(File.size(output_path)).to eq(file.length)
 
           # Verify file is readable
-          content = File.read(output_path)
+          content = File.binread(output_path)
           expect(content.bytesize).to eq(file.length)
         end
       end
