@@ -1,0 +1,9 @@
+# Ensure binary files are never modified by Git's line ending conversion
+*.cab binary
+*.dat binary
+*.kwj binary
+*.chm binary
+*.lit binary
+
+# Test fixtures must remain binary
+spec/fixtures/** binary
