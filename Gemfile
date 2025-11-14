@@ -5,6 +5,7 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in cabriolet.gemspec
 gemspec
 
+gem "openssl"
 gem "rake"
 gem "rspec"
 gem "rubocop"
