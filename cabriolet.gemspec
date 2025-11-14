@@ -29,8 +29,6 @@ Gem::Specification.new do |spec|
   spec.files = Dir.glob("{lib,exe}/**/*") + %w[
     README.adoc
     LICENSE
-    CHANGELOG.md
-    ARCHITECTURE.md
   ]
   spec.bindir = "exe"
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
