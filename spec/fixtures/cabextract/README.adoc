@@ -1,0 +1,58 @@
+= cabextract Test Fixtures
+
+== License
+
+The test fixture files in this directory are from the cabextract project and are
+licensed under the GNU General Public License (GPL) version 2 or later.
+
+Copyright (C) 2000-2023 Stuart Caie and cabextract contributors.
+
+cabextract is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2 of the License, or (at your option) any later
+version.
+
+For the complete license text, see: https://www.gnu.org/licenses/gpl-2.0.html
+
+== Acknowledgments
+
+We are grateful to Stuart Caie and the cabextract project for:
+
+* Creating a comprehensive CAB extraction tool
+* Providing excellent test coverage with diverse test cases
+* Testing edge cases including:
+  - Character encoding (ASCII, UTF-8, KOI8, Latin-1, Shift-JIS)
+  - Directory handling and path traversal
+  - Large files
+  - Multi-part/split cabinets
+  - Search functionality
+  - Security vulnerabilities
+
+The cabextract project can be found at: https://www.cabextract.org.uk/
+
+== Usage
+
+These test fixtures are used for testing and validation of the Cabriolet
+implementation. They complement the libmspack fixtures with additional test
+scenarios specific to cabextract.
+
+The fixtures test various scenarios:
+
+* Character encoding handling
+* Directory structures
+* Large file support
+* Multi-part cabinet sets (split-*.cab)
+* Embedded CAB search
+* UTF-8 stress testing
+* Security vulnerability test cases
+
+== Source
+
+Original test files from: https://github.com/kyz/libmspack/tree/master/cabextract/test/cabs
+
+Copied from: `/Users/mulgogi/src/external/libmspack/cabextract/test/cabs/`
+
+== Test Files
+
+This directory contains ~30 CAB test files and associated reference text files
+for validation.

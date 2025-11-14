@@ -1,0 +1,15 @@
+name: rake
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [ master, main ]
+    tags: [ v* ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  rake:
+    uses: metanorma/ci/.github/workflows/generic-rake.yml@main

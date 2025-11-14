@@ -1,0 +1,48 @@
+= libmspack Test Fixtures
+
+== License
+
+The test fixture files in this directory are from the libmspack project and are
+licensed under the GNU Lesser General Public License (LGPL) version 2.1.
+
+Copyright (C) 2003-2023 Stuart Caie and libmspack contributors.
+
+libmspack is free software; you can redistribute it and/or modify it under
+the terms of the GNU Lesser General Public License (LGPL) version 2.1.
+
+For the complete license text, see: https://www.gnu.org/licenses/lgpl-2.1.html
+
+== Acknowledgments
+
+We are grateful to Stuart Caie and the libmspack project for:
+
+* Creating an excellent, comprehensive implementation of Microsoft compression formats
+* Providing thorough test coverage with diverse test cases
+* Maintaining high-quality, well-documented code
+* Making these test fixtures available for validation purposes
+
+The libmspack project can be found at: https://www.cabextract.org.uk/libmspack/
+
+== Usage
+
+These test fixtures are used solely for testing and validation of the Cabriolet
+implementation. They are not distributed as part of the Cabriolet runtime gem.
+
+The fixtures test various scenarios:
+
+* Normal CAB files with different compression methods
+* Multi-part cabinet sets
+* Edge cases and malformed files
+* Security vulnerability test cases (CVE-*)
+* Reserved header variations
+* CHM (Compiled HTML Help) files with various ENCINT encodings
+* CHM files with security issues
+
+== Source
+
+Original test files from: https://github.com/kyz/libmspack
+
+Copied from:
+
+* CAB files: `/Users/mulgogi/src/external/libmspack/libmspack/test/test_files/cabd/`
+* CHM files: `/Users/mulgogi/src/external/libmspack/libmspack/test/test_files/chmd/`
