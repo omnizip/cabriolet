@@ -128,9 +128,7 @@ RSpec.describe Cabriolet::CAB::Parser do
         expect(cabinet.folder_count).to eq(2)
         expect(cabinet.folders.size).to eq(2)
 
-        cabinet.folders.each do |folder|
-          expect(folder).to be_a(Cabriolet::Models::Folder)
-        end
+        expect(cabinet.folders).to all(be_a(Cabriolet::Models::Folder))
       end
     end
 

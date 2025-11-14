@@ -3,15 +3,15 @@
 require "spec_helper"
 
 RSpec.describe Cabriolet::Decompressors::Base do
+  subject(:decompressor) do
+    described_class.new(io_system, input_handle, output_handle, buffer_size)
+  end
+
   let(:io_system) { Cabriolet::System::IOSystem.new }
   let(:input_data) { "test input data" }
   let(:input_handle) { Cabriolet::System::MemoryHandle.new(input_data) }
   let(:output_handle) { Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE) }
   let(:buffer_size) { 1024 }
-
-  subject(:decompressor) do
-    described_class.new(io_system, input_handle, output_handle, buffer_size)
-  end
 
   describe "#initialize" do
     it "initializes with all required parameters" do

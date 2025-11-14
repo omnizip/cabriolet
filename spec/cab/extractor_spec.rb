@@ -252,8 +252,7 @@ RSpec.describe Cabriolet::CAB::Extractor do
 
           # Mock an executable file
           file = cabinet.files.first
-          allow(file).to receive(:executable?).and_return(true)
-          allow(file).to receive(:readonly?).and_return(false)
+          allow(file).to receive_messages(executable?: true, readonly?: false)
 
           extractor.extract_all(cabinet, tmpdir)
 
