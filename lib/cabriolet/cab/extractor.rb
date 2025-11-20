@@ -15,6 +15,12 @@ module Cabriolet
       def initialize(io_system, decompressor)
         @io_system = io_system
         @decompressor = decompressor
+
+        # State reuse for multi-file extraction (like libmspack self->d)
+        @current_folder = nil
+        @current_decomp = nil
+        @current_input = nil
+        @current_offset = 0
       end
 
       # Extract a single file from the cabinet
@@ -45,7 +51,6 @@ module Cabriolet
           end
 
           filelen = Constants::LENGTH_MAX - file.offset
-
         end
 
         # Check for merge requirements
@@ -66,38 +71,59 @@ module Cabriolet
         output_dir = ::File.dirname(output_path)
         FileUtils.mkdir_p(output_dir) unless ::File.directory?(output_dir)
 
-        # Create input wrapper that reads CFDATA blocks across cabinets
-        input_handle = BlockReader.new(@io_system, folder.data,
-                                       folder.num_blocks, salvage)
+        # Check if we need to change folder or reset (libmspack lines 1076-1078)
+        if @current_folder != folder || @current_offset > file.offset || !@current_decomp
+          # Reset state
+          @current_input&.close
+          @current_input = nil
+          @current_decomp = nil
+
+          # Create new input (libmspack lines 1092-1095)
+          # This BlockReader will be REUSED across all files in this folder
+          @current_input = BlockReader.new(@io_system, folder.data,
+                                          folder.num_blocks, salvage)
+          @current_folder = folder
+          @current_offset = 0
+        end
+
+        # Skip ahead if needed (libmspack lines 1130-1134)
+        if file.offset > @current_offset
+          skip_bytes = file.offset - @current_offset
+
+          # Decompress with NULL output to skip (libmspack line 1130: self->d->outfh = NULL)
+          null_output = System::MemoryHandle.new("", Constants::MODE_WRITE)
+
+          # Create decompressor if needed
+          unless @current_decomp
+            @current_decomp = @decompressor.create_decompressor(folder, @current_input, null_output)
+          else
+            # Reuse existing, change output to NULL
+            @current_decomp.instance_variable_set(:@output, null_output)
+          end
+
+          @current_decomp.decompress(skip_bytes)
+          @current_offset += skip_bytes
+        end
+
+        # Extract actual file (libmspack lines 1137-1141)
+        output_fh = @io_system.open(output_path, Constants::MODE_WRITE)
 
         begin
-          # Create output file
-          output_fh = @io_system.open(output_path, Constants::MODE_WRITE)
-
-          begin
-            # Create decompressor
-            decomp = @decompressor.create_decompressor(folder, input_handle,
-                                                       output_fh)
-
-            # Skip to file offset if needed
-            if file.offset.positive?
-              # Decompress and discard bytes before file start
-              temp_output = System::MemoryHandle.new("", Constants::MODE_WRITE)
-              temp_decomp = @decompressor.create_decompressor(folder,
-                                                              input_handle, temp_output)
-              temp_decomp.decompress(file.offset)
-            end
-
-            # Decompress the file
-            decomp.decompress(filelen)
-
-            filelen
-          ensure
-            output_fh.close
+          # Create decompressor if needed
+          unless @current_decomp
+            @current_decomp = @decompressor.create_decompressor(folder, @current_input, output_fh)
+          else
+            # Reuse existing, change output to real file
+            @current_decomp.instance_variable_set(:@output, output_fh)
           end
+
+          @current_decomp.decompress(filelen)
+          @current_offset += filelen
         ensure
-          input_handle.close
+          output_fh.close
         end
+
+        filelen
       end
 
       # Extract all files from a cabinet
