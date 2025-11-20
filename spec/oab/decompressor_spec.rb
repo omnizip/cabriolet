@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "tmpdir"
 
 RSpec.describe Cabriolet::OAB::Decompressor do
   let(:io_system) { Cabriolet::System::IOSystem.new }
@@ -38,12 +37,20 @@ RSpec.describe Cabriolet::OAB::Decompressor do
     end
 
     context "with real OAB file" do
-      it "decompresses a full OAB file",
-         skip: "No OAB test fixtures available" do
-        # Would test if we had fixtures:
-        # bytes = decompressor.decompress("test.oab", "output.dat")
-        # expect(bytes).to be > 0
-        # expect(File.exist?("output.dat")).to be true
+      it "decompresses a full OAB file" do
+        fixture_path = File.join(__dir__, "..", "fixtures", "oab", "test_simple.oab")
+        skip "Fixture not found" unless File.exist?(fixture_path)
+
+        require "tmpdir"
+        Dir.mktmpdir do |tmpdir|
+          output_path = File.join(tmpdir, "output.dat")
+          bytes = decompressor.decompress(fixture_path, output_path)
+
+          expect(bytes).to be > 0
+          expect(File.exist?(output_path)).to be true
+          content = File.read(output_path)
+          expect(content).to include("Hello, World!")
+        end
       end
     end
 
@@ -64,11 +71,10 @@ RSpec.describe Cabriolet::OAB::Decompressor do
     end
 
     context "with real OAB patch" do
-      it "applies incremental patch", skip: "No OAB patch fixtures available" do
-        # Would test if we had fixtures:
-        # bytes = decompressor.decompress_incremental("patch.oab", "base.dat", "output.dat")
-        # expect(bytes).to be > 0
-        # expect(File.exist?("output.dat")).to be true
+      it "applies incremental patch" do
+        # OAB patches require both a patch file and a base file
+        # For now, skip this as it requires more complex setup
+        skip "OAB patch testing requires base file generation"
       end
     end
   end

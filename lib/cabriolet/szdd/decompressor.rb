@@ -17,8 +17,10 @@ module Cabriolet
       #
       # @param io_system [System::IOSystem, nil] Custom I/O system or nil for
       #   default
-      def initialize(io_system = nil)
+      # @param algorithm_factory [AlgorithmFactory, nil] Custom algorithm factory or nil for default
+      def initialize(io_system = nil, algorithm_factory = nil)
         @io_system = io_system || System::IOSystem.new
+        @algorithm_factory = algorithm_factory || Cabriolet.algorithm_factory
         @parser = Parser.new(@io_system)
         @buffer_size = DEFAULT_BUFFER_SIZE
       end
@@ -70,16 +72,18 @@ module Cabriolet
                       end
 
           # Create LZSS decompressor
-          decompressor = Decompressors::LZSS.new(
+          decompressor = @algorithm_factory.create(
+            :lzss,
+            :decompressor,
             @io_system,
             input_handle,
             output_handle,
             @buffer_size,
-            lzss_mode,
+            mode: lzss_mode
           )
 
-          # Decompress
-          bytes_written = decompressor.decompress(header.length)
+          # Decompress (SZDD reads until EOF, no compressed size stored)
+          bytes_written = decompressor.decompress(nil)
 
           # Verify decompressed size matches expected
           if bytes_written != header.length && Cabriolet.verbose && Cabriolet.verbose
@@ -118,16 +122,18 @@ module Cabriolet
                       end
 
           # Create LZSS decompressor
-          decompressor = Decompressors::LZSS.new(
+          decompressor = @algorithm_factory.create(
+            :lzss,
+            :decompressor,
             @io_system,
             input_handle,
             output_handle,
             @buffer_size,
-            lzss_mode,
+            mode: lzss_mode
           )
 
-          # Decompress
-          decompressor.decompress(header.length)
+          # Decompress (SZDD reads until EOF, no compressed size stored)
+          decompressor.decompress(nil)
 
           # Return the decompressed data
           output_handle.data

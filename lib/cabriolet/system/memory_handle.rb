@@ -19,13 +19,19 @@ module Cabriolet
 
       # Read bytes from memory
       #
-      # @param bytes [Integer] Number of bytes to read
+      # @param bytes [Integer, nil] Number of bytes to read (nil = read all remaining)
       # @return [String] Bytes read (binary encoding)
-      def read(bytes)
+      def read(bytes = nil)
         return "" if @pos >= @data.bytesize
 
-        result = @data.byteslice(@pos, bytes) || ""
-        @pos += result.bytesize
+        if bytes.nil?
+          # Read all remaining data
+          result = @data.byteslice(@pos..-1) || ""
+          @pos = @data.bytesize
+        else
+          result = @data.byteslice(@pos, bytes) || ""
+          @pos += result.bytesize
+        end
         result
       end
 
@@ -75,6 +81,13 @@ module Cabriolet
       # @return [Integer] Current position
       def tell
         @pos
+      end
+
+      # Rewind to the beginning of the handle
+      #
+      # @return [Integer] New position (0)
+      def rewind
+        @pos = 0
       end
 
       # Close the handle

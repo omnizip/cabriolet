@@ -13,8 +13,9 @@ module Cabriolet
 
       attr_reader :io_system, :chm
 
-      def initialize(io_system = nil)
+      def initialize(io_system = nil, algorithm_factory = nil)
         @io_system = io_system || System::IOSystem.new
+        @algorithm_factory = algorithm_factory || Cabriolet.algorithm_factory
         @chm = nil
         @input_handle = nil
         @lzx_state = nil
@@ -227,14 +228,16 @@ module Cabriolet
         output_handle = System::MemoryHandle.new("")
 
         # Initialize LZX decompressor
-        @lzx_state = Decompressors::LZX.new(
+        @lzx_state = @algorithm_factory.create(
+          Constants::COMP_TYPE_LZX,
+          :decompressor,
           @io_system,
           @input_handle,
           output_handle,
           4096,
           window_bits: window_bits,
           reset_interval: reset_interval / LZX_FRAME_SIZE,
-          output_length: length - @lzx_offset,
+          output_length: length - @lzx_offset
         )
       end
 

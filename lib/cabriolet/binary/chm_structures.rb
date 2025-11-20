@@ -83,8 +83,8 @@ module Cabriolet
       uint32 :quickref_size
     end
 
-    # LZX Control Data
-    class LZXControlData < BinData::Record
+    # CHM LZX Control Data
+    class CHMLZXControlData < BinData::Record
       endian :little
 
       uint32 :len

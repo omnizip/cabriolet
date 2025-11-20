@@ -74,7 +74,7 @@ RSpec.describe Cabriolet::Decompressors::Quantum do
     end
 
     it "defines MAX_MATCH" do
-      expect(described_class::MAX_MATCH).to eq(1028)
+      expect(described_class::MAX_MATCH).to eq(259)
     end
 
     it "defines POSITION_BASE table" do

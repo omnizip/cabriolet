@@ -22,8 +22,10 @@ module Cabriolet
       #
       # @param io_system [System::IOSystem, nil] Custom I/O system or nil for
       #   default
-      def initialize(io_system = nil)
+      # @param algorithm_factory [AlgorithmFactory, nil] Custom algorithm factory or nil for default
+      def initialize(io_system = nil, algorithm_factory = nil)
         @io_system = io_system || System::IOSystem.new
+        @algorithm_factory = algorithm_factory || Cabriolet.algorithm_factory
       end
 
       # Compress a file to KWAJ format
@@ -372,12 +374,14 @@ module Cabriolet
       # @param output_handle [System::FileHandle] Output handle
       # @return [Integer] Number of bytes written
       def compress_szdd(input_handle, output_handle)
-        compressor = Compressors::LZSS.new(
+        compressor = @algorithm_factory.create(
+          :lzss,
+          :compressor,
           @io_system,
           input_handle,
           output_handle,
           2048,
-          Compressors::LZSS::MODE_QBASIC,
+          mode: Compressors::LZSS::MODE_QBASIC
         )
         compressor.compress
       end

@@ -2,35 +2,130 @@
 
 module Cabriolet
   module Models
-    # HLP file header model
+    # QuickHelp database header model
     #
-    # NOTE: This implementation is based on the knowledge that HLP files use
-    # LZSS compression with MODE_MSHELP, but cannot be fully validated due to
-    # lack of test fixtures. Testing relies on round-trip
-    # compression/decompression and comparison with libmspack tools if
-    # available.
+    # Represents the metadata of a QuickHelp help database (.HLP file).
+    # HLP files contain topics, context strings, and optional compression
+    # (keyword dictionary and Huffman coding).
     class HLPHeader
-      attr_accessor :magic, :version, :filename, :length, :files
+      attr_accessor :magic, :version, :attributes, :control_character
+      attr_accessor :topic_count, :context_count, :display_width
+      attr_accessor :predefined_ctx_count, :database_name
+      attr_accessor :topic_index_offset, :context_strings_offset
+      attr_accessor :context_map_offset, :keywords_offset
+      attr_accessor :huffman_tree_offset, :topic_text_offset
+      attr_accessor :database_size
+      attr_accessor :filename
 
-      # Initialize HLP header
+      # Topics and context data
+      attr_accessor :topics, :contexts, :context_map
+      attr_accessor :keywords, :huffman_tree
+
+      # Initialize QuickHelp database header
       #
-      # @param magic [String] Magic number (should be specific to HLP)
-      # @param version [Integer] Format version
-      # @param filename [String] Original filename
-      # @param length [Integer] Uncompressed file length
-      def initialize(magic: nil, version: nil, filename: nil, length: 0)
-        @magic = magic
+      # @param magic [String] Magic number (should be 0x4C 0x4E)
+      # @param version [Integer] Format version (should be 2)
+      # @param attributes [Integer] Attribute flags
+      # @param control_character [Integer] Control character (usually ':' or 0xFF)
+      # @param topic_count [Integer] Number of topics
+      # @param context_count [Integer] Number of context strings
+      # @param display_width [Integer] Display width in characters
+      # @param database_name [String] Database name for external links
+      def initialize(
+        magic: nil,
+        version: 2,
+        attributes: 0,
+        control_character: 0x3A,
+        topic_count: 0,
+        context_count: 0,
+        display_width: 80,
+        predefined_ctx_count: 0,
+        database_name: "",
+        topic_index_offset: 0,
+        context_strings_offset: 0,
+        context_map_offset: 0,
+        keywords_offset: 0,
+        huffman_tree_offset: 0,
+        topic_text_offset: 0,
+        database_size: 0,
+        filename: nil
+      )
+        @magic = magic || Binary::HLPStructures::SIGNATURE
         @version = version
+        @attributes = attributes
+        @control_character = control_character
+        @topic_count = topic_count
+        @context_count = context_count
+        @display_width = display_width
+        @predefined_ctx_count = predefined_ctx_count
+        @database_name = database_name
+        @topic_index_offset = topic_index_offset
+        @context_strings_offset = context_strings_offset
+        @context_map_offset = context_map_offset
+        @keywords_offset = keywords_offset
+        @huffman_tree_offset = huffman_tree_offset
+        @topic_text_offset = topic_text_offset
+        @database_size = database_size
         @filename = filename
-        @length = length
-        @files = []
+
+        # Collections
+        @topics = []
+        @contexts = []
+        @context_map = []
+        @keywords = []
+        @huffman_tree = nil
       end
 
       # Check if header is valid
       #
       # @return [Boolean] true if header appears valid
       def valid?
-        !@magic.nil? && !@version.nil?
+        @magic == Binary::HLPStructures::SIGNATURE &&
+          @version == 2 &&
+          @topic_count >= 0 &&
+          @context_count >= 0
+      end
+
+      # Check if case-sensitive context strings
+      #
+      # @return [Boolean] true if case-sensitive
+      def case_sensitive?
+        (@attributes & Binary::HLPStructures::Attributes::CASE_SENSITIVE) != 0
+      end
+
+      # Check if database is locked (cannot be decoded by HELPMAKE)
+      #
+      # @return [Boolean] true if locked
+      def locked?
+        (@attributes & Binary::HLPStructures::Attributes::LOCKED) != 0
+      end
+
+      # Check if keyword compression is used
+      #
+      # @return [Boolean] true if keywords present
+      def has_keywords?
+        @keywords_offset > 0 && !@keywords.empty?
+      end
+
+      # Check if Huffman compression is used
+      #
+      # @return [Boolean] true if Huffman tree present
+      def has_huffman?
+        @huffman_tree_offset > 0 && !@huffman_tree.nil?
+      end
+
+      # Get control character as string
+      #
+      # @return [String] control character
+      def control_char
+        @control_character.chr(Encoding::ASCII)
+      end
+
+      # Get database name without null padding
+      #
+      # @return [String] trimmed database name
+      def db_name
+        @database_name.split("\x00").first || ""
       end
     end
   end

@@ -14,8 +14,10 @@ module Cabriolet
       #
       # @param io_system [System::IOSystem, nil] Custom I/O system or nil for
       #   default
-      def initialize(io_system = nil)
+      # @param algorithm_factory [AlgorithmFactory, nil] Custom algorithm factory or nil for default
+      def initialize(io_system = nil, algorithm_factory = nil)
         @io_system = io_system || System::IOSystem.new
+        @algorithm_factory = algorithm_factory || Cabriolet.algorithm_factory
       end
 
       # Compress a file to SZDD format
@@ -59,12 +61,14 @@ module Cabriolet
                         Compressors::LZSS::MODE_QBASIC
                       end
 
-          compressor = Compressors::LZSS.new(
+          compressor = @algorithm_factory.create(
+            :lzss,
+            :compressor,
             @io_system,
             input_handle,
             output_handle,
             2048,
-            lzss_mode,
+            mode: lzss_mode
           )
 
           compressed_bytes = compressor.compress
@@ -107,18 +111,18 @@ module Cabriolet
           )
 
           # Compress data using LZSS
-          lzss_mode = if format == :normal
-                        Compressors::LZSS::MODE_EXPAND
-                      else
-                        Compressors::LZSS::MODE_QBASIC
-                      end
-
-          compressor = Compressors::LZSS.new(
+          compressor = @algorithm_factory.create(
+            :lzss,
+            :compressor,
             @io_system,
             input_handle,
             output_handle,
             2048,
-            lzss_mode,
+            mode: if format == :normal
+                    Compressors::LZSS::MODE_EXPAND
+                  else
+                    Compressors::LZSS::MODE_QBASIC
+                  end
           )
 
           compressed_bytes = compressor.compress

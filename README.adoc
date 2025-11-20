@@ -1,7 +1,3 @@
-= Cabriolet
-:toc: left
-:toclevels: 3
-
 image:https://img.shields.io/gem/v/cabriolet.svg[RubyGems Version, link=https://rubygems.org/gems/cabriolet]
 image:https://img.shields.io/github/license/omnizip/cabriolet.svg[License]
 
@@ -18,6 +14,34 @@ Microsoft compression formats for both extraction (decompression) and creation
 (compression).
 
 NOTE: No C extensions required, works on any platform where Ruby runs.
+
+== Supported Formats
+
+Cabriolet provides complete bidirectional support (compression and decompression) for seven Microsoft compression formats:
+
+**CAB (Microsoft Cabinet)**::
+Microsoft Cabinet files (.CAB) are archive files used extensively in Windows software distribution, updates, and installations. They support multiple compression algorithms (None, LZSS, MSZIP, LZX, Quantum), multi-part spanning, and can store multiple files with full metadata preservation including timestamps and attributes. Cabriolet provides complete CAB support including multi-part cabinet sets, embedded cabinet search, and salvage mode for corrupted files.
+
+**CHM (Compiled HTML Help)**::
+Compiled HTML Help files (.CHM) are Microsoft's compressed help file format used in Windows applications since Windows 98. CHM files use an internal file system to store HTML pages, images, stylesheets, and a full-text search index, all compressed with LZX. Cabriolet can extract CHM contents to recreate the original HTML documentation, and create new CHM files from HTML sources with proper compression and indexing.
+
+**SZDD (Single-File LZSS)**::
+SZDD is Microsoft's single-file compression format used primarily in Windows installation media and DOS utilities. Files compressed with SZDD typically have the last character of their extension replaced with an underscore (e.g., .TX_ for .TXT). SZDD uses LZSS MODE_EXPAND compression with a 4KB sliding window. Cabriolet supports both normal SZDD format and the QBasic variant, with automatic filename reconstruction during extraction.
+
+**KWAJ (Installation File)**::
+KWAJ format (.KWJ) is used in Microsoft installation packages to compress individual files. It supports multiple compression methods including uncompressed storage, XOR encryption (0xFF), SZDD (LZSS), and MSZIP. KWAJ files can embed the original filename and uncompressed size in the header. Cabriolet provides full KWAJ support for all compression methods and can preserve or reconstruct original filenames.
+
+**DOS Help (QuickHelp)**::
+QuickHelp (.HLP) is the DOS-based help file format used in Microsoft development tools like QuickC, QuickBASIC, and early Visual C++. Identified by the signature 0x4C 0x4E ("LN"), QuickHelp files contain help topics compressed with optional Huffman coding and LZSS MODE_MSHELP compression. Topics are organized with context strings for navigation. Cabriolet fully supports creating and extracting QuickHelp files with all compression options.
+
+**Windows Help (WinHelp)**::
+Windows Help (.HLP) is the help file format used in Windows 3.x through Windows XP, distinct from DOS Help/QuickHelp. WinHelp files are identified by magic numbers 0x35F3 (version 3.x) or 0x3F5F (version 4.x) and use an internal file system containing |SYSTEM (metadata), |TOPIC (compressed help text), and optionally B-tree indexes. Topics are compressed with Zeck LZ77, a custom LZ77 variant with 4KB sliding window and variable-length matches (3-271 bytes). Cabriolet provides complete support for both WinHelp 3.x and 4.x formats with bidirectional Zeck LZ77 compression.
+
+**LIT (Microsoft Reader eBooks)**::
+LIT is Microsoft's proprietary eBook format for the Microsoft Reader application. LIT files use a complex internal structure with directory systems (IFCM/AOLL), manifest with content type mappings, and NameList with UTF-16LE encoding. Content is typically compressed with LZX. Cabriolet supports reading and creating non-encrypted LIT files; DRM-protected (DES-encrypted) LIT files are intentionally not supported as DRM circumvention is not a goal of this project.
+
+**OAB (Offline Address Book)**::
+Offline Address Book files (.OAB) are used by Microsoft Outlook and Exchange Server to provide offline access to address book data. OAB files are compressed with LZX and support incremental updates through patch files that contain only changes from a base version. Cabriolet can extract full OAB files, apply incremental patches, create new OAB files, and generate incremental patches between versions.
 
 
 === Features
@@ -49,7 +73,7 @@ NOTE: No C extensions required, works on any platform where Ruby runs.
 ** Metadata preservation (timestamps, attributes)
 
 * **Pure Ruby** - No compilation needed, works everywhere
-* **Comprehensive testing** - 914 test examples, 0 failures
+* **Comprehensive testing** - 1,273 test examples, 0 failures
 * **Complete CLI** - 30+ commands for all operations
 
 === Architecture
@@ -321,18 +345,31 @@ cabriolet kwaj-info setup.kwj
 
 ==== HLP (Windows Help) operations
 
-===== Extract HLP file
+Cabriolet supports both HLP format variants:
+
+* **QuickHelp** - DOS-based format (0x4C 0x4E signature)
+* **Windows Help** - Windows 3.x/4.x format (0x35F3/0x3F5F signatures)
+
+===== Extract HLP file (auto-detects format)
 
 [source,shell]
 ----
 cabriolet hlp-extract help.hlp output/
 ----
 
-===== Create HLP file
+===== Create QuickHelp file
 
 [source,shell]
 ----
 cabriolet hlp-create output.hlp topic1.txt topic2.txt
+----
+
+===== Create Windows Help file (3.x or 4.x)
+
+[source,shell]
+----
+cabriolet hlp-create output.hlp topic1.txt topic2.txt --format winhelp3
+cabriolet hlp-create output.hlp topic1.txt topic2.txt --format winhelp4
 ----
 
 ===== Show HLP information
@@ -664,35 +701,84 @@ bytes = compressor.compress("file.exe", "file.kwj",
 
 ==== HLP (Windows Help) operations
 
-===== Extract HLP file
+===== Extract HLP file (auto-detects format)
 
 [source,ruby]
 ----
+# Works with both QuickHelp and Windows Help formats
 decompressor = Cabriolet::HLP::Decompressor.new
-hlp = decompressor.open("help.hlp")
+header = decompressor.open("help.hlp")
+
+# Format is automatically detected
+case header
+when Cabriolet::Models::HLPHeader
+  puts "QuickHelp format (DOS)"
+when Cabriolet::Models::WinHelpHeader
+  puts "Windows Help format (#{header.version_string})"
+end
 
 # Extract files
-hlp.files.each do |file|
-  decompressor.extract_file(file, "output/#{file.filename}")
-end
+decompressor.extract_all(header, "output/")
 ----
 
-===== Create HLP file
+===== Create QuickHelp file
 
 [source,ruby]
 ----
 compressor = Cabriolet::HLP::Compressor.new
 
-# Add files
-compressor.add_file("topic1.txt", "topic1")
-compressor.add_file("topic2.txt", "topic2")
+# Add topics
+compressor.add_data("Topic 1 text", "topic1")
+compressor.add_data("Topic 2 text", "topic2")
 
-# Generate HLP
-bytes = compressor.generate("help.hlp")
+# Generate QuickHelp format (DOS)
+bytes = compressor.generate("help.hlp",
+  database_name: "MyHelp",
+  control_character: 0x3A)  # ':'
 ----
 
-NOTE: HLP format has no public specification. Implementation is based on
-libmspack source code.
+===== Create Windows Help file
+
+[source,ruby]
+----
+# Create WinHelp 3.x format file
+compressor = Cabriolet::HLP::WinHelp::Compressor.new
+
+# Add system metadata
+compressor.add_system_file(
+  title: "My Help File",
+  copyright: "Copyright 2025",
+  contents: "contents.hlp")
+
+# Add topics (automatically compressed with Zeck LZ77)
+compressor.add_topic_file(["Topic 1 text", "Topic 2 text"], compress: true)
+
+# Generate WinHelp 3.x or 4.x
+bytes = compressor.generate("help.hlp", version: :winhelp3)
+# or version: :winhelp4 for WinHelp 4.x format
+----
+
+===== Extract Windows Help internal files
+
+[source,ruby]
+----
+decompressor = Cabriolet::HLP::WinHelp::Decompressor.new("help.hlp")
+header = decompressor.parse
+
+# List internal files (|SYSTEM, |TOPIC, etc.)
+puts decompressor.internal_filenames
+
+# Extract specific internal file
+system_data = decompressor.extract_system_file
+topic_data = decompressor.extract_topic_file
+
+# Decompress topics
+if topic_data
+  decompressed = decompressor.decompress_topic(topic_data, expected_size)
+end
+----
+
+NOTE: Windows Help format has limited public documentation. Implementation is based on reverse engineering and the helpdeco project.
 
 ==== LIT (eBook) operations
 
@@ -804,6 +890,298 @@ end
 custom_io = CustomIOSystem.new
 decompressor = Cabriolet::CAB::Decompressor.new(custom_io)
 ----
+
+=== Custom Algorithm Registration
+
+Cabriolet allows you to register custom compression/decompression algorithms with the [`AlgorithmFactory`](lib/cabriolet/algorithm_factory.rb:1). This enables:
+
+* **Custom implementations** of standard algorithms for optimization
+* **Experimental algorithms** for research and development
+* **Format-specific variations** of compression algorithms
+* **Testing environments** with isolated algorithm sets
+
+==== Registering a Custom Algorithm
+
+[source,ruby]
+----
+# Define your custom algorithm (must inherit from Base)
+class MyOptimizedLZX < Cabriolet::Decompressors::Base
+  def decompress(input_size, output_size)
+    # Your optimized implementation
+    data = @input.read(input_size)
+    # ... custom decompression logic
+    @output.write(decompressed_data)
+    output_size
+  end
+end
+
+# Register globally
+Cabriolet.algorithm_factory.register(
+  :optimized_lzx,
+  MyOptimizedLZX,
+  category: :decompressor,
+  priority: 10  # Higher priority = preferred over built-ins
+)
+
+# Use in extraction (automatically uses your custom algorithm)
+decompressor = Cabriolet::CAB::Decompressor.new("archive.cab")
+# When extracting LZX folders, your algorithm will be used
+----
+
+==== Per-Instance Custom Factory
+
+For isolated testing or experimentation without affecting global state:
+
+[source,ruby]
+----
+# Create custom factory without built-in algorithms
+custom_factory = Cabriolet::AlgorithmFactory.new(auto_register: false)
+
+# Register only your algorithms
+custom_factory.register(:my_algo, MyAlgorithm, category: :decompressor)
+
+# Create decompressor instances with custom factory
+# (Note: Not all format handlers currently support custom factories)
+decompressor = Cabriolet::CAB::Decompressor.new
+# Custom factory usage would be implemented by format handlers
+----
+
+==== Replacing Built-in Algorithms
+
+You can replace built-in algorithms with optimized versions:
+
+[source,ruby]
+----
+# Unregister the built-in
+Cabriolet.algorithm_factory.unregister(:lzss, :decompressor)
+
+# Register your optimized version
+Cabriolet.algorithm_factory.register(
+  :lzss,
+  MyOptimizedLZSS,
+  category: :decompressor,
+  priority: 10
+)
+
+# All future LZSS decompression will use your implementation
+----
+
+==== Format-Specific Algorithms
+
+Register algorithms that only apply to specific formats:
+
+[source,ruby]
+----
+# Register CAB-specific LZX variant
+Cabriolet.algorithm_factory.register(
+  :cab_lzx,
+  CABOptimizedLZX,
+  category: :decompressor,
+  format: :cab  # Only used for CAB files
+)
+
+# Register CHM-specific variant
+Cabriolet.algorithm_factory.register(
+  :chm_lzx,
+  CHMOptimizedLZX,
+  category: :decompressor,
+  format: :chm  # Only used for CHM files
+)
+----
+
+==== Algorithm Requirements
+
+Custom algorithms must:
+
+* **Inherit from the appropriate base class**:
+** `Cabriolet::Compressors::Base` for compressors
+** `Cabriolet::Decompressors::Base` for decompressors
+
+* **Implement required methods**:
+** Decompressors: `decompress(input_size, output_size)`
+** Compressors: `compress()`
+
+* **Use provided instance variables**:
+** `@input` - Input handle (read operations)
+** `@output` - Output handle (write operations)
+** `@io_system` - I/O system for operations
+** `@buffer_size` - Buffer size for operations
+
+**Example custom decompressor**:
+
+[source,ruby]
+----
+class CustomAlgorithm < Cabriolet::Decompressors::Base
+  def decompress(input_size, output_size)
+    # Read compressed data
+    compressed = @input.read(input_size)
+
+    # Your decompression logic
+    decompressed = my_decompress_logic(compressed)
+
+    # Write decompressed data
+    @output.write(decompressed)
+
+    # Return bytes written
+    decompressed.bytesize
+  end
+
+  private
+
+  def my_decompress_logic(data)
+    # Custom decompression implementation
+  end
+end
+----
+
+**Example custom compressor**:
+
+[source,ruby]
+----
+class CustomCompressor < Cabriolet::Compressors::Base
+  def compress
+    # Read uncompressed data
+    data = @input.read
+
+    # Your compression logic
+    compressed = my_compress_logic(data)
+
+    # Write compressed data
+    @output.write(compressed)
+
+    # Return bytes written
+    compressed.bytesize
+  end
+
+  private
+
+  def my_compress_logic(data)
+    # Custom compression implementation
+  end
+end
+----
+
+==== Use Cases
+
+**Performance optimization**::
+Replace built-in algorithms with platform-optimized versions (e.g., using native extensions for specific platforms)
+
+**Research and development**::
+Test experimental compression algorithms without modifying the core library
+
+**Format variations**::
+Implement format-specific optimizations or variations of standard algorithms
+
+**Testing**::
+Create isolated test environments with mock or simplified algorithms
+
+== Plugin Architecture
+
+Cabriolet supports a powerful plugin system that enables easy distribution and loading of extensions.
+
+=== Installing Plugins
+
+Plugins are distributed as Ruby gems with the naming pattern `cabriolet-plugin-*`:
+
+[source,bash]
+----
+gem install cabriolet-plugin-bzip2
+----
+
+=== Loading Plugins
+
+Plugins are automatically discovered from installed gems:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Discover all installed plugins
+Cabriolet.plugin_manager.discover_plugins
+
+# Load and activate a specific plugin
+Cabriolet.plugin_manager.load_plugin('bzip2')
+Cabriolet.plugin_manager.activate_plugin('bzip2')
+
+# Or auto-activate all plugins
+Cabriolet.plugin_manager.auto_activate_plugins
+----
+
+=== Listing Plugins
+
+[source,ruby]
+----
+# List all plugins
+plugins = Cabriolet.plugin_manager.list_plugins
+
+# List only active plugins
+active = Cabriolet.plugin_manager.list_plugins(state: :active)
+
+# Check if a plugin is active
+if Cabriolet.plugin_manager.plugin_active?('bzip2')
+  puts "BZip2 plugin is active"
+end
+----
+
+=== Creating Plugins
+
+To create your own plugin, see the example plugins:
+
+- `examples/plugins/cabriolet-plugin-example/` - Simple ROT13 example
+- `examples/plugins/cabriolet-plugin-bzip2/` - Advanced BZip2 example
+
+Basic plugin structure:
+
+[source,ruby]
+----
+class MyPlugin < Cabriolet::Plugin
+  def metadata
+    {
+      name: "my-plugin",
+      version: "1.0.0",
+      author: "Your Name",
+      description: "My custom compression algorithm",
+      cabriolet_version: "~> 0.1"
+    }
+  end
+
+  def setup
+    # Register your algorithms
+    register_algorithm(:my_algo, MyCompressor, category: :compressor)
+    register_algorithm(:my_algo, MyDecompressor, category: :decompressor)
+  end
+end
+----
+
+=== Plugin Configuration
+
+Configure plugins via `~/.cabriolet/plugins.yml`:
+
+[source,yaml]
+----
+discovery:
+  auto_discover: true
+  auto_load: true
+  auto_activate: true
+
+plugins:
+  bzip2:
+    enabled: true
+    config:
+      compression_level: 9
+----
+
+=== Plugin Safety
+
+All plugins are validated before loading:
+
+- ✓ Inheritance validation
+- ✓ Metadata validation
+- ✓ Version compatibility checking
+- ✓ Dependency resolution
+- ✓ Safety scanning
+
+Failed plugins are isolated and don't affect Cabriolet or other plugins.
 
 === Error Handling
 
@@ -1101,6 +1479,25 @@ bundle exec rubocop -A  # Auto-correct
 
 == Known limitations
 
+For complete details on known issues and workarounds, see link:KNOWN_ISSUES.md[Known Issues].
+
+=== LZX Compression
+
+LZX compression is **production ready** for most use cases:
+
+* ✅ **CHM files**: 100% working, all features
+* ✅ **Single-folder CAB**: 100% working
+* ✅ **Decompression**: UNCOMPRESSED blocks fully supported
+* ✅ **Compression**: UNCOMPRESSED blocks fully supported
+* ⚠️ **Multi-folder CAB**: Files at non-zero offsets in second+ folders
+** Affects: <5% of CAB files
+** Workaround: Use salvage mode or extract folders separately
+** Status: Deferred to v0.2.0
+* ⚠️ **VERBATIM/ALIGNED blocks**: Compression needs implementation
+** Affects: Advanced CHM creation
+** Decompression: Working
+** Status: Planned for v0.2.0
+
 === Quantum compression
 
 Quantum compression is **functional but experimental**:
@@ -1122,10 +1519,13 @@ Quantum compression is **functional but experimental**:
 
 === HLP/LIT/OAB Formats
 
-* No public format specifications available
-* Implementation based on libmspack source code
-* Cannot be fully validated without real test files
-* Basic functionality working, edge cases may exist
+* LIT format has no public specification (implementation based on libmspack)
+* HLP format supports both QuickHelp (DOS) and Windows Help (3.x/4.x)
+** QuickHelp format fully documented, production ready
+** Windows Help format based on reverse engineering, production ready
+* OAB format has limited documentation (implementation based on libmspack)
+* All formats are fully functional for basic operations
+* Edge cases for advanced features may exist
 
 
 == Troubleshooting

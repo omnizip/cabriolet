@@ -10,8 +10,10 @@ module Cabriolet
       # Initialize a new CAB decompressor
       #
       # @param io_system [System::IOSystem, nil] Custom I/O system or nil for default
-      def initialize(io_system = nil)
+      # @param algorithm_factory [AlgorithmFactory, nil] Custom algorithm factory or nil for default
+      def initialize(io_system = nil, algorithm_factory = nil)
         @io_system = io_system || System::IOSystem.new
+        @algorithm_factory = algorithm_factory || Cabriolet.algorithm_factory
         @parser = Parser.new(@io_system)
         @buffer_size = Cabriolet.default_buffer_size
         @fix_mszip = false
@@ -57,24 +59,16 @@ module Cabriolet
       # @param output [System::FileHandle, System::MemoryHandle] Output handle
       # @return [Decompressors::Base] Appropriate decompressor instance
       def create_decompressor(folder, input, output)
-        case folder.compression_method
-        when Constants::COMP_TYPE_NONE
-          Decompressors::None.new(@io_system, input, output, @buffer_size)
-        when Constants::COMP_TYPE_MSZIP
-          Decompressors::MSZIP.new(@io_system, input, output, @buffer_size,
-                                   fix_mszip: @fix_mszip)
-        when Constants::COMP_TYPE_LZX
-          window_bits = folder.compression_level
-          Decompressors::LZX.new(@io_system, input, output, @buffer_size,
-                                 window_bits: window_bits)
-        when Constants::COMP_TYPE_QUANTUM
-          window_bits = folder.compression_level
-          Decompressors::Quantum.new(@io_system, input, output, @buffer_size,
-                                     window_bits: window_bits)
-        else
-          raise UnsupportedFormatError,
-                "Unsupported compression type: #{folder.compression_method}"
-        end
+        @algorithm_factory.create(
+          folder.compression_method,
+          :decompressor,
+          @io_system,
+          input,
+          output,
+          @buffer_size,
+          fix_mszip: @fix_mszip,
+          window_bits: folder.compression_level
+        )
       end
 
       # Append a cabinet to another, merging their folders and files

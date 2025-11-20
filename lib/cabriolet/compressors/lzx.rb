@@ -66,7 +66,7 @@ module Cabriolet
       # @param output [System::FileHandle, System::MemoryHandle] Output handle
       # @param buffer_size [Integer] Buffer size for I/O operations
       # @param window_bits [Integer] Window size (15-21 for regular LZX)
-      def initialize(io_system, input, output, buffer_size, window_bits: 15)
+      def initialize(io_system, input, output, buffer_size, window_bits: 15, **_kwargs)
         super(io_system, input, output, buffer_size)
 
         # Validate window_bits
@@ -152,19 +152,43 @@ module Cabriolet
       # @param data [String] Frame data to compress
       # @return [void]
       def compress_frame(data)
-        # Use UNCOMPRESSED blocks for now (simplest approach)
+        # For now, use UNCOMPRESSED blocks to bypass Huffman tree issues
+        # Write UNCOMPRESSED block header
         write_block_header(BLOCKTYPE_UNCOMPRESSED, data.bytesize)
 
-        # Write R0, R1, R2 (required for uncompressed blocks)
+        # Write offset registers (R0, R1, R2)
         write_offset_registers
 
-        # Write raw data
+        # Write raw uncompressed data
         data.each_byte do |byte|
           @bitstream.write_bits(byte, 8)
         end
+      end
 
-        # Ensure byte alignment at end of frame for multi-frame support
-        @bitstream.byte_align
+      # Compress a single frame (32KB) - VERBATIM version (currently disabled)
+      #
+      # @param data [String] Frame data to compress
+      # @return [void]
+      def compress_frame_verbatim(data)
+        # Reset frequency statistics for each frame
+        @literal_freq.fill(0)
+        @match_freq.fill(0)
+        @length_freq.fill(0)
+
+        # Analyze frame to generate LZ77 tokens
+        tokens = analyze_frame(data)
+
+        # Build Huffman trees from statistics
+        build_trees
+
+        # Write VERBATIM block header
+        write_block_header(BLOCKTYPE_VERBATIM, data.bytesize)
+
+        # Write Huffman tree definitions
+        write_trees
+
+        # Encode all tokens using the Huffman codes
+        encode_tokens(tokens)
       end
 
       # Analyze frame and generate LZ77 tokens
@@ -301,68 +325,216 @@ module Cabriolet
         slot
       end
 
-      # Build Huffman trees from frequency statistics
-      #
-      # @return [void]
-      def build_trees
-        # Build main tree (literals + matches)
-        maintree_freqs = @literal_freq + @match_freq
-        @maintree_lengths = build_tree_lengths(maintree_freqs,
-                                               @maintree_maxsymbols)
-        @maintree_codes = Huffman::Encoder.build_codes(@maintree_lengths,
-                                                       @maintree_maxsymbols)
-
-        # Build length tree
-        @length_lengths = build_tree_lengths(@length_freq, LENGTH_MAXSYMBOLS)
-        @length_codes = Huffman::Encoder.build_codes(@length_lengths,
-                                                     LENGTH_MAXSYMBOLS)
-
-        # Build pretree (used to encode the other trees)
-        # Create a valid Huffman tree that satisfies Kraft inequality
-        # For 20 symbols, use: 2@3bits + 6@4bits + 12@5bits = 1.0
-        @pretree_lengths = Array.new(PRETREE_MAXSYMBOLS, 0)
-        # Most common symbols (0-1): 3 bits
-        (0..1).each { |i| @pretree_lengths[i] = 3 }
-        # Common symbols (2-7): 4 bits
-        (2..7).each { |i| @pretree_lengths[i] = 4 }
-        # Less common symbols (8-19): 5 bits
-        (8..19).each { |i| @pretree_lengths[i] = 5 }
-        @pretree_codes = Huffman::Encoder.build_codes(@pretree_lengths,
-                                                      PRETREE_MAXSYMBOLS)
-      end
-
       # Build Huffman code lengths from frequencies
+      #
+      # Uses a simplified approach: assign equal lengths to all symbols.
+      # This guarantees valid Huffman trees that satisfy Kraft inequality.
       #
       # @param freqs [Array<Integer>] Symbol frequencies
       # @param num_symbols [Integer] Number of symbols
       # @return [Array<Integer>] Code lengths
       def build_tree_lengths(freqs, num_symbols)
-        # Simple implementation: assign lengths based on frequency
-        # Higher frequency = shorter code
         lengths = Array.new(num_symbols, 0)
 
-        # Get non-zero frequencies
-        non_zero = freqs.each_with_index.select { |freq, _| freq.positive? }
-        return lengths if non_zero.empty?
+        # Get symbols with non-zero frequencies
+        non_zero_symbols = freqs.each_with_index.select { |freq, _| freq.positive? }.map { |_, sym| sym }
 
-        # Sort by frequency (descending)
-        sorted = non_zero.sort_by { |freq, _| -freq }
+        # Handle edge cases
+        if non_zero_symbols.empty?
+          # Empty tree: create minimal valid tree with 2 symbols
+          lengths[0] = 1
+          lengths[1] = 1
+          return lengths
+        elsif non_zero_symbols.size == 1
+          # Single symbol: need at least 2 symbols for valid Huffman tree
+          symbol = non_zero_symbols[0]
+          lengths[symbol] = 1
+          dummy = symbol == 0 ? 1 : 0
+          lengths[dummy] = 1
+          return lengths
+        end
 
-        # Assign lengths using simple strategy
-        sorted.each_with_index do |(_, symbol), index|
-          # Assign shorter codes to more frequent symbols
-          lengths[symbol] = if index < num_symbols / 8
-                              4
-                            elsif index < num_symbols / 4
-                              6
-                            elsif index < num_symbols / 2
-                              8
-                            else
-                              10
-                            end
+        # Calculate required length: ceil(log2(count))
+        count = non_zero_symbols.size
+        bit_length = 1
+        while (1 << bit_length) < count
+          bit_length += 1
+        end
+
+        # Assign same length to all non-zero symbols
+        non_zero_symbols.each do |symbol|
+          lengths[symbol] = bit_length
+        end
+
+        # Pad with dummy symbols to make tree complete (2^bit_length total symbols)
+        # This ensures Kraft inequality sum equals exactly 1.0
+        total_needed = 1 << bit_length
+        dummy_count = total_needed - count
+
+        if dummy_count.positive?
+          dummy_index = 0
+          while dummy_count.positive? && dummy_index < num_symbols
+            if lengths[dummy_index].zero?
+              lengths[dummy_index] = bit_length
+              dummy_count -= 1
+            end
+            dummy_index += 1
+          end
         end
 
         lengths
+      end
+
+      # Build Huffman trees from frequency statistics
+      #
+      # This creates three trees for LZX compression:
+      # 1. Main tree: literals (0-255) + match position/length combinations
+      # 2. Length tree: additional length symbols for long matches
+      # 3. Pretree: encodes the code lengths of main/length trees
+      #
+      # @return [void]
+      def build_trees
+        # Step 1: Combine literal and match frequencies for main tree
+        maintree_freq = @literal_freq + @match_freq
+
+        # Step 2: Build main tree code lengths
+        @maintree_lengths = build_tree_lengths(maintree_freq, @maintree_maxsymbols)
+
+        # Step 3: Build length tree code lengths
+        @length_lengths = build_tree_lengths(@length_freq, LENGTH_MAXSYMBOLS)
+
+        # Step 4: Calculate pretree frequencies by simulating tree encoding
+        pretree_freq = calculate_pretree_frequencies
+
+        # Step 5: Build pretree code lengths
+        @pretree_lengths = build_tree_lengths(pretree_freq, PRETREE_MAXSYMBOLS)
+
+        # Step 6: Generate code tables from lengths
+        @maintree_codes = Huffman::Encoder.build_codes(@maintree_lengths, @maintree_maxsymbols)
+        @length_codes = Huffman::Encoder.build_codes(@length_lengths, LENGTH_MAXSYMBOLS)
+        @pretree_codes = Huffman::Encoder.build_codes(@pretree_lengths, PRETREE_MAXSYMBOLS)
+      end
+
+      # Calculate pretree symbol frequencies
+      #
+      # The pretree encodes the code lengths of the main and length trees.
+      # This method simulates the tree encoding process to determine which
+      # pretree symbols will be needed.
+      #
+      # @return [Array<Integer>] Frequency array for pretree symbols (0-19)
+      def calculate_pretree_frequencies
+        pretree_freq = Array.new(PRETREE_MAXSYMBOLS, 0)
+
+        # Count symbols needed to encode main tree (two parts)
+        count_pretree_symbols(@maintree_lengths, 0, NUM_CHARS, pretree_freq)
+        count_pretree_symbols(@maintree_lengths, NUM_CHARS, @maintree_maxsymbols, pretree_freq)
+
+        # Count symbols needed to encode length tree
+        count_pretree_symbols(@length_lengths, 0, NUM_SECONDARY_LENGTHS, pretree_freq)
+
+        pretree_freq
+      end
+
+      # Count pretree symbols needed to encode a tree
+      #
+      # This simulates the write_tree_with_pretree encoding process to count
+      # which pretree symbols will be used, allowing us to build an optimal
+      # pretree.
+      #
+      # @param lengths [Array<Integer>] Tree lengths to encode
+      # @param start [Integer] Start index
+      # @param end_idx [Integer] End index (exclusive)
+      # @param freq [Array<Integer>] Frequency array to update
+      # @return [void]
+      def count_pretree_symbols(lengths, start, end_idx, freq)
+        i = start
+        prev_length = 0
+
+        while i < end_idx
+          length = lengths[i]
+
+          if length.zero?
+            # Count run of zeros
+            zero_count = 0
+            while i < end_idx && lengths[i].zero? && zero_count < 138
+              zero_count += 1
+              i += 1
+            end
+
+            # Encode long runs with symbol 18
+            if zero_count >= 20
+              while zero_count >= 20
+                run = [zero_count, 51].min
+                freq[18] += 1
+                zero_count -= run
+              end
+            end
+
+            # Encode medium runs with symbol 17
+            if zero_count >= 4
+              run = [zero_count, 19].min
+              freq[17] += 1
+              zero_count -= run
+            end
+
+            # Encode remaining short runs as deltas
+            if zero_count.positive?
+              zero_count.times do
+                delta = (17 - prev_length) % 17
+                freq[delta] += 1
+                prev_length = 0
+              end
+            end
+          else
+            # Encode as delta from previous length
+            delta = (length - prev_length) % 17
+            freq[delta] += 1
+            prev_length = length
+            i += 1
+          end
+        end
+      end
+
+      # Calculate code lengths by traversing Huffman tree
+      #
+      # @param node [Array] Tree node [freq, symbol, left, right, depth]
+      # @param depth [Integer] Current depth
+      # @param lengths [Array<Integer>] Output array for lengths
+      # @return [void]
+      def calculate_depths(node, depth, lengths)
+        return unless node
+
+        freq, symbol, left, right, = node
+
+        if symbol.nil?
+          # Internal node: recurse to children
+          calculate_depths(left, depth + 1, lengths)
+          calculate_depths(right, depth + 1, lengths)
+        else
+          # Leaf node: record length
+          lengths[symbol] = depth
+        end
+      end
+
+      # Calculate code lengths by traversing Huffman tree
+      #
+      # @param node [Array] Tree node [freq, symbol, left, right]
+      # @param depth [Integer] Current depth
+      # @param lengths [Array<Integer>] Output array for lengths
+      # @return [void]
+      def calculate_code_lengths(node, depth, lengths)
+        return unless node
+
+        freq, symbol, left, right = node
+
+        if symbol.nil?
+          # Internal node: recurse to children
+          calculate_code_lengths(left, depth + 1, lengths)
+          calculate_code_lengths(right, depth + 1, lengths)
+        else
+          # Leaf node: record length
+          lengths[symbol] = depth
+        end
       end
 
       # Write block header

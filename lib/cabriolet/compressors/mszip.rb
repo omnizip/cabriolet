@@ -56,7 +56,7 @@ module Cabriolet
       # @param input [System::FileHandle, System::MemoryHandle] Input handle
       # @param output [System::FileHandle, System::MemoryHandle] Output handle
       # @param buffer_size [Integer] Buffer size for I/O operations
-      def initialize(io_system, input, output, buffer_size)
+      def initialize(io_system, input, output, buffer_size, **_kwargs)
         super
 
         # Initialize bitstream writer

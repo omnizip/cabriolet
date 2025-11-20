@@ -40,13 +40,17 @@ module Cabriolet
 
       # Decompress LZSS data
       #
-      # @param bytes [Integer] Number of bytes to decompress (unused, reads
-      #   until EOF)
+      # @param bytes [Integer, nil] Maximum number of output bytes to write (nil or 0 = until EOF)
       # @return [Integer] Number of bytes decompressed
-      def decompress(_bytes)
+      def decompress(bytes = nil)
         bytes_written = 0
+        # Only enforce limit if bytes is a positive integer
+        enforce_limit = bytes && bytes.positive?
 
         loop do
+          # Check if we've reached the output byte limit (only when limit is enforced)
+          break if enforce_limit && bytes_written >= bytes
+
           # Read control byte
           control_byte = read_input_byte
           break if control_byte.nil?
@@ -55,6 +59,9 @@ module Cabriolet
 
           # Process each bit in the control byte
           8.times do |bit_index|
+            # Check output limit before each operation (only when limit is enforced)
+            break if enforce_limit && bytes_written >= bytes
+
             mask = 1 << bit_index
 
             if control_byte.anybits?(mask)
@@ -81,6 +88,9 @@ module Cabriolet
 
               # Copy from window
               length.times do
+                # Check if we've reached the limit mid-match
+                break if enforce_limit && bytes_written >= bytes
+
                 byte = @window[match_pos]
                 @window[@window_pos] = byte
                 write_output_byte(byte)

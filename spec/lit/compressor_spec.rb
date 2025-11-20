@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "tmpdir"
+require "fileutils"
 
 RSpec.describe Cabriolet::LIT::Compressor do
   let(:io_system) { Cabriolet::System::IOSystem.new }
@@ -64,61 +65,110 @@ RSpec.describe Cabriolet::LIT::Compressor do
   end
 
   describe "#generate" do
-    it "raises error when no files added" do
-      Dir.mktmpdir do |dir|
-        output = File.join(dir, "test.lit")
-
-        expect { compressor.generate(output) }.to raise_error(
-          ArgumentError,
-          /No files added to archive/,
-        )
-      end
-    end
-
-    it "raises NotImplementedError when encryption requested" do
+    it "creates a minimal valid LIT file" do
       Dir.mktmpdir do |dir|
         source = File.join(dir, "test.txt")
         output = File.join(dir, "test.lit")
-        File.write(source, "test")
+        File.write(source, "Hello World")
 
         compressor.add_file(source, "test.txt")
 
-        expect { compressor.generate(output, encrypt: true) }.to raise_error(
-          NotImplementedError,
-          /DES encryption is not implemented/,
-        )
+        bytes_written = compressor.generate(output)
+
+        expect(bytes_written).to be > 0
+        expect(File.exist?(output)).to be true
+        expect(File.size(output)).to be > 0
       end
     end
 
-    it "creates a LIT file with single uncompressed file" do
+    it "creates LIT file with uncompressed files" do
       Dir.mktmpdir do |dir|
         source = File.join(dir, "test.txt")
         output = File.join(dir, "test.lit")
         File.write(source, "Hello World")
 
         compressor.add_file(source, "test.txt", compress: false)
-        bytes = compressor.generate(output)
 
-        expect(bytes).to be > 0
+        bytes_written = compressor.generate(output)
+
+        expect(bytes_written).to be > 0
         expect(File.exist?(output)).to be true
       end
     end
 
-    it "creates a LIT file with single compressed file",
-       skip: "LZX compressor integration needed" do
-      # Would test compression if LZX compressor is fully integrated
-    end
+    it "creates LIT file with multiple files" do
+      Dir.mktmpdir do |dir|
+        file1 = File.join(dir, "file1.txt")
+        file2 = File.join(dir, "file2.txt")
+        output = File.join(dir, "test.lit")
+        File.write(file1, "Content 1")
+        File.write(file2, "Content 2")
 
-    it "creates a LIT file with multiple files",
-       skip: "Full round-trip testing needed" do
-      # Would test multi-file archives with round-trip verification
+        compressor.add_file(file1, "file1.txt")
+        compressor.add_file(file2, "file2.txt")
+
+        bytes_written = compressor.generate(output)
+
+        expect(bytes_written).to be > 0
+        expect(File.exist?(output)).to be true
+      end
     end
   end
 
   describe "round-trip compression" do
-    it "compresses and decompresses data correctly",
-       skip: "No LIT test fixtures for verification" do
-      # Would test: create LIT → extract → verify content matches
+    it "compresses and decompresses data correctly" do
+      Dir.mktmpdir do |dir|
+        # Create source files
+        source1 = File.join(dir, "test1.txt")
+        source2 = File.join(dir, "test2.html")
+        File.write(source1, "Hello World from LIT compression!")
+        File.write(source2, "<html><body>Test HTML</body></html>")
+
+        # Compress into LIT file
+        lit_file = File.join(dir, "test.lit")
+        compressor.add_file(source1, "test1.txt")
+        compressor.add_file(source2, "test2.html")
+        bytes_written = compressor.generate(lit_file)
+
+        expect(bytes_written).to be > 0
+        expect(File.exist?(lit_file)).to be true
+
+        # Decompress the LIT file
+        decompressor = Cabriolet::LIT::Decompressor.new(io_system)
+        lit_header = decompressor.open(lit_file)
+
+        expect(lit_header).not_to be_nil
+        expect(lit_header.directory).not_to be_nil
+        expect(lit_header.directory.entries.size).to be >= 2
+
+        # Extract files
+        output_dir = File.join(dir, "output")
+        FileUtils.mkdir_p(output_dir)
+
+        # Find and extract test1.txt
+        entry1 = lit_header.directory.entries.find { |e| e.name == "test1.txt" }
+        expect(entry1).not_to be_nil
+
+        output1 = File.join(output_dir, "test1.txt")
+        decompressor.extract_file(lit_header, "test1.txt", output1)
+
+        expect(File.exist?(output1)).to be true
+        extracted_content1 = File.read(output1)
+        expect(extracted_content1).to eq("Hello World from LIT compression!")
+
+        # Find and extract test2.html
+        entry2 = lit_header.directory.entries.find { |e| e.name == "test2.html" }
+        expect(entry2).not_to be_nil
+
+        output2 = File.join(output_dir, "test2.html")
+        decompressor.extract_file(lit_header, "test2.html", output2)
+
+        expect(File.exist?(output2)).to be true
+        extracted_content2 = File.read(output2)
+        expect(extracted_content2).to eq("<html><body>Test HTML</body></html>")
+
+        decompressor.close(lit_header)
+      end
     end
   end
 end

@@ -34,8 +34,10 @@ module Cabriolet
       # Initialize CHM compressor
       #
       # @param io_system [System::IOSystem] I/O system for file operations
-      def initialize(io_system = nil)
+      # @param algorithm_factory [AlgorithmFactory, nil] Custom algorithm factory or nil for default
+      def initialize(io_system = nil, algorithm_factory = nil)
         @io_system = io_system || System::IOSystem.new
+        @algorithm_factory = algorithm_factory || Cabriolet.algorithm_factory
         @files = []
         @timestamp = Time.now.to_i
         @language_id = 0x0409 # English (US)
@@ -156,12 +158,14 @@ module Cabriolet
         input_handle = System::MemoryHandle.new(uncompressed_data, Constants::MODE_READ)
         output_handle = System::MemoryHandle.new("", Constants::MODE_WRITE)
 
-        compressor = Compressors::LZX.new(
+        compressor = @algorithm_factory.create(
+          Constants::COMP_TYPE_LZX,
+          :compressor,
           @io_system,
           input_handle,
           output_handle,
           4096,
-          window_bits: @window_bits,
+          window_bits: @window_bits
         )
 
         compressor.compress
@@ -255,7 +259,7 @@ module Cabriolet
 
       # Build control data for LZX
       def build_control_data
-        control = Binary::LZXControlData.new
+        control = Binary::CHMLZXControlData.new
         control.len = 28
         control.signature = "LZXC"
         control.version = 2

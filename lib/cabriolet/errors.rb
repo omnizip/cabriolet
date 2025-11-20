@@ -36,4 +36,7 @@ module Cabriolet
 
   # Raised when seek operation fails
   class SeekError < IOError; end
+
+  # Raised when plugin operations fail
+  class PluginError < Error; end
 end

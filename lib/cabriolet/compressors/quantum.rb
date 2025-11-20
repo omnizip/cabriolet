@@ -8,9 +8,9 @@ module Cabriolet
     # STATUS: Functional with known limitations
     # - Literals: WORKING ✓
     # - Short matches (3-13 bytes): WORKING ✓
-    # - Longer matches (14+ bytes): Limited support (known issue)
+    # - Longer matches (14+ bytes): WORKING ✓ (fixed: MAX_MATCH now correct)
     # - Simple data round-trips successfully
-    # - Complex repeated patterns may have issues
+    # - Complex repeated patterns round-trip successfully
     #
     # The Quantum method was created by David Stafford, adapted by Microsoft
     # Corporation.
@@ -21,7 +21,7 @@ module Cabriolet
 
       # Match constants
       MIN_MATCH = 3
-      MAX_MATCH = 1028
+      MAX_MATCH = 259
 
       # Position slot tables (same as decompressor)
       POSITION_BASE = [
@@ -77,7 +77,7 @@ module Cabriolet
       # @param output [System::FileHandle, System::MemoryHandle] Output handle
       # @param buffer_size [Integer] Buffer size for I/O operations
       # @param window_bits [Integer] Window size parameter (10-21)
-      def initialize(io_system, input, output, buffer_size, window_bits: 10)
+      def initialize(io_system, input, output, buffer_size, window_bits: 10, **_kwargs)
         super(io_system, input, output, buffer_size)
 
         # Validate window_bits
@@ -206,8 +206,7 @@ module Cabriolet
       # Finish arithmetic coding by outputting the final state
       def finish_arithmetic_coding
         # Output enough bits to ensure decoder can decode correctly
-        # We need to output a value that falls within [L, H)
-        # A common approach is to output L plus half the range
+        # Standard arithmetic coding finalization: output pending underflow bits
         @underflow_bits += 1
         bit = if @l.anybits?(0x4000)
                 1

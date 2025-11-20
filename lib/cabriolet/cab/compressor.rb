@@ -10,8 +10,10 @@ module Cabriolet
       # Initialize a new compressor
       #
       # @param io_system [System::IOSystem] I/O system for writing
-      def initialize(io_system = nil)
+      # @param algorithm_factory [AlgorithmFactory, nil] Custom algorithm factory or nil for default
+      def initialize(io_system = nil, algorithm_factory = nil)
         @io_system = io_system || System::IOSystem.new
+        @algorithm_factory = algorithm_factory || Cabriolet.algorithm_factory
         @files = []
         @compression = :mszip
         @set_id = rand(0xFFFF)
@@ -161,54 +163,45 @@ module Cabriolet
 
       # Compress a single chunk of data
       def compress_chunk(data)
-        case @compression
-        when :none
-          data
-        when :mszip
-          compress_mszip(data)
-        when :lzx
-          compress_lzx(data)
-        when :quantum
-          compress_quantum(data)
-        else
-          raise ArgumentError, "Unsupported compression type: #{@compression}"
+        return data if @compression == :none
+
+        # Create temporary handles for compression
+        input = System::MemoryHandle.new(data)
+        output = System::MemoryHandle.new("", Constants::MODE_WRITE)
+
+        # Get compression method value
+        compression_method = begin
+          {
+            none: Constants::COMP_TYPE_NONE,
+            mszip: Constants::COMP_TYPE_MSZIP,
+            lzx: Constants::COMP_TYPE_LZX,
+            quantum: Constants::COMP_TYPE_QUANTUM,
+          }.fetch(@compression)
+        rescue KeyError
+          raise ArgumentError,
+                "Unsupported compression type: #{@compression}"
         end
-      end
 
-      # Compress data using MSZIP
-      def compress_mszip(data)
-        input = System::MemoryHandle.new(data, Constants::MODE_READ)
-        output = System::MemoryHandle.new("", Constants::MODE_WRITE)
+        # Determine window bits based on compression type
+        window_bits = case @compression
+                      when :lzx then 15
+                      when :quantum then 10
+                      else nil
+                      end
 
-        compressor = Compressors::MSZIP.new(@io_system, input, output,
-                                            Cabriolet.default_buffer_size)
+        compressor = @algorithm_factory.create(
+          compression_method,
+          :compressor,
+          @io_system,
+          input,
+          output,
+          data.bytesize,
+          window_bits: window_bits
+        )
+
         compressor.compress
-
-        output.data
-      end
-
-      # Compress data using LZX
-      def compress_lzx(data)
-        input = System::MemoryHandle.new(data, Constants::MODE_READ)
-        output = System::MemoryHandle.new("", Constants::MODE_WRITE)
-
-        compressor = Compressors::LZX.new(@io_system, input, output,
-                                          Cabriolet.default_buffer_size, window_bits: 15)
-        compressor.compress
-
-        output.data
-      end
-
-      # Compress data using Quantum
-      def compress_quantum(data)
-        input = System::MemoryHandle.new(data, Constants::MODE_READ)
-        output = System::MemoryHandle.new("", Constants::MODE_WRITE)
-
-        compressor = Compressors::Quantum.new(@io_system, input, output,
-                                              Cabriolet.default_buffer_size, window_bits: 10)
-        compressor.compress
-
-        output.data
+        output.rewind
+        output.read
       end
 
       # Write the complete cabinet file

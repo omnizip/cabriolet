@@ -50,7 +50,7 @@ module Cabriolet
       # @param output [System::FileHandle, System::MemoryHandle] Output handle
       # @param buffer_size [Integer] Buffer size for I/O operations
       # @param fix_mszip [Boolean] Enable repair mode for corrupted data
-      def initialize(io_system, input, output, buffer_size, fix_mszip: false)
+      def initialize(io_system, input, output, buffer_size, fix_mszip: false, **_kwargs)
         super(io_system, input, output, buffer_size)
         @fix_mszip = fix_mszip
 
@@ -114,7 +114,7 @@ module Cabriolet
         # Align to byte boundary
         @bitstream.byte_align
 
-        # Read bytes until we find 'CK'
+        # Read bytes until we find 'CK' (no EOF checking - matches libmspack lines 407-414)
         state = 0
         bytes_read = 0
         max_search = 10_000 # Prevent infinite loops
@@ -122,12 +122,6 @@ module Cabriolet
         loop do
           byte = @bitstream.read_bits(8)
           bytes_read += 1
-
-          # Check for EOF (bitstream returns 0)
-          if bytes_read > 2 && byte.zero?
-            raise DecompressionError,
-                  "Unexpected EOF while searching for CK signature"
-          end
 
           # Prevent infinite loops
           if bytes_read > max_search

@@ -100,7 +100,7 @@ module Cabriolet
       # @param output_length [Integer] Expected output length for E8 processing
       # @param is_delta [Boolean] Whether this is LZX DELTA format
       def initialize(io_system, input, output, buffer_size, window_bits:,
-                     reset_interval: 0, output_length: 0, is_delta: false)
+                     reset_interval: 0, output_length: 0, is_delta: false, **_kwargs)
         super(io_system, input, output, buffer_size)
 
         # Validate window_bits

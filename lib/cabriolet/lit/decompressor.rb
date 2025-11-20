@@ -1,249 +1,484 @@
 # frozen_string_literal: true
 
+require_relative "parser"
+require_relative "../decompressors/lzx"
+require_relative "../binary/lit_structures"
+require_relative "../errors"
+
 module Cabriolet
   module LIT
-    # Decompressor is the main interface for LIT file operations
+    # Decompressor for Microsoft Reader LIT files
     #
-    # LIT files are Microsoft Reader eBook files that use LZX compression.
+    # Handles complete LIT file extraction including:
+    # - Parsing complex LIT structure with Parser
+    # - DataSpace/Storage sections with transform layers
+    # - LZX decompression with ResetTable
+    # - Manifest-based filename restoration
+    # - Section caching for efficiency
     #
-    # NOTE: This implementation handles non-encrypted LIT files only.
-    # DES-encrypted (DRM-protected) LIT files are not supported.
-    # For encrypted files, use Microsoft Reader or convert to another format
-    # first.
+    # Based on the openclit/SharpLit reference implementation.
+    #
+    # NOTE: DES encryption (DRM) is not supported.
     class Decompressor
-      attr_reader :io_system
+      attr_reader :io_system, :parser
       attr_accessor :buffer_size
 
-      # Input buffer size for decompression
-      DEFAULT_BUFFER_SIZE = 32_768
+      # Default buffer size for decompression
+      DEFAULT_BUFFER_SIZE = 8192
 
-      # Initialize a new LIT decompressor
-      #
-      # @param io_system [System::IOSystem, nil] Custom I/O system or nil for
-      #   default
-      def initialize(io_system = nil)
+      def initialize(io_system = nil, algorithm_factory = nil)
         @io_system = io_system || System::IOSystem.new
+        @algorithm_factory = algorithm_factory || Cabriolet.algorithm_factory
+        @parser = Parser.new(@io_system)
+        @section_cache = {}
         @buffer_size = DEFAULT_BUFFER_SIZE
       end
 
       # Open and parse a LIT file
       #
-      # @param filename [String] Path to the LIT file
-      # @return [Models::LITHeader] Parsed header with file list
-      # @raise [Errors::ParseError] if the file is not a valid LIT
-      # @raise [NotImplementedError] if the file is DES-encrypted
+      # @param filename [String] Path to LIT file
+      # @return [Models::LITFile] Parsed LIT file structure
+      # @raise [Errors::ParseError] if file is invalid
+      # @raise [NotImplementedError] if file is DRM-encrypted
       def open(filename)
-        header = parse_header(filename)
-        header.filename = filename
+        lit_file = @parser.parse(filename)
 
-        # Check for encryption
-        if header.encrypted?
+        # Store filename for later extraction
+        lit_file.instance_variable_set(:@filename, filename)
+
+        # Check for DRM
+        if lit_file.encrypted?
           raise NotImplementedError,
-                "DES-encrypted LIT files not yet supported. " \
-                "Use Microsoft Reader or another tool to decrypt first."
+                "DES-encrypted LIT files not supported. " \
+                "DRM level: #{lit_file.drm_level}"
         end
 
-        header
+        lit_file
       end
 
       # Close a LIT file (no-op for compatibility)
       #
-      # @param _header [Models::LITHeader] Header to close
+      # @param _lit_file [Models::LITFile] LIT file to close
       # @return [void]
-      def close(_header)
-        # No resources to free in the header itself
+      def close(_lit_file)
+        # No resources to free in the file object itself
         # File handles are managed separately during extraction
+        @section_cache.clear
         nil
       end
 
-      # Extract a file from LIT archive
+      # Extract a file from LIT archive (wrapper for extract_file)
       #
-      # @param header [Models::LITHeader] LIT header from open()
-      # @param file [Models::LITFile] File entry to extract
-      # @param output_path [String] Where to write the decompressed file
-      # @return [Integer] Number of bytes written
-      # @raise [Errors::DecompressionError] if decompression fails
-      # @raise [NotImplementedError] if the file is encrypted
-      def extract(header, file, output_path)
-        raise ArgumentError, "Header must not be nil" unless header
+      # @param lit_file [Models::LITFile] Parsed LIT file
+      # @param file [Models::LITDirectoryEntry] File entry to extract
+      # @param output_path [String] Where to write extracted file
+      # @return [Integer] Bytes written
+      # @raise [ArgumentError] if parameters are invalid
+      # @raise [NotImplementedError] if file is encrypted
+      # @raise [Errors::DecompressionError] if extraction fails
+      def extract(lit_file, file, output_path)
+        raise ArgumentError, "Header must not be nil" unless lit_file
         raise ArgumentError, "File must not be nil" unless file
         raise ArgumentError, "Output path must not be nil" unless output_path
 
-        if file.encrypted?
+        # Check for encryption
+        if lit_file.encrypted?
           raise NotImplementedError,
-                "DES-encrypted files not yet supported. " \
-                "Use Microsoft Reader or another tool to decrypt first."
+                "Encrypted sections not yet supported. " \
+                "DRM level: #{lit_file.drm_level}"
         end
 
-        input_handle = @io_system.open(header.filename, Constants::MODE_READ)
+        # Use extract_file with file name
+        internal_name = file.respond_to?(:name) ? file.name : file.to_s
+        extract_file(lit_file, internal_name, output_path)
+      end
+
+      # Extract a file by name from LIT archive
+      #
+      # @param lit_file [Models::LITFile] Parsed LIT file
+      # @param internal_name [String] Internal filename
+      # @param output_path [String] Where to write extracted file
+      # @return [Integer] Bytes written
+      # @raise [Errors::DecompressionError] if extraction fails
+      def extract_file(lit_file, internal_name, output_path)
+        raise ArgumentError, "LIT file required" unless lit_file
+        raise ArgumentError, "Internal name required" unless internal_name
+        raise ArgumentError, "Output path required" unless output_path
+
+        # Find directory entry
+        entry = lit_file.directory.find(internal_name)
+        unless entry
+          raise Errors::DecompressionError,
+                "File not found: #{internal_name}"
+        end
+
+        # Get section data (cached or decompressed)
+        section_data = get_section_data(lit_file, entry.section)
+
+        # Extract file from section
+        file_data = section_data[entry.offset, entry.size]
+
+        # Write to output
         output_handle = @io_system.open(output_path, Constants::MODE_WRITE)
-
         begin
-          # Seek to file data
-          @io_system.seek(input_handle, file.offset, Constants::SEEK_START)
-
-          bytes_written = if file.compressed?
-                            # Decompress using LZX
-                            decompress_lzx(
-                              input_handle, output_handle, file.length
-                            )
-                          else
-                            # Direct copy
-                            copy_data(
-                              input_handle, output_handle, file.length
-                            )
-                          end
-
-          bytes_written
+          @io_system.write(output_handle, file_data)
         ensure
-          @io_system.close(input_handle) if input_handle
-          @io_system.close(output_handle) if output_handle
+          @io_system.close(output_handle)
         end
+
+        file_data.bytesize
       end
 
       # Extract all files from LIT archive
       #
-      # @param header [Models::LITHeader] LIT header from open()
-      # @param output_dir [String] Directory to extract files to
+      # @param lit_file [Models::LITFile] Parsed LIT file
+      # @param output_dir [String] Directory to extract to
+      # @param use_manifest [Boolean] Use manifest for filenames
       # @return [Integer] Number of files extracted
-      # @raise [Errors::DecompressionError] if extraction fails
-      def extract_all(header, output_dir)
-        raise ArgumentError, "Header must not be nil" unless header
-        raise ArgumentError, "Output dir must not be nil" unless output_dir
+      def extract_all(lit_file, output_dir, use_manifest: true)
+        raise ArgumentError, "Header must not be nil" unless lit_file
+        raise ArgumentError, "Output directory must not be nil" unless output_dir
 
-        # Create output directory if it doesn't exist
         ::FileUtils.mkdir_p(output_dir)
 
         extracted = 0
-        header.files.each do |file|
-          output_path = ::File.join(output_dir, file.filename)
+
+        # Extract each directory entry
+        lit_file.directory.entries.each do |entry|
+          # Skip root entry
+          next if entry.root?
+
+          # Determine output filename
+          if use_manifest && lit_file.manifest
+            mapping = lit_file.manifest.find_by_internal(entry.name)
+            filename = mapping ? mapping.original_name : entry.name
+          else
+            filename = entry.name
+          end
+
+          # Create output path
+          output_path = ::File.join(output_dir, filename)
 
           # Create subdirectories if needed
           file_dir = ::File.dirname(output_path)
           ::FileUtils.mkdir_p(file_dir) unless ::File.directory?(file_dir)
 
-          extract(header, file, output_path)
+          # Extract file
+          extract_file(lit_file, entry.name, output_path)
           extracted += 1
         end
 
         extracted
       end
 
+      # List all files in LIT archive
+      #
+      # @param lit_file [Models::LITFile] Parsed LIT file
+      # @param use_manifest [Boolean] Show original filenames
+      # @return [Array<Hash>] File information
+      def list_files(lit_file, use_manifest: true)
+        raise ArgumentError, "LIT file required" unless lit_file
+
+        lit_file.directory.entries.reject(&:root?).map do |entry|
+          info = {
+            internal_name: entry.name,
+            section: entry.section,
+            offset: entry.offset,
+            size: entry.size,
+          }
+
+          if use_manifest && lit_file.manifest
+            mapping = lit_file.manifest.find_by_internal(entry.name)
+            if mapping
+              info[:original_name] = mapping.original_name
+              info[:content_type] = mapping.content_type
+            end
+          end
+
+          info
+        end
+      end
+
       private
 
-      # Parse LIT file header
+      # Get section data (cached or freshly decompressed)
       #
-      # @param filename [String] Path to LIT file
-      # @return [Models::LITHeader] Parsed header
-      # @raise [Errors::ParseError] if file is not valid LIT
-      def parse_header(filename)
+      # @param lit_file [Models::LITFile] Parsed LIT file
+      # @param section_id [Integer] Section ID
+      # @return [String] Decompressed section data
+      def get_section_data(lit_file, section_id)
+        # Check cache first
+        return @section_cache[section_id] if @section_cache[section_id]
+
+        # Section 0 is uncompressed content
+        if section_id.zero?
+          data = read_uncompressed_content(lit_file)
+        else
+          # Get section info
+          section = lit_file.sections[section_id - 1]
+          raise Errors::DecompressionError, "Section #{section_id} not found" unless section
+
+          # Decompress section
+          data = decompress_section(lit_file, section)
+        end
+
+        # Cache for future use
+        @section_cache[section_id] = data
+
+        data
+      end
+
+      # Read uncompressed content from section 0
+      def read_uncompressed_content(lit_file)
+        filename = lit_file.instance_variable_get(:@filename)
         handle = @io_system.open(filename, Constants::MODE_READ)
 
         begin
-          # Read and verify signature
-          signature = @io_system.read(handle, 8)
-          unless signature.start_with?(Binary::LITStructures::SIGNATURE[0..3])
-            raise Errors::ParseError,
-                  "Not a valid LIT file: invalid signature"
+          # Section 0 starts at content_offset
+          @io_system.seek(handle, lit_file.content_offset, Constants::SEEK_START)
+
+          # Read until we hit another section or EOF
+          # For now, read a reasonable amount
+          @io_system.read(handle, 1024 * 1024) # 1MB for section 0
+        ensure
+          @io_system.close(handle)
+        end
+      end
+
+      # Decompress a section with transforms
+      def decompress_section(lit_file, section)
+        lit_file.instance_variable_get(:@filename)
+
+        # Read transform list
+        transform_path = Binary::LITStructures::Paths::STORAGE +
+          section.name +
+          Binary::LITStructures::Paths::TRANSFORM_LIST
+
+        transform_entry = lit_file.directory.find(transform_path)
+        unless transform_entry
+          raise Errors::DecompressionError,
+                "Transform list not found for section: #{section.name}"
+        end
+
+        transforms = read_transforms(lit_file, transform_entry)
+
+        # Read content
+        content_path = Binary::LITStructures::Paths::STORAGE +
+          section.name +
+          Binary::LITStructures::Paths::CONTENT
+
+        content_entry = lit_file.directory.find(content_path)
+        unless content_entry
+          raise Errors::DecompressionError,
+                "Content not found for section: #{section.name}"
+        end
+
+        data = read_entry_data(lit_file, content_entry)
+
+        # Read control data
+        control_path = Binary::LITStructures::Paths::STORAGE +
+          section.name +
+          Binary::LITStructures::Paths::CONTROL_DATA
+
+        control_entry = lit_file.directory.find(control_path)
+        control_data = control_entry ? read_entry_data(lit_file, control_entry) : nil
+
+        # Apply transforms in order
+        transforms.each do |transform_guid|
+          case transform_guid
+          when Binary::LITStructures::GUIDs::DESENCRYPT
+            raise NotImplementedError,
+                  "DES encryption not supported"
+          when Binary::LITStructures::GUIDs::LZXCOMPRESS
+            data = decompress_lzx_section(lit_file, section, data, control_data)
+          else
+            raise Errors::DecompressionError,
+                  "Unknown transform GUID: #{transform_guid}"
+          end
+        end
+
+        data
+      end
+
+      # Read transforms from transform list
+      def read_transforms(lit_file, entry)
+        data = read_entry_data(lit_file, entry)
+
+        transforms = []
+        pos = 0
+
+        while pos + 16 <= data.bytesize
+          guid_bytes = data[pos, 16]
+          guid = format_guid(guid_bytes)
+          transforms << guid
+          pos += 16
+        end
+
+        transforms
+      end
+
+      # Format GUID bytes as string
+      def format_guid(bytes)
+        parts = bytes.unpack("VvvnH12")
+        format(
+          "{%<part0>08X-%<part1>04X-%<part2>04X-%<part3>04X-%<part4>s}",
+          part0: parts[0], part1: parts[1], part2: parts[2],
+          part3: parts[3], part4: parts[4].upcase
+        )
+      end
+
+      # Read entry data from file
+      def read_entry_data(lit_file, entry)
+        filename = lit_file.instance_variable_get(:@filename)
+        handle = @io_system.open(filename, Constants::MODE_READ)
+
+        begin
+          @io_system.seek(
+            handle,
+            lit_file.content_offset + entry.offset,
+            Constants::SEEK_START,
+          )
+          @io_system.read(handle, entry.size)
+        ensure
+          @io_system.close(handle)
+        end
+      end
+
+      # Decompress LZX section with ResetTable
+      def decompress_lzx_section(lit_file, section, compressed_data, control_data)
+        # Parse control data
+        unless control_data && control_data.bytesize >= 32
+          raise Errors::DecompressionError,
+                "Invalid LZX control data"
+        end
+
+        control = Binary::LITStructures::LZXControlData.read(control_data)
+
+        unless control.tag == Binary::LITStructures::Tags::LZXC
+          raise Errors::DecompressionError,
+                "Invalid LZXC tag: #{format('0x%08X', control.tag)}"
+        end
+
+        # Calculate window size
+        window_size = 15
+        size_code = control.window_size_code
+        while size_code.positive?
+          size_code >>= 1
+          window_size += 1
+        end
+
+        if window_size < 15 || window_size > 21
+          raise Errors::DecompressionError,
+                "Invalid LZX window size: #{window_size}"
+        end
+
+        # Read reset table
+        reset_table_path = Binary::LITStructures::Paths::STORAGE +
+          section.name +
+          "/Transform/#{Binary::LITStructures::GUIDs::LZXCOMPRESS}/InstanceData/ResetTable"
+
+        reset_entry = lit_file.directory.find(reset_table_path)
+        unless reset_entry
+          raise Errors::DecompressionError,
+                "ResetTable not found for section: #{section.name}"
+        end
+
+        reset_data = read_entry_data(lit_file, reset_entry)
+        reset_table = parse_reset_table(reset_data)
+
+        # Decompress with reset points
+        decompress_with_reset_table(
+          compressed_data,
+          reset_table,
+          window_size,
+        )
+      end
+
+      # Parse reset table
+      def parse_reset_table(data)
+        header = Binary::LITStructures::ResetTableHeader.read(data[0, 40])
+
+        unless header.version == 3
+          raise Errors::DecompressionError,
+                "Unsupported ResetTable version: #{header.version}"
+        end
+
+        # Read reset entries (skip first which is always 0)
+        entry_offset = header.header_length + 8
+        num_entries = header.num_entries
+
+        reset_points = []
+        (num_entries - 1).times do |_i|
+          break if entry_offset + 8 > data.bytesize
+
+          offset_low = data[entry_offset, 4].unpack1("V")
+          offset_high = data[entry_offset + 4, 4].unpack1("V")
+
+          if offset_high != 0
+            raise Errors::DecompressionError,
+                  "64-bit reset point not supported"
           end
 
-          # Seek back to start
-          @io_system.seek(handle, 0, Constants::SEEK_START)
-
-          # Read header structure
-          header_data = @io_system.read(handle, 24)
-          lit_header = Binary::LITStructures::LITHeader.read(header_data)
-
-          # Create header model
-          header = Models::LITHeader.new
-          header.version = lit_header.version
-          header.encrypted = lit_header.flags.anybits?(0x01)
-
-          # Parse file entries
-          header.files = parse_file_entries(
-            handle, lit_header.file_count
-          )
-
-          header
-        ensure
-          @io_system.close(handle) if handle
-        end
-      end
-
-      # Parse file entries from LIT archive
-      #
-      # @param handle [System::FileHandle] File handle positioned at file
-      #   entries
-      # @param file_count [Integer] Number of files to parse
-      # @return [Array<Models::LITFile>] List of file entries
-      def parse_file_entries(handle, file_count)
-        files = []
-
-        file_count.times do
-          # Read filename length
-          len_data = @io_system.read(handle, 4)
-          filename_length = len_data.unpack1("V")
-
-          # Read filename
-          filename = @io_system.read(handle, filename_length)
-
-          # Read file metadata
-          metadata = @io_system.read(handle, 28)
-          offset, _, uncompressed_size, flags =
-            metadata.unpack("QQQV")
-
-          # Create file entry
-          file = Models::LITFile.new
-          file.filename = filename
-          file.offset = offset
-          file.length = uncompressed_size
-          file.compressed = flags.anybits?(Binary::LITStructures::FileFlags::COMPRESSED)
-          file.encrypted = flags.anybits?(Binary::LITStructures::FileFlags::ENCRYPTED)
-
-          files << file
+          reset_points << offset_low
+          entry_offset += 8
         end
 
-        files
+        {
+          uncompressed_length: header.uncompressed_length,
+          compressed_length: header.compressed_length,
+          reset_interval: header.reset_interval,
+          reset_points: reset_points,
+        }
       end
 
-      # Decompress data using LZX
-      #
-      # @param input_handle [System::FileHandle] Input handle
-      # @param output_handle [System::FileHandle] Output handle
-      # @param expected_size [Integer] Expected output size
-      # @return [Integer] Number of bytes written
-      def decompress_lzx(input_handle, output_handle, expected_size)
-        decompressor = Decompressors::LZX.new(
-          @io_system,
-          input_handle,
-          output_handle,
-          @buffer_size,
-        )
+      # Decompress with reset table
+      def decompress_with_reset_table(compressed_data, reset_table, window_size)
+        uncompressed = String.new(capacity: reset_table[:uncompressed_length])
 
-        decompressor.decompress(expected_size)
-      end
+        # Create LZX decompressor
+        input_handle = System::MemoryHandle.new(compressed_data)
+        output_handle = System::MemoryHandle.new("", Constants::MODE_WRITE)
 
-      # Copy data directly without decompression
-      #
-      # @param input_handle [System::FileHandle] Input handle
-      # @param output_handle [System::FileHandle] Output handle
-      # @param size [Integer] Number of bytes to copy
-      # @return [Integer] Number of bytes written
-      def copy_data(input_handle, output_handle, size)
-        bytes_written = 0
-        remaining = size
+        decompressor = Decompressors::LZX.new(window_size)
 
-        while remaining.positive?
-          chunk_size = [remaining, @buffer_size].min
-          data = @io_system.read(input_handle, chunk_size)
-          break if data.empty?
+        window_bytes = 1 << window_size
+        reset_table[:reset_interval]
+        reset_points = [0] + reset_table[:reset_points]
 
-          written = @io_system.write(output_handle, data)
-          bytes_written += written
-          remaining -= written
+        bytes_remaining = reset_table[:uncompressed_length]
+        compressed_pos = 0
+        0
+
+        # Process each reset block
+        reset_points.each_with_index do |reset_point, idx|
+          next_reset = reset_points[idx + 1] || compressed_data.bytesize
+
+          compressed_size = next_reset - reset_point
+          output_size = [bytes_remaining, window_bytes].min
+
+          if output_size.positive?
+            # Decompress this block
+            input_chunk = compressed_data[compressed_pos, compressed_size]
+            input_handle = System::MemoryHandle.new(input_chunk)
+            output_handle = System::MemoryHandle.new("", Constants::MODE_WRITE)
+
+            decompressor.reset if idx.positive?
+            decompressor.decompress_chunk(
+              input_handle,
+              output_handle,
+              compressed_size,
+              output_size,
+            )
+
+            uncompressed << output_handle.data
+            compressed_pos += compressed_size
+            bytes_remaining -= output_size
+          end
+
+          break if bytes_remaining <= 0
         end
 
-        bytes_written
+        uncompressed
       end
     end
   end

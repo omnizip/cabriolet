@@ -280,7 +280,7 @@ RSpec.describe Cabriolet::Decompressors::MSZIP do
 
       expect do
         decompressor.decompress(10)
-      end.to raise_error(Cabriolet::DecompressionError, /EOF/)
+      end.to raise_error(Cabriolet::DecompressionError)
     end
 
     it "handles truncated block gracefully" do

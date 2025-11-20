@@ -21,8 +21,10 @@ module Cabriolet
       #
       # @param io_system [System::IOSystem, nil] Custom I/O system or nil for
       #   default
-      def initialize(io_system = nil)
+      # @param algorithm_factory [AlgorithmFactory, nil] Custom algorithm factory or nil for default
+      def initialize(io_system = nil, algorithm_factory = nil)
         @io_system = io_system || System::IOSystem.new
+        @algorithm_factory = algorithm_factory || Cabriolet.algorithm_factory
         @parser = Parser.new(@io_system)
         @buffer_size = DEFAULT_BUFFER_SIZE
       end
@@ -196,12 +198,14 @@ module Cabriolet
       # @param output_handle [System::FileHandle] Output handle
       # @return [Integer] Number of bytes written
       def decompress_szdd(input_handle, output_handle)
-        decompressor = Decompressors::LZSS.new(
+        decompressor = @algorithm_factory.create(
+          :lzss,
+          :decompressor,
           @io_system,
           input_handle,
           output_handle,
           @buffer_size,
-          Decompressors::LZSS::MODE_QBASIC,
+          mode: Decompressors::LZSS::MODE_QBASIC
         )
         decompressor.decompress(0)
       end
@@ -224,11 +228,13 @@ module Cabriolet
       # @param output_handle [System::FileHandle] Output handle
       # @return [Integer] Number of bytes written
       def decompress_mszip(input_handle, output_handle)
-        decompressor = Decompressors::MSZIP.new(
+        decompressor = @algorithm_factory.create(
+          Constants::COMP_TYPE_MSZIP,
+          :decompressor,
           @io_system,
           input_handle,
           output_handle,
-          @buffer_size,
+          @buffer_size
         )
         decompressor.decompress(0)
       end

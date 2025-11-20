@@ -32,8 +32,10 @@ module Cabriolet
       # Initialize OAB compressor
       #
       # @param io_system [System::IOSystem, nil] I/O system or nil for default
-      def initialize(io_system = nil)
+      # @param algorithm_factory [AlgorithmFactory, nil] Custom algorithm factory or nil for default
+      def initialize(io_system = nil, algorithm_factory = nil)
         @io_system = io_system || System::IOSystem.new
+        @algorithm_factory = algorithm_factory || Cabriolet.algorithm_factory
         @buffer_size = DEFAULT_BUFFER_SIZE
         @block_size = DEFAULT_BLOCK_SIZE
       end
@@ -287,8 +289,13 @@ module Cabriolet
         output_mem = System::MemoryHandle.new("", Constants::MODE_WRITE)
 
         # Compress with LZX
-        compressor = Compressors::LZX.new(
-          @io_system, input_mem, output_mem, @buffer_size,
+        compressor = @algorithm_factory.create(
+          Constants::COMP_TYPE_LZX,
+          :compressor,
+          @io_system,
+          input_mem,
+          output_mem,
+          @buffer_size,
           window_bits: window_bits
         )
 
