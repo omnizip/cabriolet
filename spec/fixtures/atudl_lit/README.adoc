@@ -1,0 +1,12 @@
+= Microsoft Reader LIT files
+
+The `.LIT` files in this directory are obtained freely from:
+https://at-udl.com/library_bkup/mreader.htm
+
+While there is not explicit license, it is implied that these files are free to use:
+
+[quote]
+All Microsoft Reader documents are saved in a *.lit format. The following
+books were collected and free downloads from multiple sources.
+
+The site is copyright to Elisa Wern, 2004.

@@ -214,3 +214,13 @@ Style/ComparableClamp:
 Style/OptionalBooleanParameter:
   Exclude:
     - 'lib/cabriolet/cab/parser.rb'
+
+# Offense count: 1
+# This cop supports safe autocorrection (--autocorrect).
+# Configuration parameters: AllowedMethods, AllowedPatterns, ForbiddenPrefixes, AllowedPrefixes, MethodDefinitionMacros.
+# AllowedMethods: is_a?
+# ForbiddenPrefixes: is_, has_, have_
+# AllowedPrefixes: is_, has_, have_
+Naming/PredicateName:
+  Exclude:
+    - 'lib/cabriolet/algorithm_factory.rb'

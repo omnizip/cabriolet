@@ -1,0 +1,13 @@
+= Microsoft Help HLP files
+
+The `.HLP` files in this directory are obtained from the MASM32 SDK at:
+http://www.carabez.com/downloads.html
+
+The files here are in particular extracted from the
+"Latest MASM32 working development tool ver 9.0 ServicePack 2"
+http://www.carabez.com/downloads/m32v9sp2.zip[m32v9sp2.zip] package published
+on 2006-12-28.
+
+The file is licensed under the MASM32 SDK license, which can be found
+at https://www.masm32.com/licence.htm.
+
