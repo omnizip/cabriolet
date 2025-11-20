@@ -1,3 +1,5 @@
+= Cabriolet: Working with Microsoft Compression Formats in Pure Ruby
+
 image:https://img.shields.io/gem/v/cabriolet.svg[RubyGems Version, link=https://rubygems.org/gems/cabriolet]
 image:https://img.shields.io/github/license/omnizip/cabriolet.svg[License]
 
@@ -6,42 +8,87 @@ format files.
 
 == Introduction
 
-Cabriolet extracts and creates Microsoft Cabinet (.CAB) files and related
+Cabriolet extracts and creates Microsoft compression files and related
 compression formats using pure Ruby.
 
-This gem fully covers the features of libmspack and cabextract, implementing all
-Microsoft compression formats for both extraction (decompression) and creation
-(compression).
+This gem aims to cover the features of libmspack and cabextract, implementing
+all Microsoft compression formats for both extraction (decompression) and
+creation (compression).
 
 NOTE: No C extensions required, works on any platform where Ruby runs.
 
-== Supported Formats
+== Supported formats
 
-Cabriolet provides complete bidirectional support (compression and decompression) for seven Microsoft compression formats:
+Cabriolet provides complete bidirectional support (compression and
+decompression) for seven Microsoft compression formats:
 
-**CAB (Microsoft Cabinet)**::
-Microsoft Cabinet files (.CAB) are archive files used extensively in Windows software distribution, updates, and installations. They support multiple compression algorithms (None, LZSS, MSZIP, LZX, Quantum), multi-part spanning, and can store multiple files with full metadata preservation including timestamps and attributes. Cabriolet provides complete CAB support including multi-part cabinet sets, embedded cabinet search, and salvage mode for corrupted files.
+CAB (Microsoft Cabinet)::
+Microsoft Cabinet files (.CAB) are archive files used extensively in Windows
+software distribution, updates, and installations. They support multiple
+compression algorithms (None, LZSS, MSZIP, LZX, Quantum), multi-part spanning,
+and can store multiple files with full metadata preservation including
+timestamps and attributes. Cabriolet provides complete CAB support including
+multi-part cabinet sets, embedded cabinet search, and salvage mode for corrupted
+files.
 
-**CHM (Compiled HTML Help)**::
-Compiled HTML Help files (.CHM) are Microsoft's compressed help file format used in Windows applications since Windows 98. CHM files use an internal file system to store HTML pages, images, stylesheets, and a full-text search index, all compressed with LZX. Cabriolet can extract CHM contents to recreate the original HTML documentation, and create new CHM files from HTML sources with proper compression and indexing.
+CHM (Compiled HTML Help)::
+Compiled HTML Help files (.CHM) are Microsoft's compressed help file format used
+in Windows applications since Windows 98. CHM files use an internal file system
+to store HTML pages, images, stylesheets, and a full-text search index, all
+compressed with LZX. Cabriolet can extract CHM contents to recreate the original
+HTML documentation, and create new CHM files from HTML sources with proper
+compression and indexing.
 
-**SZDD (Single-File LZSS)**::
-SZDD is Microsoft's single-file compression format used primarily in Windows installation media and DOS utilities. Files compressed with SZDD typically have the last character of their extension replaced with an underscore (e.g., .TX_ for .TXT). SZDD uses LZSS MODE_EXPAND compression with a 4KB sliding window. Cabriolet supports both normal SZDD format and the QBasic variant, with automatic filename reconstruction during extraction.
+SZDD (Single-File LZSS)::
+SZDD is Microsoft's single-file compression format used primarily in Windows
+installation media and DOS utilities. Files compressed with SZDD typically have
+the last character of their extension replaced with an underscore (e.g., .TX_
+for .TXT). SZDD uses LZSS MODE_EXPAND compression with a 4KB sliding window.
+Cabriolet supports both normal SZDD format and the QBasic variant, with
+automatic filename reconstruction during extraction.
 
-**KWAJ (Installation File)**::
-KWAJ format (.KWJ) is used in Microsoft installation packages to compress individual files. It supports multiple compression methods including uncompressed storage, XOR encryption (0xFF), SZDD (LZSS), and MSZIP. KWAJ files can embed the original filename and uncompressed size in the header. Cabriolet provides full KWAJ support for all compression methods and can preserve or reconstruct original filenames.
+KWAJ (Installation File)::
+KWAJ format (.KWJ) is used in Microsoft installation packages to compress
+individual files. It supports multiple compression methods including
+uncompressed storage, XOR encryption (0xFF), SZDD (LZSS), and MSZIP. KWAJ files
+can embed the original filename and uncompressed size in the header. Cabriolet
+provides full KWAJ support for all compression methods and can preserve or
+reconstruct original filenames.
 
-**DOS Help (QuickHelp)**::
-QuickHelp (.HLP) is the DOS-based help file format used in Microsoft development tools like QuickC, QuickBASIC, and early Visual C++. Identified by the signature 0x4C 0x4E ("LN"), QuickHelp files contain help topics compressed with optional Huffman coding and LZSS MODE_MSHELP compression. Topics are organized with context strings for navigation. Cabriolet fully supports creating and extracting QuickHelp files with all compression options.
+DOS Help (QuickHelp)::
+QuickHelp (.HLP) is the DOS-based help file format used in Microsoft development
+tools like QuickC, QuickBASIC, and early Visual C++. Identified by the signature
+0x4C 0x4E ("LN"), QuickHelp files contain help topics compressed with optional
+Huffman coding and LZSS MODE_MSHELP compression. Topics are organized with
+context strings for navigation. Cabriolet fully supports creating and extracting
+QuickHelp files with all compression options.
 
-**Windows Help (WinHelp)**::
-Windows Help (.HLP) is the help file format used in Windows 3.x through Windows XP, distinct from DOS Help/QuickHelp. WinHelp files are identified by magic numbers 0x35F3 (version 3.x) or 0x3F5F (version 4.x) and use an internal file system containing |SYSTEM (metadata), |TOPIC (compressed help text), and optionally B-tree indexes. Topics are compressed with Zeck LZ77, a custom LZ77 variant with 4KB sliding window and variable-length matches (3-271 bytes). Cabriolet provides complete support for both WinHelp 3.x and 4.x formats with bidirectional Zeck LZ77 compression.
+Windows Help (WinHelp)::
+Windows Help (.HLP) is the help file format used in Windows 3.x through Windows
+XP, distinct from DOS Help/QuickHelp. WinHelp files are identified by magic
+numbers 0x35F3 (version 3.x) or 0x3F5F (version 4.x) and use an internal file
+system containing |SYSTEM (metadata), |TOPIC (compressed help text), and
+optionally B-tree indexes. Topics are compressed with Zeck LZ77, a custom LZ77
+variant with 4KB sliding window and variable-length matches (3-271 bytes).
+Cabriolet provides complete support for both WinHelp 3.x and 4.x formats with
+bidirectional Zeck LZ77 compression.
 
-**LIT (Microsoft Reader eBooks)**::
-LIT is Microsoft's proprietary eBook format for the Microsoft Reader application. LIT files use a complex internal structure with directory systems (IFCM/AOLL), manifest with content type mappings, and NameList with UTF-16LE encoding. Content is typically compressed with LZX. Cabriolet supports reading and creating non-encrypted LIT files; DRM-protected (DES-encrypted) LIT files are intentionally not supported as DRM circumvention is not a goal of this project.
+LIT (Microsoft Reader eBooks)::
+LIT is Microsoft's proprietary eBook format for the Microsoft Reader
+application. LIT files use a complex internal structure with directory systems
+(IFCM/AOLL), manifest with content type mappings, and NameList with UTF-16LE
+encoding. Content is typically compressed with LZX. Cabriolet supports reading
+and creating non-encrypted LIT files; DRM-protected (DES-encrypted) LIT files
+are intentionally not supported as DRM circumvention is not a goal of this
+project.
 
-**OAB (Offline Address Book)**::
-Offline Address Book files (.OAB) are used by Microsoft Outlook and Exchange Server to provide offline access to address book data. OAB files are compressed with LZX and support incremental updates through patch files that contain only changes from a base version. Cabriolet can extract full OAB files, apply incremental patches, create new OAB files, and generate incremental patches between versions.
+OAB (Offline Address Book)::
+Offline Address Book files (.OAB) are used by Microsoft Outlook and Exchange
+Server to provide offline access to address book data. OAB files are compressed
+with LZX and support incremental updates through patch files that contain only
+changes from a base version. Cabriolet can extract full OAB files, apply
+incremental patches, create new OAB files, and generate incremental patches
+between versions.
 
 
 === Features
@@ -1479,7 +1526,8 @@ bundle exec rubocop -A  # Auto-correct
 
 == Known limitations
 
-For complete details on known issues and workarounds, see link:KNOWN_ISSUES.md[Known Issues].
+For complete details on known issues and workarounds, see
+link:KNOWN_ISSUES.md[Known Issues].
 
 === LZX Compression
 
@@ -1527,6 +1575,47 @@ Quantum compression is **functional but experimental**:
 * All formats are fully functional for basic operations
 * Edge cases for advanced features may exist
 
+=== Not yet supported
+
+The following features are documented as pending (64 specs total):
+
+**Multi-file extraction** (6 specs):
+- MSZIP folders with multiple files
+- LZX folders with multiple files
+- Requires: State reuse implementation (4-6 hours)
+- Status: In progress for v0.1.0
+
+**LZX VERBATIM/ALIGNED compression** (7 specs):
+- CHM round-trip compression
+- Optimal LZX compression
+- Decompression works, compression needs trees
+- Status: Deferred to v0.2.0
+
+**Quantum edge cases** (22 specs):
+- Very long matches (14+ bytes)
+- Complex pattern encoding
+- Frame boundary cases
+- Note: Core functionality validated with libmspack, likely over-cautious
+- Status: Low priority, optional refinement
+
+**LIT extraction tests** (4 specs):
+- Tests need adjustment for directory model
+- Parser works correctly
+- Status: Test refactoring needed (1-2 hours)
+
+**QuickHelp real files** (4 specs):
+- Real file extraction tests
+- Fixture investigation needed
+- Status: Low priority
+
+**Edge cases** (21 specs):
+- 1-byte search buffer
+- Various format-specific edge cases
+- Window size variations
+- Status: Low priority, optional enhancements
+
+**Total pending**: 64 specs (5% of test suite)
+
 
 == Troubleshooting
 
@@ -1549,17 +1638,6 @@ Solution:: Enable error recovery:
 ----
 decompressor.fix_mszip = true
 decompressor.salvage = true
-----
-
-=== Performance issues
-
-Problem:: Slow extraction
-
-Solution:: Increase buffer size:
-
-[source,ruby]
-----
-decompressor.buffer_size = 16384
 ----
 
 
