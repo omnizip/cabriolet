@@ -74,7 +74,7 @@ module Cabriolet
           raise ArgumentError, "Output path must not be nil" unless output_path
 
           # Find topic by file index
-          topic = header.files[hlp_file.index] if hlp_file.respond_to?(:index)
+          topic = header.topics[hlp_file.index] if hlp_file.respond_to?(:index)
           topic ||= header.topics.find { |t| t.offset == hlp_file.offset } if hlp_file.respond_to?(:offset)
 
           unless topic
@@ -103,7 +103,7 @@ module Cabriolet
           raise ArgumentError, "HLP file must not be nil" unless hlp_file
 
           # Find topic by file index
-          topic = header.files[hlp_file.index] if hlp_file.respond_to?(:index)
+          topic = header.topics[hlp_file.index] if hlp_file.respond_to?(:index)
           topic ||= header.topics.find { |t| t.offset == hlp_file.offset } if hlp_file.respond_to?(:offset)
 
           unless topic
@@ -274,13 +274,10 @@ module Cabriolet
         # @param header [Models::HLPHeader] Header with keywords
         # @return [String] Binary decompressed data
         def decompress_data(data, output_length, header)
-          if header.has_keywords?
-            compression_stream = CompressionStream.new(data, header.keywords)
-            compression_stream.read(output_length)
-          else
-            # No keyword compression, return as-is
-            data[0, output_length]
-          end
+          # Always use CompressionStream to decode escape sequences
+          # (0x1A followed by a byte makes that byte literal)
+          compression_stream = CompressionStream.new(data, header.keywords || [])
+          compression_stream.read(output_length)
         end
 
         # Parse topic text from decompressed binary data
@@ -309,6 +306,13 @@ module Cabriolet
 
         # Parse a single line from topic data
         #
+        # Format: [text_length][text][newline][attr_length][attrs][0xFF terminator]
+        # - text_length: includes text + newline = text_bytes + 1
+        # - text: the actual line content (without newline)
+        # - newline: 0x0D carriage return
+        # - attr_length: includes attrs + terminator = attrs_bytes + 1
+        # - attrs: attribute data (without terminator)
+        #
         # @param data [String] Binary topic data
         # @param offset [Integer] Offset to start reading
         # @return [Array<Models::HLPLine, Integer>] Parsed line and bytes read
@@ -322,14 +326,21 @@ module Cabriolet
 
           pos += 1
 
-          # Read text (length-1 bytes for the text, last byte is for newline/terminator)
-          text_bytes = text_length - 1
+          # Read text (text_length - 2 bytes: -1 for len byte, -1 for newline)
+          # text_length includes text + newline, so text = text_length - 1 bytes
+          # But we want to exclude newline from the actual text content
+          text_bytes = text_length - 2
           if pos + text_bytes > data.bytesize
             raise Cabriolet::DecompressionError, "Unexpected EOF reading text"
           end
 
           text = data[pos, text_bytes].force_encoding(Encoding::ASCII)
           pos += text_bytes
+
+          # Skip newline byte
+          newline = data.getbyte(pos)
+          raise Cabriolet::DecompressionError, "Unexpected EOF reading newline" if newline.nil?
+          pos += 1
 
           # Create line with text
           line = Models::HLPLine.new(text)
@@ -340,7 +351,7 @@ module Cabriolet
 
           pos += 1
 
-          # Read attribute data (length-1 bytes)
+          # Read attribute data (length-1 bytes, excluding terminator)
           attr_bytes = attr_length - 1
           if pos + attr_bytes > data.bytesize
             raise Cabriolet::DecompressionError, "Unexpected EOF reading attributes"
@@ -348,6 +359,12 @@ module Cabriolet
 
           attr_data = data[pos, attr_bytes]
           pos += attr_bytes
+
+          # Skip terminator byte if present
+          if pos < data.bytesize
+            terminator = data.getbyte(pos)
+            pos += 1 if terminator == 0xFF
+          end
 
           # Parse attributes and hyperlinks
           parse_line_attributes(line, attr_data)

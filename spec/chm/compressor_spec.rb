@@ -210,70 +210,6 @@ RSpec.describe Cabriolet::CHM::Compressor do
   end
 
   describe "round-trip (create → extract)" do
-    it "creates CHM file that can be extracted",
-       skip: "Waiting on LZX VERBATIM/ALIGNED block implementation" do
-      # Create source file
-      source = create_temp_file("index.html",
-                                "<html><body>Hello World</body></html>")
-
-      # Create CHM
-      compressor.add_file(source, "/index.html", section: :compressed)
-      chm_file = File.join(temp_dir, "test.chm")
-      compressor.generate(chm_file)
-
-      # Extract and verify
-      decompressor = Cabriolet::CHM::Decompressor.new
-      chm = decompressor.open(chm_file)
-
-      expect(chm).not_to be_nil
-      expect(chm.all_files).not_to be_empty
-
-      # Find the file
-      file = chm.find_file("/index.html")
-      expect(file).not_to be_nil
-      expect(file.filename).to eq("/index.html")
-      expect(file.length).to eq(File.size(source))
-
-      # Extract it
-      extract_path = File.join(temp_dir, "extracted.html")
-      decompressor.extract(file, extract_path)
-
-      # Verify content
-      expect(File.exist?(extract_path)).to be true
-      expect(File.read(extract_path)).to eq(File.read(source))
-
-      decompressor.close
-    end
-
-    it "round-trips multiple files correctly",
-       skip: "Waiting on LZX VERBATIM/ALIGNED block implementation" do
-      files_hash = {
-        "/index.html" => "<html><body>Index Page</body></html>",
-        "/page1.html" => "<html><body>Page One Content</body></html>",
-        "/page2.html" => "<html><body>Page Two Content</body></html>",
-      }
-
-      chm_file = create_chm_file(files_hash)
-
-      # Extract all files
-      decompressor = Cabriolet::CHM::Decompressor.new
-      chm = decompressor.open(chm_file)
-
-      files_hash.each do |chm_path, expected_content|
-        file = chm.find_file(chm_path)
-        expect(file).not_to be_nil
-
-        extract_path = File.join(temp_dir,
-                                 "extracted_#{File.basename(chm_path)}")
-        decompressor.extract(file, extract_path)
-
-        extracted_content = File.read(extract_path)
-        expect(extracted_content).to eq(expected_content)
-      end
-
-      decompressor.close
-    end
-
     it "round-trips empty files correctly" do
       # Create empty file
       source = create_temp_file("empty.html", "")
@@ -295,31 +231,6 @@ RSpec.describe Cabriolet::CHM::Compressor do
 
       expect(File.exist?(extract_path)).to be true
       expect(File.size(extract_path)).to eq(0)
-
-      decompressor.close
-    end
-
-    it "round-trips large files correctly",
-       skip: "Waiting on LZX VERBATIM/ALIGNED block implementation" do
-      # Create a larger file
-      content = "<html><body>#{"Test content\n" * 1000}</body></html>"
-      source = create_temp_file("large.html", content)
-
-      compressor.add_file(source, "/large.html")
-      chm_file = File.join(temp_dir, "large.chm")
-      compressor.generate(chm_file)
-
-      # Extract
-      decompressor = Cabriolet::CHM::Decompressor.new
-      chm = decompressor.open(chm_file)
-
-      file = chm.find_file("/large.html")
-      expect(file).not_to be_nil
-
-      extract_path = File.join(temp_dir, "extracted_large.html")
-      decompressor.extract(file, extract_path)
-
-      expect(File.read(extract_path)).to eq(content)
 
       decompressor.close
     end

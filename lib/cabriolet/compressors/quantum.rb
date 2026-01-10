@@ -5,15 +5,12 @@ module Cabriolet
     # Quantum compresses data using arithmetic coding and LZ77-based matching
     # Based on the Quantum decompressor and libmspack qtmd.c implementation
     #
-    # STATUS: Functional with known limitations
-    # - Literals: WORKING ✓
-    # - Short matches (3-13 bytes): WORKING ✓
-    # - Longer matches (14+ bytes): WORKING ✓ (fixed: MAX_MATCH now correct)
-    # - Simple data round-trips successfully
-    # - Complex repeated patterns round-trip successfully
-    #
     # The Quantum method was created by David Stafford, adapted by Microsoft
     # Corporation.
+    #
+    # NOTE: This compressor is a work-in-progress. The arithmetic coding
+    # implementation needs refinement to match the decoder exactly.
+    # For now, this implementation focuses on correct structure.
     # rubocop:disable Metrics/ClassLength
     class Quantum < Base
       # Frame size (32KB per frame)
@@ -179,7 +176,6 @@ module Cabriolet
 
       # Compress a single frame
       def compress_frame(data)
-        # No header needed - the first 16 bits of encoded data will be read as C
         pos = 0
 
         while pos < data.bytesize
@@ -198,26 +194,25 @@ module Cabriolet
           end
         end
 
-        # Finish arithmetic coding - output final range
-        # We need to output enough bits to disambiguate the final range
+        # Finish arithmetic coding
         finish_arithmetic_coding
       end
 
-      # Finish arithmetic coding by outputting the final state
+      # Finish arithmetic coding
       def finish_arithmetic_coding
-        # Output enough bits to ensure decoder can decode correctly
-        # Standard arithmetic coding finalization: output pending underflow bits
-        @underflow_bits += 1
-        bit = if @l.anybits?(0x4000)
-                1
-              else
-                0
-              end
-        @bitstream.write_bits_msb(bit, 1)
-        @underflow_bits.times do
-          @bitstream.write_bits_msb(bit ^ 1, 1)
+        # Output pending underflow bits
+        if @underflow_bits.positive?
+          bit = if @l.anybits?(0x4000)
+                  1
+                else
+                  0
+                end
+          @bitstream.write_bits_msb(bit, 1)
+          @underflow_bits.times do
+            @bitstream.write_bits_msb(bit ^ 1, 1)
+          end
+          @underflow_bits = 0
         end
-        @underflow_bits = 0
       end
 
       # Find best match in the sliding window
@@ -334,7 +329,6 @@ module Cabriolet
       end
 
       # Encode a symbol using arithmetic coding
-      # This is the inverse of GET_SYMBOL macro in qtmd.c
       def encode_symbol(model, sym)
         # Find symbol index in model
         i = 0
@@ -345,33 +339,29 @@ module Cabriolet
                 "Symbol #{sym} not found in model"
         end
 
-        # Calculate range (matching decoder line 93, 101-102)
-        range = (@h - @l) + 1
+        # Calculate range - use decoder's formula
+        range = ((@h - @l) & 0xFFFF) + 1
         symf = model.syms[0].cumfreq
 
-        # Update H and L (matching decoder lines 103-104)
-        # Decoder uses syms[i-1] and syms[i], so encoder at index j
-        # should use syms[j] and syms[j+1] to make decoder land at i=j+1
-        # But decoder returns syms[i-1].sym, so it will return syms[j].sym ✓
+        # Update H and L
         @h = @l + ((model.syms[i].cumfreq * range) / symf) - 1
         @l += ((model.syms[i + 1].cumfreq * range) / symf)
 
-        # Update model frequencies (matching decoder line 106)
+        # Update model frequencies
         j = i
         while j >= 0
           model.syms[j].cumfreq += 8
           j -= 1
         end
 
-        # Check if model needs updating (matching decoder line 107)
+        # Check if model needs updating
         update_model(model) if model.syms[0].cumfreq > 3800
 
-        # Normalize range (matching decoder lines 109-121)
+        # Normalize range
         normalize_range
       end
 
       # Normalize arithmetic coding range and output bits
-      # This implements the encoder equivalent of the decoder's normalization (lines 109-121)
       def normalize_range
         loop do
           if (@l & 0x8000) == (@h & 0x8000)
@@ -394,37 +384,36 @@ module Cabriolet
             @h |= 0x4000
 
             # Can't normalize further
-
           end
 
-          # Shift range (both for underflow and MSB match cases)
+          # Shift range
           @l = (@l << 1) & 0xFFFF
           @h = ((@h << 1) | 1) & 0xFFFF
         end
       end
 
-      # Update model statistics (matching qtmd_update_model exactly)
+      # Update model statistics
       def update_model(model)
         model.shiftsleft -= 1
 
         if model.shiftsleft.positive?
-          # Simple shift (matching decoder lines 129-135)
+          # Simple shift
           (model.entries - 1).downto(0) do |i|
             model.syms[i].cumfreq >>= 1
             model.syms[i].cumfreq = model.syms[i + 1].cumfreq + 1 if model.syms[i].cumfreq <= model.syms[i + 1].cumfreq
           end
         else
-          # Full rebuild (matching decoder lines 137-163)
+          # Full rebuild
           model.shiftsleft = 50
 
-          # Convert cumfreq to frequencies (lines 139-145)
+          # Convert cumfreq to frequencies
           (0...model.entries).each do |i|
             model.syms[i].cumfreq -= model.syms[i + 1].cumfreq
             model.syms[i].cumfreq += 1
             model.syms[i].cumfreq >>= 1
           end
 
-          # Sort by frequency (selection sort for stability, lines 150-158)
+          # Sort by frequency
           (0...(model.entries - 1)).each do |i|
             ((i + 1)...model.entries).each do |j|
               if model.syms[i].cumfreq < model.syms[j].cumfreq
@@ -433,7 +422,7 @@ module Cabriolet
             end
           end
 
-          # Convert back to cumulative frequencies (lines 161-163)
+          # Convert back to cumulative frequencies
           (model.entries - 1).downto(0) do |i|
             model.syms[i].cumfreq += model.syms[i + 1].cumfreq
           end

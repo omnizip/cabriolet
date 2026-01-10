@@ -115,21 +115,6 @@ RSpec.describe Cabriolet::Decompressors::MSZIP do
       end
     end
 
-    context "with fixed Huffman block" do
-      it "decompresses data using fixed Huffman codes" do
-        # This would require creating a valid fixed Huffman encoded stream
-        # For now, we'll test that the decompressor can handle the block type
-        skip "Requires manual creation of fixed Huffman test data"
-      end
-    end
-
-    context "with dynamic Huffman block" do
-      it "decompresses data using dynamic Huffman codes" do
-        # This would require creating a valid dynamic Huffman encoded stream
-        skip "Requires manual creation of dynamic Huffman test data"
-      end
-    end
-
     context "with invalid signature" do
       it "searches for CK signature in stream" do
         # Add some garbage before CK signature
@@ -229,48 +214,7 @@ RSpec.describe Cabriolet::Decompressors::MSZIP do
     end
   end
 
-  describe "integration tests with CAB fixtures", :integration do
-    let(:fixtures_dir) do
-      File.join(__dir__, "..", "fixtures", "libmspack", "cabd")
-    end
-
-    context "with normal_2files_1folder.cab" do
-      it "can extract MSZIP compressed files" do
-        cab_path = File.join(fixtures_dir, "normal_2files_1folder.cab")
-        skip "CAB file not found" unless File.exist?(cab_path)
-
-        # This test requires full CAB parsing integration
-        # Will be implemented when CAB parser supports decompression
-        skip "Requires full CAB integration"
-      end
-    end
-
-    context "with mszip_lzx_qtm.cab" do
-      it "handles MSZIP blocks in mixed compression CAB" do
-        cab_path = File.join(fixtures_dir, "mszip_lzx_qtm.cab")
-        skip "CAB file not found" unless File.exist?(cab_path)
-
-        skip "Requires full CAB integration"
-      end
-    end
-
-    context "with CVE test files" do
-      it "handles cve-2010-2800-mszip-infinite-loop.cab safely" do
-        cab_path = File.join(fixtures_dir,
-                             "cve-2010-2800-mszip-infinite-loop.cab")
-        skip "CAB file not found" unless File.exist?(cab_path)
-
-        skip "Requires full CAB integration and infinite loop protection"
-      end
-
-      it "handles cve-2015-4470-mszip-over-read.cab safely" do
-        cab_path = File.join(fixtures_dir, "cve-2015-4470-mszip-over-read.cab")
-        skip "CAB file not found" unless File.exist?(cab_path)
-
-        skip "Requires full CAB integration and bounds checking"
-      end
-    end
-  end
+  # NOTE: Integration tests with CAB fixtures are tested in spec/cab/libmspack_parity_spec.rb
 
   describe "error handling" do
     it "handles EOF during signature read gracefully" do
@@ -296,19 +240,6 @@ RSpec.describe Cabriolet::Decompressors::MSZIP do
       expect do
         decompressor.decompress(10)
       end.to raise_error(Cabriolet::DecompressionError)
-    end
-  end
-
-  describe "LZ77 match handling" do
-    it "copies matches from sliding window" do
-      # This requires a proper MSZIP stream with LZ77 matches
-      # Testing indirectly through stored block that we can construct
-      skip "Requires proper LZ77 encoded test data"
-    end
-
-    it "handles window wraparound correctly" do
-      # Test that matches can reference data that wraps around the window
-      skip "Requires proper LZ77 encoded test data with wraparound"
     end
   end
 end

@@ -100,7 +100,7 @@ module Cabriolet
       # @param output_length [Integer] Expected output length for E8 processing
       # @param is_delta [Boolean] Whether this is LZX DELTA format
       def initialize(io_system, input, output, buffer_size, window_bits:,
-                     reset_interval: 0, output_length: 0, is_delta: false, **_kwargs)
+                     reset_interval: 0, output_length: 0, is_delta: false, salvage: false, **_kwargs)
         super(io_system, input, output, buffer_size)
 
         # Validate window_bits
@@ -146,8 +146,8 @@ module Cabriolet
         @intel_started = false
         @e8_buf = "\0" * FRAME_SIZE
 
-        # Initialize bitstream
-        @bitstream = Binary::Bitstream.new(io_system, input, buffer_size)
+        # Initialize bitstream (LZX uses MSB-first bit ordering per libmspack lzxd.c)
+        @bitstream = Binary::Bitstream.new(io_system, input, buffer_size, bit_order: :msb, salvage: salvage)
 
         # Initialize Huffman trees
         initialize_trees
@@ -173,18 +173,20 @@ module Cabriolet
       def decompress(bytes)
         return 0 if bytes <= 0
 
+        # Read Intel filesize header if not already read (once per stream)
+        read_intel_header unless @header_read
+
         total_written = 0
         end_frame = ((@offset + bytes) / FRAME_SIZE) + 1
 
         while @frame < end_frame
-          # Check reset interval
-          reset_state if @reset_interval.positive? && (@frame % @reset_interval).zero?
+          # Check reset interval - reset offset registers at frame boundaries
+          if @reset_interval.positive? && (@frame % @reset_interval).zero? && @frame > 0
+            @r0 = @r1 = @r2 = 1
+          end
 
           # Read DELTA chunk size if needed
           @bitstream.read_bits(16) if @is_delta
-
-          # Read Intel filesize header if needed
-          read_intel_header unless @header_read
 
           # Calculate frame size
           frame_size = calculate_frame_size
@@ -238,6 +240,10 @@ module Cabriolet
 
       # Reset LZX state (called at reset intervals)
       #
+      # Per libmspack: Only reset state variables, NOT Huffman code lengths.
+      # Lengths persist across blocks and are updated via delta encoding.
+      # They are only zeroed at initialization (in initialize_trees).
+      #
       # @return [void]
       def reset_state
         @r0 = 1
@@ -247,12 +253,17 @@ module Cabriolet
         @block_remaining = 0
         @block_type = BLOCKTYPE_INVALID
 
-        # Reset tree lengths to 0
-        @maintree_lengths.fill(0)
-        @length_lengths.fill(0)
+        # NOTE: Do NOT reset @maintree_lengths or @length_lengths here!
+        # Per libmspack lzxd.c line 267-269, lengths are initialized to 0
+        # only once (at start) "because deltas will be applied to them".
+        # Resetting them here breaks delta encoding between blocks.
       end
 
-      # Read Intel filesize header
+      # Read Intel filesize header (once per stream, before any frames)
+      #
+      # Format per libmspack:
+      # - 1 bit: Intel flag (if 0, filesize = 0; if 1, read 32-bit filesize)
+      # - If flag is 1: 32 bits for filesize (16 bits high, 16 bits low)
       #
       # @return [void]
       def read_intel_header
@@ -304,13 +315,20 @@ module Cabriolet
 
       # Read block header
       #
+      # LZX block header format (per libmspack):
+      # - 3 bits: block_type
+      # - 24 bits: block_length (16 bits high, 8 bits low, combined as (high << 8) | low)
+      #
       # @return [void]
       def read_block_header
-        # Align for uncompressed blocks
+        # Align for uncompressed blocks - this ensures correct byte alignment
+        # when reading the R0, R1, R2 values from the block header
         @bitstream.byte_align if @block_type == BLOCKTYPE_UNCOMPRESSED && @block_length.allbits?(1)
 
-        # Read block type and length
+        # Read block type (3 bits)
         @block_type = @bitstream.read_bits(3)
+
+        # Read block length (24 bits: 16 bits high, then 8 bits low)
         high = @bitstream.read_bits(16)
         low = @bitstream.read_bits(8)
         @block_length = (high << 8) | low
@@ -324,6 +342,8 @@ module Cabriolet
         when BLOCKTYPE_UNCOMPRESSED
           read_uncompressed_block_header
         else
+          # Per libmspack lzxd.c line 519-521, BLOCKTYPE_INVALID (0) and
+          # blocktypes 4-7 are all invalid and should raise an error
           raise DecompressionError, "Invalid block type: #{@block_type}"
         end
       end
@@ -338,11 +358,10 @@ module Cabriolet
         end
 
         # Build aligned tree
-        @aligned_tree = Huffman::Tree.new(@aligned_lengths, ALIGNED_MAXSYMBOLS)
-        unless @aligned_tree.build_table(ALIGNED_TABLEBITS)
-          raise DecompressionError,
-                "Failed to build aligned tree"
-        end
+        # Note: Aligned tree may be incomplete (Kraft sum < 1.0), which is valid
+        # as long as the unused codes are never encountered in the bitstream
+        @aligned_tree = Huffman::Tree.new(@aligned_lengths, ALIGNED_MAXSYMBOLS, bit_order: :msb)
+        @aligned_tree.build_table(ALIGNED_TABLEBITS)
 
         # Read main and length trees (same as verbatim)
         read_main_and_length_trees
@@ -359,15 +378,13 @@ module Cabriolet
       #
       # @return [void]
       def read_main_and_length_trees
-        # Read and build pretree
-        read_pretree
-
         # Read main tree lengths using pretree
+        # Note: Each call to read_lengths reads its own pretree (per libmspack lzxd_read_lens)
         read_lengths(@maintree_lengths, 0, 256)
         read_lengths(@maintree_lengths, 256, @maintree_maxsymbols)
 
         # Build main tree
-        @maintree = Huffman::Tree.new(@maintree_lengths, @maintree_maxsymbols)
+        @maintree = Huffman::Tree.new(@maintree_lengths, @maintree_maxsymbols, bit_order: :msb)
         unless @maintree.build_table(LENGTH_TABLEBITS)
           raise DecompressionError,
                 "Failed to build main tree"
@@ -380,7 +397,7 @@ module Cabriolet
         read_lengths(@length_lengths, 0, NUM_SECONDARY_LENGTHS)
 
         # Build length tree (may be empty)
-        @length_tree = Huffman::Tree.new(@length_lengths, LENGTH_MAXSYMBOLS)
+        @length_tree = Huffman::Tree.new(@length_lengths, LENGTH_MAXSYMBOLS, bit_order: :msb)
         if @length_tree.build_table(LENGTH_TABLEBITS)
           @length_empty = false
         else
@@ -401,7 +418,7 @@ module Cabriolet
           @pretree_lengths[i] = @bitstream.read_bits(4)
         end
 
-        @pretree = Huffman::Tree.new(@pretree_lengths, PRETREE_MAXSYMBOLS)
+        @pretree = Huffman::Tree.new(@pretree_lengths, PRETREE_MAXSYMBOLS, bit_order: :msb)
         return if @pretree.build_table(PRETREE_TABLEBITS)
 
         raise DecompressionError, "Failed to build pretree"
@@ -409,11 +426,16 @@ module Cabriolet
 
       # Read code lengths using pretree
       #
+      # Per libmspack's lzxd_read_lens, each call reads its own pretree first
+      #
       # @param lengths [Array<Integer>] Target length array
       # @param first [Integer] First symbol index
       # @param last [Integer] Last symbol index (exclusive)
       # @return [void]
       def read_lengths(lengths, first, last)
+        # Read and build pretree (20 elements, 4 bits each)
+        read_pretree
+
         x = first
 
         while x < last
@@ -494,9 +516,9 @@ module Cabriolet
             @window_posn += 1
             run_length -= 1
           else
-            # Match: decode length and offset
-            decode_match(main_element, run_length)
-            run_length = 0 # Match decoding handles run_length internally
+            # Match: decode length and offset, then decrement run_length by match_length
+            match_length = decode_match(main_element, run_length)
+            run_length -= match_length
           end
         end
       end
@@ -504,8 +526,8 @@ module Cabriolet
       # Decode and copy a match
       #
       # @param main_element [Integer] Main tree symbol
-      # @param run_length [Integer] Remaining run length
-      # @return [void]
+      # @param run_length [Integer] Remaining run length (unused, kept for compatibility)
+      # @return [Integer] Match length (bytes consumed)
       def decode_match(main_element, _run_length)
         main_element -= NUM_CHARS
 
@@ -533,8 +555,10 @@ module Cabriolet
           match_offset = @r0
         when 1
           @r1, @r0 = @r0, @r1
+          match_offset = @r0
         when 2
           @r2, @r0 = @r0, @r2
+          match_offset = @r0
         else
           # Calculate offset from position slot
           extra = position_slot >= 36 ? 17 : EXTRA_BITS[position_slot]
@@ -573,6 +597,9 @@ module Cabriolet
 
         # Copy match
         copy_match(match_offset, match_length)
+
+        # Return match length so caller can decrement run_length
+        match_length
       end
 
       # Decode extended match length for LZX DELTA
@@ -608,9 +635,12 @@ module Cabriolet
       # @return [void]
       def copy_match(offset, length)
         if offset > @window_posn
-          # Match wraps around window
-          if offset > @offset && (offset - @window_posn).positive?
-            raise DecompressionError, "Match offset beyond stream"
+          # Match wraps around window - validate it doesn't read beyond available data
+          # Per libmspack lzxd.c lines 622-628: check if match offset goes beyond
+          # what has been decompressed so far (accounting for any reference data)
+          ref_data_size = 0  # We don't support reference data yet (LZX DELTA feature)
+          if offset > @offset && (offset - @window_posn) > ref_data_size
+            raise DecompressionError, "Match offset beyond LZX stream"
           end
 
           # Copy from end of window

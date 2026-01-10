@@ -88,9 +88,14 @@ module Cabriolet
 
         # Process data in FRAME_SIZE chunks
         # Each frame is independent and contains blocks ending with last_block=1
+        frame_num = 0
         while pos < input_data.bytesize
           chunk_size = [FRAME_SIZE, input_data.bytesize - pos].min
           chunk = input_data[pos, chunk_size]
+
+          if ENV['DEBUG_MSZIP_COMPRESS']
+            $stderr.puts "DEBUG compress: Frame #{frame_num}: pos=#{pos}, chunk_size=#{chunk_size}"
+          end
 
           # Write CK signature
           write_signature
@@ -99,11 +104,19 @@ module Cabriolet
           # Each frame's block is always marked as last within that frame
           compress_block(chunk, true)
 
+          # Flush bitstream after each frame to ensure data is written
+          @bitstream.flush
+
+          if ENV['DEBUG_MSZIP_COMPRESS']
+            $stderr.puts "DEBUG compress: Frame #{frame_num} complete, flushed"
+          end
+
           pos += chunk_size
           total_written += chunk_size
+          frame_num += 1
         end
 
-        # Flush any remaining bits
+        # Final flush (may not be needed now but keep for safety)
         @bitstream.flush
 
         total_written
@@ -129,8 +142,19 @@ module Cabriolet
       #
       # @return [void]
       def write_signature
+        if ENV['DEBUG_MSZIP_COMPRESS']
+          $stderr.puts "DEBUG write_signature: ENTRY"
+        end
         @bitstream.byte_align
-        SIGNATURE.each { |byte| @bitstream.write_raw_byte(byte) }
+        SIGNATURE.each do |byte|
+          if ENV['DEBUG_MSZIP_COMPRESS']
+            $stderr.puts "DEBUG write_signature: Writing byte 0x#{byte.to_s(16)}"
+          end
+          @bitstream.write_raw_byte(byte)
+        end
+        if ENV['DEBUG_MSZIP_COMPRESS']
+          $stderr.puts "DEBUG write_signature: EXIT"
+        end
       end
 
       # Compress a single block using fixed Huffman encoding
@@ -139,6 +163,10 @@ module Cabriolet
       # @param is_last [Boolean] Whether this is the last block
       # @return [void]
       def compress_block(data, is_last)
+        if ENV['DEBUG_MSZIP_COMPRESS']
+          $stderr.puts "DEBUG compress_block: ENTRY data_size=#{data.bytesize} is_last=#{is_last}"
+        end
+
         # Write block header
         @bitstream.write_bits(is_last ? 1 : 0, 1) # Last block flag
         @bitstream.write_bits(FIXED_HUFFMAN_BLOCK, 2) # Block type
@@ -151,6 +179,10 @@ module Cabriolet
 
         # Write end-of-block symbol (256)
         encode_literal(256)
+
+        if ENV['DEBUG_MSZIP_COMPRESS']
+          $stderr.puts "DEBUG compress_block: EXIT"
+        end
       end
 
       # Encode data using LZ77 matching and Huffman encoding

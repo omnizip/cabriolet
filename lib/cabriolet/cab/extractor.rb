@@ -72,7 +72,19 @@ module Cabriolet
         FileUtils.mkdir_p(output_dir) unless ::File.directory?(output_dir)
 
         # Check if we need to change folder or reset (libmspack lines 1076-1078)
+        if ENV['DEBUG_BLOCK']
+          $stderr.puts "DEBUG extract_file: Checking reset condition for file #{file.filename} (offset=#{file.offset}, length=#{file.length})"
+          $stderr.puts "  @current_folder == folder: #{@current_folder == folder} (current=#{@current_folder.object_id}, new=#{folder.object_id})"
+          $stderr.puts "  @current_offset (#{@current_offset}) > file.offset (#{file.offset}): #{@current_offset > file.offset}"
+          $stderr.puts "  @current_decomp.nil?: #{@current_decomp.nil?}"
+          $stderr.puts "  Reset needed?: #{@current_folder != folder || @current_offset > file.offset || !@current_decomp}"
+        end
+
         if @current_folder != folder || @current_offset > file.offset || !@current_decomp
+          if ENV['DEBUG_BLOCK']
+            $stderr.puts "DEBUG extract_file: RESETTING state (creating new BlockReader)"
+          end
+
           # Reset state
           @current_input&.close
           @current_input = nil
@@ -84,6 +96,14 @@ module Cabriolet
                                           folder.num_blocks, salvage)
           @current_folder = folder
           @current_offset = 0
+
+          # Create decompressor ONCE and reuse it (this is the key fix!)
+          # The decompressor maintains bitstream state across files
+          @current_decomp = @decompressor.create_decompressor(folder, @current_input, nil)
+        else
+          if ENV['DEBUG_BLOCK']
+            $stderr.puts "DEBUG extract_file: NOT resetting (reusing existing BlockReader and decompressor)"
+          end
         end
 
         # Skip ahead if needed (libmspack lines 1130-1134)
@@ -93,13 +113,11 @@ module Cabriolet
           # Decompress with NULL output to skip (libmspack line 1130: self->d->outfh = NULL)
           null_output = System::MemoryHandle.new("", Constants::MODE_WRITE)
 
-          # Create decompressor if needed
-          unless @current_decomp
-            @current_decomp = @decompressor.create_decompressor(folder, @current_input, null_output)
-          else
-            # Reuse existing, change output to NULL
-            @current_decomp.instance_variable_set(:@output, null_output)
-          end
+          # Reuse existing decompressor, change output to NULL
+          @current_decomp.instance_variable_set(:@output, null_output)
+
+          # Set output length for LZX frame limiting
+          @current_decomp.set_output_length(skip_bytes) if @current_decomp.respond_to?(:set_output_length)
 
           @current_decomp.decompress(skip_bytes)
           @current_offset += skip_bytes
@@ -109,13 +127,11 @@ module Cabriolet
         output_fh = @io_system.open(output_path, Constants::MODE_WRITE)
 
         begin
-          # Create decompressor if needed
-          unless @current_decomp
-            @current_decomp = @decompressor.create_decompressor(folder, @current_input, output_fh)
-          else
-            # Reuse existing, change output to real file
-            @current_decomp.instance_variable_set(:@output, output_fh)
-          end
+          # Reuse existing decompressor, change output to real file
+          @current_decomp.instance_variable_set(:@output, output_fh)
+
+          # Set output length for LZX frame limiting
+          @current_decomp.set_output_length(filelen) if @current_decomp.respond_to?(:set_output_length)
 
           @current_decomp.decompress(filelen)
           @current_offset += filelen
@@ -218,11 +234,28 @@ module Cabriolet
         end
 
         def read(bytes)
+          # Early return if we've already exhausted all blocks and buffer
+          if @current_block >= @num_blocks && @buffer_pos >= @buffer.bytesize
+            if ENV['DEBUG_BLOCK']
+              $stderr.puts "DEBUG BlockReader.read(#{bytes}): Already exhausted, returning empty"
+            end
+            return +""
+          end
+
           result = +""
+
+          if ENV['DEBUG_BLOCK']
+            $stderr.puts "DEBUG BlockReader.read(#{bytes}): buffer_size=#{@buffer.bytesize} buffer_pos=#{@buffer_pos} block=#{@current_block}/#{@num_blocks}"
+          end
 
           while result.bytesize < bytes
             # Read more data if buffer is empty
-            break if (@buffer_pos >= @buffer.bytesize) && !read_next_block
+            if (@buffer_pos >= @buffer.bytesize) && !read_next_block
+              if ENV['DEBUG_BLOCK']
+                $stderr.puts "DEBUG BlockReader.read: EXHAUSTED at result.bytesize=#{result.bytesize} (wanted #{bytes})"
+              end
+              break
+            end
 
             # Copy from buffer
             available = @buffer.bytesize - @buffer_pos
@@ -230,6 +263,10 @@ module Cabriolet
 
             result << @buffer[@buffer_pos, to_copy]
             @buffer_pos += to_copy
+          end
+
+          if ENV['DEBUG_BLOCK']
+            $stderr.puts "DEBUG BlockReader.read: returning #{result.bytesize} bytes"
           end
 
           result
@@ -252,15 +289,39 @@ module Cabriolet
         private
 
         def read_next_block
-          return false if @current_block >= @num_blocks
+          if ENV['DEBUG_BLOCK']
+            $stderr.puts "DEBUG read_next_block: current_block=#{@current_block} num_blocks=#{@num_blocks}"
+          end
+
+          if @current_block >= @num_blocks
+            if ENV['DEBUG_BLOCK']
+              $stderr.puts "DEBUG read_next_block: EXHAUSTED (current_block >= num_blocks)"
+            end
+            return false
+          end
 
           # Read blocks, potentially spanning multiple cabinets
           accumulated_data = +""
 
           loop do
             # Read CFDATA header
+            if ENV['DEBUG_BLOCK']
+              handle_pos = @cab_handle.tell
+              $stderr.puts "DEBUG read_next_block: About to read CFDATA header at position #{handle_pos}"
+            end
+
             header_data = @cab_handle.read(Constants::CFDATA_SIZE)
-            return false if header_data.bytesize != Constants::CFDATA_SIZE
+
+            if ENV['DEBUG_BLOCK']
+              $stderr.puts "DEBUG read_next_block: Read #{header_data.bytesize} bytes (expected #{Constants::CFDATA_SIZE})"
+            end
+
+            if header_data.bytesize != Constants::CFDATA_SIZE
+              if ENV['DEBUG_BLOCK']
+                $stderr.puts "DEBUG read_next_block: FAILED - header read returned #{header_data.bytesize} bytes"
+              end
+              return false
+            end
 
             cfdata = Binary::CFData.read(header_data)
 
@@ -284,8 +345,22 @@ module Cabriolet
             end
 
             # Read compressed data
+            if ENV['DEBUG_BLOCK']
+              $stderr.puts "DEBUG read_next_block: About to read #{cfdata.compressed_size} bytes of compressed data"
+            end
+
             compressed_data = @cab_handle.read(cfdata.compressed_size)
-            return false if compressed_data.bytesize != cfdata.compressed_size
+
+            if ENV['DEBUG_BLOCK']
+              $stderr.puts "DEBUG read_next_block: Read #{compressed_data.bytesize} bytes of compressed data (expected #{cfdata.compressed_size})"
+            end
+
+            if compressed_data.bytesize != cfdata.compressed_size
+              if ENV['DEBUG_BLOCK']
+                $stderr.puts "DEBUG read_next_block: FAILED - compressed data read returned #{compressed_data.bytesize} bytes"
+              end
+              return false
+            end
 
             # Verify checksum if present and not in salvage mode
             if cfdata.checksum.positive? && !@salvage
@@ -325,9 +400,18 @@ module Cabriolet
         end
 
         def open_current_cabinet
+          if ENV['DEBUG_BLOCK']
+            $stderr.puts "DEBUG open_current_cabinet: filename=#{@current_data.cabinet.filename} offset=#{@current_data.offset}"
+          end
+
           @cab_handle&.close
           @cab_handle = @io_system.open(@current_data.cabinet.filename, Constants::MODE_READ)
           @cab_handle.seek(@current_data.offset, Constants::SEEK_START)
+
+          if ENV['DEBUG_BLOCK']
+            actual_pos = @cab_handle.tell
+            $stderr.puts "DEBUG open_current_cabinet: seeked to position #{actual_pos} (expected #{@current_data.offset})"
+          end
         end
 
         def advance_to_next_cabinet

@@ -219,7 +219,7 @@ module Cabriolet
         # @return [Integer] Bytes written
         def write_header_4x(output_handle, structure)
           header = Binary::HLPStructures::WinHelp4Header.new
-          header.magic = 0x00003F5F
+          header.magic = 0x00033F5F  # Magic with low 16 bits = 0x3F5F
           header.directory_offset = structure[:directory_offset]
           header.free_list_offset = 0
           header.file_size = structure[:file_size]

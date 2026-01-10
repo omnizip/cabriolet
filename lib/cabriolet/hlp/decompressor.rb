@@ -129,18 +129,18 @@ module Cabriolet
         begin
           sig_data = @io_system.read(handle, 4)
 
-          # Check QuickHelp signature
+          # Check QuickHelp signature ("LN" = 0x4C 0x4E)
           return :quickhelp if sig_data[0..1] == Binary::HLPStructures::SIGNATURE
 
-          # Check WinHelp 3.x
+          # Check WinHelp 3.x magic (little-endian 16-bit: 0x35F3)
           magic_word = sig_data[0..1].unpack1("v")
           return :winhelp if magic_word == 0x35F3
 
-          # Check WinHelp 4.x
+          # Check WinHelp 4.x magic (little-endian 32-bit, low 16 bits: 0x5F3F)
           magic_dword = sig_data.unpack1("V")
-          return :winhelp if (magic_dword & 0xFFFF) == 0x3F5F
+          return :winhelp if (magic_dword & 0xFFFF) == 0x5F3F
 
-          raise Cabriolet::ParseError, "Unknown HLP format"
+          raise Cabriolet::ParseError, "Unknown HLP format: #{sig_data.bytes.map { |b| format('0x%02X', b) }.join(' ')}"
         ensure
           @io_system.close(handle)
         end

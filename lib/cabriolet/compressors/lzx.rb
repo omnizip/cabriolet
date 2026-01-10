@@ -82,8 +82,8 @@ module Cabriolet
         @num_offsets = POSITION_SLOTS[window_bits - 15] << 3
         @maintree_maxsymbols = NUM_CHARS + @num_offsets
 
-        # Initialize bitstream writer
-        @bitstream = Binary::BitstreamWriter.new(io_system, output, buffer_size)
+        # Initialize bitstream writer (LZX uses MSB-first bit ordering per libmspack lzxd.c)
+        @bitstream = Binary::BitstreamWriter.new(io_system, output, buffer_size, bit_order: :msb)
 
         # Initialize sliding window for LZ77
         @window = "\0" * @window_size
@@ -119,6 +119,7 @@ module Cabriolet
           frame_data = input_data[pos, frame_size]
 
           # Compress this frame
+          # TODO: Use compress_frame_verbatim once tree encoding is fixed
           compress_frame(frame_data)
 
           pos += frame_size
@@ -152,9 +153,12 @@ module Cabriolet
       # @param data [String] Frame data to compress
       # @return [void]
       def compress_frame(data)
-        # For now, use UNCOMPRESSED blocks to bypass Huffman tree issues
+        # For uncompressed blocks, block length is just the frame data size
+        # (offset registers are NOT included in the block length field)
+        block_length = data.bytesize
+
         # Write UNCOMPRESSED block header
-        write_block_header(BLOCKTYPE_UNCOMPRESSED, data.bytesize)
+        write_block_header(BLOCKTYPE_UNCOMPRESSED, block_length)
 
         # Write offset registers (R0, R1, R2)
         write_offset_registers

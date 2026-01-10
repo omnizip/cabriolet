@@ -13,9 +13,11 @@ module Cabriolet
       #
       # @param lengths [Array<Integer>] Code lengths for each symbol
       # @param num_symbols [Integer] Number of symbols
-      def initialize(lengths, num_symbols)
+      # @param bit_order [Symbol] Bit ordering (:lsb or :msb), defaults to :lsb
+      def initialize(lengths, num_symbols, bit_order: :lsb)
         @lengths = lengths
         @num_symbols = num_symbols
+        @bit_order = bit_order
         @table = nil
       end
 
@@ -39,6 +41,88 @@ module Cabriolet
         table_mask = 1 << table_bits
         bit_mask = table_mask >> 1
 
+        if @bit_order == :msb
+          build_table_msb(table_bits, pos, table_mask, bit_mask)
+        else
+          build_table_lsb(table_bits, pos, table_mask, bit_mask)
+        end
+      end
+
+      private
+
+      # Build table for MSB-first bit ordering
+      def build_table_msb(table_bits, pos, table_mask, bit_mask)
+        # Fill entries for codes short enough for direct mapping
+        (1..table_bits).each do |bit_num|
+          (0...num_symbols).each do |sym|
+            next unless lengths[sym] == bit_num
+
+            leaf = pos
+            return false if (pos += bit_mask) > table_mask
+
+            # Fill all possible lookups of this symbol
+            fill = bit_mask
+            while fill > 0
+              @table[leaf] = sym
+              leaf += 1
+              fill -= 1
+            end
+          end
+          bit_mask >>= 1
+        end
+
+        # Exit with success if table is complete
+        return true if pos == table_mask
+
+        # Mark remaining entries as unused
+        (pos...(table_mask)).each do |sym|
+          @table[sym] = 0xFFFF
+        end
+
+        # next_symbol = base of allocation for long codes
+        next_symbol = [(table_mask >> 1), num_symbols].max
+
+        # Process longer codes (table_bits + 1 to MAX_BITS)
+        pos <<= 16
+        table_mask <<= 16
+        bit_mask = 1 << 15
+
+        ((table_bits + 1)..MAX_BITS).each do |bit_num|
+          (0...num_symbols).each do |sym|
+            next unless lengths[sym] == bit_num
+
+            return false if pos >= table_mask
+
+            # leaf = the first table_bits of the code
+            leaf = pos >> 16
+
+            # Build the tree path for this long code
+            (0...(bit_num - table_bits)).each do |fill_idx|
+              # If this path hasn't been taken yet, allocate two entries
+              if @table[leaf] == 0xFFFF
+                @table[next_symbol << 1] = 0xFFFF
+                @table[(next_symbol << 1) + 1] = 0xFFFF
+                @table[leaf] = next_symbol
+                next_symbol += 1
+              end
+
+              # Follow the path and select either left or right for next bit
+              leaf = @table[leaf] << 1
+              leaf += 1 if (pos >> (15 - fill_idx)).anybits?(1)
+            end
+
+            @table[leaf] = sym
+            pos += bit_mask
+          end
+          bit_mask >>= 1
+        end
+
+        # Full table?
+        pos == table_mask
+      end
+
+      # Build table for LSB-first bit ordering (original implementation)
+      def build_table_lsb(table_bits, pos, table_mask, bit_mask)
         # Fill entries for codes short enough for direct mapping (LSB ordering)
         (1..table_bits).each do |bit_num|
           (0...num_symbols).each do |sym|
