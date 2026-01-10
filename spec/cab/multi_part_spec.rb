@@ -201,27 +201,6 @@ RSpec.describe "Multi-part cabinet operations" do
   end
 
   describe "multi-cabinet file extraction" do
-    it "extracts files spanning multiple cabinets" do
-      skip "Requires actual multi-part test fixtures with spanning files"
-
-      cab1 = decompressor.open(File.join(fixture_dir, "multi_basic_pt1.cab"))
-      cab2 = decompressor.open(File.join(fixture_dir, "multi_basic_pt2.cab"))
-
-      decompressor.append(cab1, cab2)
-
-      # Extract a file that spans cabinets
-      Dir.mktmpdir do |tmpdir|
-        spanning_file = cab1.files.find(&:continued_to_next?)
-        next unless spanning_file
-
-        output_path = File.join(tmpdir, "output.bin")
-        bytes = decompressor.extract_file(spanning_file, output_path)
-
-        expect(bytes).to eq(spanning_file.length)
-        expect(File.exist?(output_path)).to be true
-      end
-    end
-
     it "follows FolderData chain across cabinets" do
       cab1 = decompressor.open(File.join(fixture_dir, "multi_basic_pt1.cab"))
       cab2 = decompressor.open(File.join(fixture_dir, "multi_basic_pt2.cab"))

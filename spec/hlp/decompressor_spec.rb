@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "tmpdir"
 
 RSpec.describe Cabriolet::HLP::Decompressor do
   let(:io_system) { Cabriolet::System::IOSystem.new }
@@ -26,25 +27,60 @@ RSpec.describe Cabriolet::HLP::Decompressor do
   end
 
   describe "#open" do
-    context "with valid HLP file" do
-      it "opens and parses HLP file",
-         skip: "Real QuickHelp HLP format not yet fully implemented" do
-        fixture_path = File.join(__dir__, "..", "fixtures", "masm32_hlp", "MASMLIB.HLP")
+    context "with WinHelp file" do
+      it "opens and parses WinHelp 4.x file" do
+        fixture_path = File.join(__dir__, "..", "fixtures", "masm32_hlp", "SE.HLP")
         skip "Fixture not found" unless File.exist?(fixture_path)
 
         header = decompressor.open(fixture_path)
-        expect(header).to be_a(Cabriolet::Models::HLPHeader)
-        expect(header.files).not_to be_empty
+        expect(header).to be_a(Cabriolet::Models::WinHelpHeader)
         decompressor.close(header)
       end
 
       it "sets filename in header" do
-        fixture_path = File.join(__dir__, "..", "fixtures", "masm32_hlp", "MASMLIB.HLP")
+        fixture_path = File.join(__dir__, "..", "fixtures", "masm32_hlp", "SE.HLP")
         skip "Fixture not found" unless File.exist?(fixture_path)
-        skip "Fixture is Windows Help format (0x3F 0x5F), not QuickHelp (0x4C 0x4E)"
 
         header = decompressor.open(fixture_path)
         expect(header.filename).to eq(fixture_path)
+        decompressor.close(header)
+      end
+    end
+
+    context "with QuickHelp file (generated)" do
+      let(:compressor) { Cabriolet::HLP::Compressor.new(io_system) }
+
+      around do |example|
+        Dir.mktmpdir do |tmpdir|
+          @tmpdir = tmpdir
+          example.run
+        end
+      end
+
+      it "opens and parses generated QuickHelp file" do
+        # Generate a QuickHelp file
+        compressor.add_data("Test content", "test.txt")
+        output_file = File.join(@tmpdir, "test.hlp")
+        compressor.generate(output_file)
+
+        # Open and parse it
+        header = decompressor.open(output_file)
+        expect(header).to be_a(Cabriolet::Models::HLPHeader)
+        expect(header.topics).not_to be_empty
+        decompressor.close(header)
+      end
+
+      it "extracts content from generated QuickHelp file" do
+        # Generate a QuickHelp file
+        compressor.add_data("Hello, QuickHelp World!", "test.txt")
+        output_file = File.join(@tmpdir, "test.hlp")
+        compressor.generate(output_file)
+
+        # Open and extract
+        header = decompressor.open(output_file)
+        topic = header.topics.first
+        content = decompressor.extract_file_to_memory(header, topic)
+        expect(content).to eq("Hello, QuickHelp World!")
         decompressor.close(header)
       end
     end
@@ -93,50 +129,34 @@ RSpec.describe Cabriolet::HLP::Decompressor do
       end.to raise_error(ArgumentError, /Output path must not be nil/)
     end
 
-    context "with real files" do
-      it "extracts compressed file",
-         skip: "Real QuickHelp HLP format not yet fully implemented" do
-        fixture_path = File.join(__dir__, "..", "fixtures", "masm32_hlp", "QEDITOR.HLP")
-        skip "Fixture not found" unless File.exist?(fixture_path)
+    context "with generated QuickHelp file" do
+      let(:compressor) { Cabriolet::HLP::Compressor.new(io_system) }
 
-        require "tempfile"
-        output_file = Tempfile.new(["output", ".txt"])
-
-        begin
-          header = decompressor.open(fixture_path)
-          file = header.files.first
-          decompressor.extract_file(header, file, output_file.path)
-
-          expect(File.exist?(output_file.path)).to be true
-          expect(File.size(output_file.path)).to be > 0
-
-          decompressor.close(header)
-        ensure
-          output_file.unlink
+      around do |example|
+        Dir.mktmpdir do |tmpdir|
+          @tmpdir = tmpdir
+          example.run
         end
       end
 
-      it "extracts uncompressed file",
-         skip: "Real QuickHelp HLP format not yet fully implemented" do
-        fixture_path = File.join(__dir__, "..", "fixtures", "masm32_hlp", "MASMLIB.HLP")
-        skip "Fixture not found" unless File.exist?(fixture_path)
+      it "extracts file to disk" do
+        # Generate a QuickHelp file
+        compressor.add_data("Extracted content", "test.txt")
+        output_file = File.join(@tmpdir, "test.hlp")
+        compressor.generate(output_file)
 
-        require "tempfile"
-        output_file = Tempfile.new(["output", ".txt"])
+        # Open and extract to file
+        header = decompressor.open(output_file)
+        topic = header.topics.first
 
-        begin
-          header = decompressor.open(fixture_path)
-          file = header.files.first
-          decompressor.extract_file(header, file, output_file.path)
+        output_txt = File.join(@tmpdir, "output.txt")
+        bytes = decompressor.extract_file(header, topic, output_txt)
 
-          expect(File.exist?(output_file.path)).to be true
-          content = File.read(output_file.path)
-          expect(content.size).to be > 0
+        expect(bytes).to eq(17)
+        expect(File.exist?(output_txt)).to be true
+        expect(File.read(output_txt)).to eq("Extracted content")
 
-          decompressor.close(header)
-        ensure
-          output_file.unlink
-        end
+        decompressor.close(header)
       end
     end
   end
@@ -156,18 +176,29 @@ RSpec.describe Cabriolet::HLP::Decompressor do
       end.to raise_error(ArgumentError, /HLP file must not be nil/)
     end
 
-    context "with real files" do
-      it "extracts file to memory",
-         skip: "Real QuickHelp HLP format not yet fully implemented" do
-        fixture_path = File.join(__dir__, "..", "fixtures", "masm32_hlp", "MASMLIB.HLP")
-        skip "Fixture not found" unless File.exist?(fixture_path)
+    context "with generated QuickHelp file" do
+      let(:compressor) { Cabriolet::HLP::Compressor.new(io_system) }
 
-        header = decompressor.open(fixture_path)
-        file = header.files.first
-        content = decompressor.extract_file_to_memory(header, file)
+      around do |example|
+        Dir.mktmpdir do |tmpdir|
+          @tmpdir = tmpdir
+          example.run
+        end
+      end
+
+      it "extracts file to memory" do
+        # Generate a QuickHelp file
+        compressor.add_data("Memory content", "test.txt")
+        output_file = File.join(@tmpdir, "test.hlp")
+        compressor.generate(output_file)
+
+        # Open and extract to memory
+        header = decompressor.open(output_file)
+        topic = header.topics.first
+        content = decompressor.extract_file_to_memory(header, topic)
 
         expect(content).to be_a(String)
-        expect(content.size).to be > 0
+        expect(content).to eq("Memory content")
 
         decompressor.close(header)
       end
@@ -188,29 +219,80 @@ RSpec.describe Cabriolet::HLP::Decompressor do
       end.to raise_error(ArgumentError, /Output directory must not be nil/)
     end
 
-    context "with real files" do
-      it "extracts all files to directory" do
-        fixture_path = File.join(__dir__, "..", "fixtures", "masm32_hlp", "SE.HLP")
-        skip "Fixture not found" unless File.exist?(fixture_path)
-        skip "Fixture is Windows Help format (0x3F 0x5F), not QuickHelp (0x4C 0x4E)"
+    context "with generated QuickHelp file" do
+      let(:compressor) { Cabriolet::HLP::Compressor.new(io_system) }
 
-        require "tmpdir"
-        Dir.mktmpdir do |output_dir|
-          header = decompressor.open(fixture_path)
-          decompressor.extract_all(header, output_dir)
-
-          expect(Dir.children(output_dir).size).to eq(header.files.size)
-
-          decompressor.close(header)
+      around do |example|
+        Dir.mktmpdir do |tmpdir|
+          @tmpdir = tmpdir
+          example.run
         end
+      end
+
+      it "extracts all files to directory" do
+        # Generate a QuickHelp file with multiple topics
+        compressor.add_data("Content 1", "file1.txt")
+        compressor.add_data("Content 2", "file2.txt")
+        output_file = File.join(@tmpdir, "test.hlp")
+        compressor.generate(output_file)
+
+        # Extract all
+        header = decompressor.open(output_file)
+        output_dir = File.join(@tmpdir, "output")
+        Dir.mkdir(output_dir)
+        decompressor.extract_all(header, output_dir)
+
+        # Verify
+        expect(Dir.children(output_dir).size).to eq(2)
+
+        decompressor.close(header)
       end
     end
   end
 
   describe "round-trip compression/decompression" do
-    it "compresses and decompresses data correctly",
-       skip: "HLP compression not implemented - decompressor works perfectly, compressor raises NotImplementedError. See compressor_spec.rb for details." do
-      # This test would verify round-trip once compression is implemented
+    let(:compressor) { Cabriolet::HLP::Compressor.new(io_system) }
+
+    around do |example|
+      Dir.mktmpdir do |tmpdir|
+        @tmpdir = tmpdir
+        example.run
+      end
+    end
+
+    it "compresses and decompresses data correctly" do
+      # Generate a QuickHelp file
+      original_data = "Round-trip test data"
+      compressor.add_data(original_data, "test.txt")
+      output_file = File.join(@tmpdir, "test.hlp")
+      compressor.generate(output_file)
+
+      # Decompress it
+      header = decompressor.open(output_file)
+      topic = header.topics.first
+      decompressed = decompressor.extract_file_to_memory(header, topic)
+
+      # Verify
+      expect(decompressed).to eq(original_data)
+
+      decompressor.close(header)
+    end
+
+    it "handles multiple files in round-trip" do
+      # Generate a QuickHelp file with multiple files
+      compressor.add_data("First content", "file1.txt")
+      compressor.add_data("Second content", "file2.txt")
+      output_file = File.join(@tmpdir, "test.hlp")
+      compressor.generate(output_file)
+
+      # Decompress all
+      header = decompressor.open(output_file)
+      header.topics.each_with_index do |topic, index|
+        content = decompressor.extract_file_to_memory(header, topic)
+        expect(content).to eq(["First content", "Second content"][index])
+      end
+
+      decompressor.close(header)
     end
   end
 end

@@ -19,4 +19,12 @@ Gemfile.lock
 .idea/
 *.swp
 *.swo
-*~
+
+.claude
+.kilocode
+old-docs/
+
+# Cached rubocop configs
+.rubocop-https---*
+
+docs/_site/

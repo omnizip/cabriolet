@@ -22,26 +22,41 @@ RSpec.describe Cabriolet::LIT::Decompressor do
   end
 
   describe "#open" do
-    it "raises NotImplementedError for DES-encrypted files" do
-      # Create a minimal valid LIT file with encryption flag set
-      # LIT files need proper ITOL/ITLS headers + enough structure to parse
-      Dir.mktmpdir do |dir|
-        file_path = File.join(dir, "test.lit")
+    context "with generated LIT file" do
+      let(:compressor) { Cabriolet::LIT::Compressor.new(io_system) }
 
-        # For now, skip this test as creating a valid minimal LIT file
-        # requires complex structure (ITOL header, directory, etc.)
-        skip "Creating minimal valid LIT file structure not yet implemented"
+      around do |example|
+        Dir.mktmpdir do |tmpdir|
+          @tmpdir = tmpdir
+          example.run
+        end
+      end
 
-        expect { decompressor.open(file_path) }.to raise_error(
-          NotImplementedError,
-          /DES-encrypted LIT files not yet supported/,
-        )
+      it "opens and parses generated LIT file" do
+        # Create input file
+        input_file = File.join(@tmpdir, "input.txt")
+        File.write(input_file, "Test content")
+
+        # Generate LIT file
+        compressor.add_file(input_file, "test.txt")
+        output_file = File.join(@tmpdir, "test.lit")
+        compressor.generate(output_file)
+
+        # Open and parse
+        header = decompressor.open(output_file)
+        expect(header).to be_a(Cabriolet::Models::LITFile)
+        expect(header.directory).not_to be_nil
+
+        decompressor.close(header)
       end
     end
 
-    it "raises ParseError for invalid signature",
-       skip: "No valid LIT file format specification" do
-      # Would test with invalid signature
+    context "with invalid file" do
+      it "raises error for non-existent file" do
+        expect do
+          decompressor.open("nonexistent.lit")
+        end.to raise_error(Cabriolet::IOError)
+      end
     end
   end
 
@@ -88,23 +103,35 @@ RSpec.describe Cabriolet::LIT::Decompressor do
       )
     end
 
-    it "extracts a real LIT file",
-       skip: "Real Microsoft Reader LIT format not yet fully implemented" do
-      fixture_path = File.join(__dir__, "..", "fixtures", "atudl_lit", "bill.lit")
-      skip "Fixture not found" unless File.exist?(fixture_path)
+    context "with generated LIT file" do
+      let(:compressor) { Cabriolet::LIT::Compressor.new(io_system) }
 
-      require "tmpdir"
-      Dir.mktmpdir do |tmpdir|
-        header = decompressor.open(fixture_path)
-        file = header.files.first if header.files && !header.files.empty?
-        skip "No files in LIT fixture" unless file
+      around do |example|
+        Dir.mktmpdir do |tmpdir|
+          @tmpdir = tmpdir
+          example.run
+        end
+      end
 
-        output_path = File.join(tmpdir, "output.txt")
-        decompressor.extract(header, file, output_path)
+      it "extracts a file from generated LIT" do
+        # Create input file
+        input_file = File.join(@tmpdir, "input.txt")
+        File.write(input_file, "Extract me!")
 
+        # Generate LIT file
+        compressor.add_file(input_file, "test.txt")
+        output_file = File.join(@tmpdir, "test.lit")
+        compressor.generate(output_file)
+
+        # Open and extract
+        header = decompressor.open(output_file)
+
+        output_path = File.join(@tmpdir, "output.txt")
+        bytes = decompressor.extract(header, "test.txt", output_path)
+
+        expect(bytes).to eq(11)
         expect(File.exist?(output_path)).to be true
-        content = File.read(output_path)
-        expect(content.size).to be > 0
+        expect(File.read(output_path)).to eq("Extract me!")
 
         decompressor.close(header)
       end
@@ -113,7 +140,9 @@ RSpec.describe Cabriolet::LIT::Decompressor do
 
   describe "#extract_all" do
     it "raises error when header is nil" do
-      expect { decompressor.extract_all(nil, ".") }.to raise_error(
+      expect do
+        decompressor.extract_all(nil, ".")
+      end.to raise_error(
         ArgumentError,
         /Header must not be nil/,
       )
@@ -121,23 +150,44 @@ RSpec.describe Cabriolet::LIT::Decompressor do
 
     it "raises error when output dir is nil" do
       header = Cabriolet::Models::LITFile.new
-      expect { decompressor.extract_all(header, nil) }.to raise_error(
+      expect do
+        decompressor.extract_all(header, nil)
+      end.to raise_error(
         ArgumentError,
         /Output directory must not be nil/,
       )
     end
 
-    it "extracts all files from archive",
-       skip: "Real Microsoft Reader LIT format not yet fully implemented" do
-      fixture_path = File.join(__dir__, "..", "fixtures", "atudl_lit", "A History of Greek Art.lit")
-      skip "Fixture not found" unless File.exist?(fixture_path)
+    context "with generated LIT file" do
+      let(:compressor) { Cabriolet::LIT::Compressor.new(io_system) }
 
-      require "tmpdir"
-      Dir.mktmpdir do |tmpdir|
-        header = decompressor.open(fixture_path)
-        decompressor.extract_all(header, tmpdir)
+      around do |example|
+        Dir.mktmpdir do |tmpdir|
+          @tmpdir = tmpdir
+          example.run
+        end
+      end
 
-        expect(Dir.children(tmpdir).size).to eq(header.files.size)
+      it "extracts all files from archive" do
+        # Create input files
+        File.write(File.join(@tmpdir, "file1.txt"), "Content 1")
+        File.write(File.join(@tmpdir, "file2.txt"), "Content 2")
+
+        # Generate LIT file
+        compressor.add_file(File.join(@tmpdir, "file1.txt"), "file1.txt")
+        compressor.add_file(File.join(@tmpdir, "file2.txt"), "file2.txt")
+        output_file = File.join(@tmpdir, "test.lit")
+        compressor.generate(output_file)
+
+        # Open and extract all
+        header = decompressor.open(output_file)
+        output_dir = File.join(@tmpdir, "output")
+        count = decompressor.extract_all(header, output_dir)
+
+        # Verify specific user files exist (not internal LIT metadata)
+        expect(File.exist?(File.join(output_dir, "file1.txt"))).to be true
+        expect(File.exist?(File.join(output_dir, "file2.txt"))).to be true
+        expect(count).to be >= 2
 
         decompressor.close(header)
       end

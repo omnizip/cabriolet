@@ -95,24 +95,8 @@ RSpec.describe Cabriolet::KWAJ::Decompressor do
     end
 
     context "with LZH compression" do
-      it "raises error for LZH compression (not yet implemented)" do
-        # Marking as pending - test fixtures don't actually contain LZH compression
-        pending("Need actual LZH-compressed KWAJ test file")
-
-        file = fixture_path("libmspack/kwajd/f30.kwj")
-        header = decompressor.open(file)
-
-        output = temp_file("output")
-
-        expect do
-          decompressor.extract(header, file, output)
-        end.to raise_error(
-          Cabriolet::DecompressionError,
-          /LZH compression type is not yet implemented/,
-        )
-
-        FileUtils.rm_f(output)
-      end
+      # NOTE: LZH compression tests require actual LZH-compressed KWAJ test files
+      # which are not currently available in the test fixtures.
     end
   end
 

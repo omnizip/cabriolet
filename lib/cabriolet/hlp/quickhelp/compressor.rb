@@ -336,30 +336,101 @@ module Cabriolet
           end
         end
 
-        # Compress topic text using LZSS MODE_MSHELP
+        # Compress topic text using QuickHelp keyword compression
+        #
+        # QuickHelp format uses:
+        # - 0x00-0x0F: Literal bytes
+        # - 0x10-0x17: Dictionary entry references
+        # - 0x18: Run of spaces
+        # - 0x19: Run of bytes (repeat)
+        # - 0x1A: Escape byte (next byte is literal)
+        # - 0x1B-0xFF: Literal bytes
+        #
+        # Without a dictionary, we encode literals directly and escape
+        # control characters (0x10-0x1A) with 0x1A prefix.
+        #
+        # Topic text format:
+        # - Each line: [len][text][newline][attr_len][attrs][0xFF]
+        # - len includes itself, text, newline, attr_len
+        # - attr_len includes itself and attrs, minimum 1 (just 0xFF terminator)
         #
         # @param text [String] Topic text
         # @return [String] Compressed data with length header
         def compress_topic_text(text)
-          # Compress using LZSS
-          input_handle = System::MemoryHandle.new(text)
-          output_handle = System::MemoryHandle.new("", Constants::MODE_WRITE)
+          # Build topic in QuickHelp internal format
+          topic_data = build_topic_data(text)
 
-          compressor = @algorithm_factory.create(
-            :lzss,
-            :compressor,
-            @io_system,
-            input_handle,
-            output_handle,
-            DEFAULT_BUFFER_SIZE,
-            mode: Compressors::LZSS::MODE_MSHELP,
-          )
-
-          compressor.compress
+          # Encode using QuickHelp keyword compression format
+          encoded = encode_keyword_compression(topic_data)
 
           # Prepend decompressed length (2 bytes)
-          length_header = [text.bytesize].pack("v")
-          length_header + output_handle.data
+          length_header = [topic_data.bytesize].pack("v")
+          length_header + encoded
+        end
+
+        # Build topic data in QuickHelp internal format
+        #
+        # Topic format as expected by decompressor:
+        # - Each line: [text_length][text][newline][attr_len][attrs][0xFF]
+        # - text_length = text + newline + 1 (for attr_len byte) = text_bytes + 2
+        # - Line structure: text_length byte + text + newline + attr_len byte + attr_data
+        #
+        # The decompressor reads:
+        # - text_length = data.getbyte(pos)
+        # - text_bytes = text_length - 2 (reads text, skips newline)
+        # - attr_length = data.getbyte(pos after text + newline)
+        #
+        # @param text [String] Raw topic text
+        # @return [String] Formatted topic data
+        def build_topic_data(text)
+          result = +""
+
+          # Split text into lines
+          lines = text.split("\n")
+
+          lines.each do |line|
+            text_bytes = line.b
+            newline = "\x0D" # Carriage return
+
+            # Attribute section: just 0xFF terminator (attr_len = 1)
+            attr_data = "\xFF"
+            attr_len = 1
+
+            # text_length = text + newline + 1 (for attr_len byte)
+            # This ensures text_bytes = text_length - 2 gives correct text length
+            text_length = text_bytes.bytesize + 2
+
+            result << text_length.chr
+            result << text_bytes
+            result << newline
+            result << attr_len.chr
+            result << attr_data
+          end
+
+          result
+        end
+
+        # Encode data using QuickHelp keyword compression format
+        #
+        # @param data [String] Data to encode
+        # @return [String] Encoded data
+        def encode_keyword_compression(data)
+          result = +""
+
+          data.bytes.each do |byte|
+            if byte < 0x10 || byte == 0x1B || byte > 0x1A
+              # Literal byte (except control range 0x10-0x1A)
+              result << byte.chr
+            elsif byte >= 0x10 && byte <= 0x1A
+              # Control byte - escape it
+              result << 0x1A.chr << byte.chr
+            else
+              # 0x1B is also literal (above control range)
+              result << byte.chr
+            end
+          end
+
+          result
         end
 
         # Calculate all offsets in the file

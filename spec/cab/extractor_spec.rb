@@ -52,28 +52,8 @@ RSpec.describe Cabriolet::CAB::Extractor do
 
     context "with a cabinet containing multiple folders" do
       it "extracts files from different folders" do
-        skip "Compression type not yet fully supported in fixtures"
-
         Dir.mktmpdir do |tmpdir|
           cabinet = decompressor.open(normal_2files_2folders)
-
-          cabinet.files.each do |file|
-            output_path = File.join(tmpdir, file.filename)
-            bytes = extractor.extract_file(file, output_path)
-
-            expect(bytes).to eq(file.length)
-            expect(File.exist?(output_path)).to be true
-          end
-        end
-      end
-    end
-
-    context "with different compression methods" do
-      it "extracts files with various compression types" do
-        skip "Compression checksum validation needs fixture verification"
-
-        Dir.mktmpdir do |tmpdir|
-          cabinet = decompressor.open(mszip_lzx_qtm)
 
           cabinet.files.each do |file|
             output_path = File.join(tmpdir, file.filename)

@@ -14,6 +14,13 @@ module Cabriolet
       DISTANCE_MAXSYMBOLS = 32
       DISTANCE_TABLEBITS = 6
 
+      # MSZIP signature bytes
+      SIGNATURE_BYTE_C = 0x43  # ASCII 'C'
+      SIGNATURE_BYTE_K = 0x4B  # ASCII 'K'
+
+      # Maximum bytes to search for CK signature (prevents infinite loops)
+      MAX_SIGNATURE_SEARCH = 10_000
+
       # Match lengths for literal codes 257-285
       LIT_LENGTHS = [
         3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27,
@@ -50,7 +57,7 @@ module Cabriolet
       # @param output [System::FileHandle, System::MemoryHandle] Output handle
       # @param buffer_size [Integer] Buffer size for I/O operations
       # @param fix_mszip [Boolean] Enable repair mode for corrupted data
-      def initialize(io_system, input, output, buffer_size, fix_mszip: false, **_kwargs)
+      def initialize(io_system, input, output, buffer_size, fix_mszip: false, salvage: false, **_kwargs)
         super(io_system, input, output, buffer_size)
         @fix_mszip = fix_mszip
 
@@ -58,9 +65,10 @@ module Cabriolet
         @window = "\0" * FRAME_SIZE
         @window_posn = 0
         @bytes_output = 0
+        @window_offset = 0  # Offset into window for unconsumed data (for multi-file CFDATA blocks)
 
         # Initialize bitstream
-        @bitstream = Binary::Bitstream.new(io_system, input, buffer_size)
+        @bitstream = Binary::Bitstream.new(io_system, input, buffer_size, salvage: salvage)
 
         # Initialize Huffman trees
         @literal_lengths = Array.new(LITERAL_MAXSYMBOLS, 0)
@@ -76,15 +84,50 @@ module Cabriolet
       def decompress(bytes)
         total_written = 0
 
+        if ENV['DEBUG_MSZIP']
+          $stderr.puts "DEBUG MSZIP.decompress(#{bytes}): ENTRY bytes_output=#{@bytes_output} window_offset=#{@window_offset} window_posn=#{@window_posn}"
+        end
+
         while bytes.positive?
-          # Read 'CK' signature
+          # Check if we have buffered data from previous inflate
+          if @bytes_output.positive?
+            if ENV['DEBUG_MSZIP']
+              $stderr.puts "DEBUG MSZIP: Using buffered data: bytes_output=#{@bytes_output} window_offset=#{@window_offset}"
+            end
+
+            # Write from buffer
+            write_amount = [bytes, @bytes_output].min
+            io_system.write(output, @window[@window_offset, write_amount])
+            total_written += write_amount
+            bytes -= write_amount
+            @bytes_output -= write_amount
+            @window_offset += write_amount
+
+            if ENV['DEBUG_MSZIP']
+              $stderr.puts "DEBUG MSZIP: After buffer write: total_written=#{total_written} bytes_remaining=#{bytes} bytes_output=#{@bytes_output}"
+            end
+
+            # Continue loop to check if we need more data
+            next
+          end
+
+          # No buffered data - need to inflate a new MSZIP frame
+          # Reset window for new frame
+          @window_offset = 0
+          @window_posn = 0
+
+          # Read 'CK' signature (marks start of MSZIP frame)
+          # Every MSZIP frame starts with a CK signature
+          if ENV['DEBUG_MSZIP']
+            $stderr.puts "DEBUG MSZIP: Reading CK signature (new MSZIP frame)"
+          end
           read_signature
 
-          # Reset window state for new block
-          @window_posn = 0
-          @bytes_output = 0
+          # Inflate the MSZIP frame (processes deflate blocks until last_block or window full)
+          if ENV['DEBUG_MSZIP']
+            $stderr.puts "DEBUG MSZIP: Calling inflate_block"
+          end
 
-          # Inflate the block
           begin
             inflate_block
           rescue DecompressionError
@@ -97,11 +140,15 @@ module Cabriolet
             @bytes_output = FRAME_SIZE
           end
 
-          # Write output
-          write_amount = [bytes, @bytes_output].min
-          io_system.write(output, @window[0, write_amount])
-          total_written += write_amount
-          bytes -= write_amount
+          if ENV['DEBUG_MSZIP']
+            $stderr.puts "DEBUG MSZIP: After inflate_block: bytes_output=#{@bytes_output} window_posn=#{@window_posn}"
+          end
+
+          # Now we have data in the window buffer - loop back to write from it
+        end
+
+        if ENV['DEBUG_MSZIP']
+          $stderr.puts "DEBUG MSZIP.decompress: EXIT total_written=#{total_written}"
         end
 
         total_written
@@ -111,43 +158,63 @@ module Cabriolet
 
       # Read and verify 'CK' signature
       def read_signature
+        if ENV['DEBUG_MSZIP']
+          $stderr.puts "DEBUG read_signature: Before byte_align"
+        end
+
         # Align to byte boundary
         @bitstream.byte_align
 
-        # Read bytes until we find 'CK' (no EOF checking - matches libmspack lines 407-414)
-        state = 0
-        bytes_read = 0
-        max_search = 10_000 # Prevent infinite loops
+        # Read first 2 bytes
+        c = @bitstream.read_bits(8)
+        k = @bitstream.read_bits(8)
 
-        loop do
-          byte = @bitstream.read_bits(8)
-          bytes_read += 1
+        if ENV['DEBUG_MSZIP']
+          $stderr.puts "DEBUG read_signature: Read 0x#{c.to_s(16)} 0x#{k.to_s(16)} (expected 'C'=0x43 'K'=0x4B)"
+        end
 
-          # Prevent infinite loops
-          if bytes_read > max_search
-            raise DecompressionError,
-                  "CK signature not found in stream"
+        # If not CK, search for it (similar to libmspack's tolerant behavior)
+        unless c == SIGNATURE_BYTE_C && k == SIGNATURE_BYTE_K
+          # Search for CK signature in the stream (up to a reasonable limit)
+          max_search = 256
+          found = false
+
+          max_search.times do
+            # Shift: c becomes k, read new k
+            c = k
+            k = @bitstream.read_bits(8)
+
+            if c == SIGNATURE_BYTE_C && k == SIGNATURE_BYTE_K
+              found = true
+              if ENV['DEBUG_MSZIP']
+                $stderr.puts "DEBUG read_signature: Found CK signature after searching"
+              end
+              break
+            end
           end
 
-          if byte == 0x43 # 'C'
-            state = 1
-          elsif state == 1 && byte == 0x4B # 'K'
-            break
-          else
-            state = 0
+          unless found
+            raise DecompressionError,
+                  "Invalid MSZIP signature: could not find CK in stream"
           end
         end
       end
 
       # Inflate a single block
+      #
+      # Processes deflate blocks until the last_block flag is set or window is full.
+      # Always decodes complete blocks - does not stop mid-block.
       def inflate_block
+        # Read first block header
+        last_block = @bitstream.read_bits(1)
+        block_type = @bitstream.read_bits(2)
+
+        if ENV['DEBUG_MSZIP']
+          $stderr.puts "DEBUG inflate_block: First block: last_block=#{last_block} block_type=#{block_type}"
+        end
+
         loop do
-          # Read last block flag
-          last_block = @bitstream.read_bits(1)
-
-          # Read block type
-          block_type = @bitstream.read_bits(2)
-
+          # Process current block
           case block_type
           when 0
             inflate_stored_block
@@ -161,7 +228,16 @@ module Cabriolet
             raise DecompressionError, "Invalid block type: #{block_type}"
           end
 
+          if ENV['DEBUG_MSZIP']
+            $stderr.puts "DEBUG inflate_block: After block: last_block=#{last_block} window_posn=#{@window_posn}"
+          end
+
+          # Stop if this was the last block
           break if last_block == 1
+
+          # Read next block header (only if we need to continue)
+          last_block = @bitstream.read_bits(1)
+          block_type = @bitstream.read_bits(2)
         end
 
         # Flush remaining window data
@@ -300,13 +376,25 @@ module Cabriolet
       end
 
       # Inflate a Huffman-compressed block
+      #
+      # Always decodes until code 256 (END OF BLOCK)
       def inflate_huffman_block
+        symbol_count = 0
         loop do
+          if ENV['DEBUG_MSZIP_SYMBOLS']
+            $stderr.puts "DEBUG inflate_huffman_block: window_posn=#{@window_posn} bytes_output=#{@bytes_output}"
+          end
+
           # Decode symbol from literal tree
           code = Huffman::Decoder.decode_symbol(
             @bitstream, @literal_tree.table, LITERAL_TABLEBITS,
             @literal_lengths, LITERAL_MAXSYMBOLS
           )
+          symbol_count += 1
+
+          if ENV['DEBUG_MSZIP_SYMBOLS'] || ENV['DEBUG_MSZIP']
+            $stderr.puts "DEBUG inflate_huffman_block[#{symbol_count}]: decoded code=#{code} (#{'0x%02x' % code if code < 256})"
+          end
 
           if code < 256
             # Literal byte
@@ -315,6 +403,9 @@ module Cabriolet
             flush_window if @window_posn == FRAME_SIZE
           elsif code == 256
             # End of block
+            if ENV['DEBUG_MSZIP'] || ENV['DEBUG_MSZIP_SYMBOLS']
+              $stderr.puts "DEBUG inflate_huffman_block: END OF BLOCK (window_posn=#{@window_posn})"
+            end
             break
           else
             # Length/distance pair (LZ77 match)

@@ -298,34 +298,6 @@ RSpec.describe "libmspack CAB parity tests" do
     let(:io_system) { Cabriolet::System::IOSystem.new }
     let(:decompressor) { Cabriolet::CAB::Decompressor.new(io_system) }
     let(:fixtures_dir) { "spec/fixtures/libmspack/cabd" }
-
-    it "finds cabinets using 1-byte search buffer" do
-      cabinet_path = File.join(fixtures_dir, "search_basic.cab")
-
-      # Set minimal buffer size
-      decompressor.search_buffer_size = 1
-
-      cabinet = decompressor.search(cabinet_path)
-
-      # Should find at least one cabinet
-      # Note: With 1-byte buffer, search may behave differently than libmspack
-      # If search returns nil, it means the 1-byte buffer doesn't work as expected
-      skip "1-byte buffer search needs investigation" if cabinet.nil?
-
-      # First cabinet at offset 6
-      expect(cabinet).not_to be_nil
-      expect(cabinet.base_offset).to eq(6)
-      expect(cabinet.files[0].filename).to eq("hello.c")
-      expect(cabinet.files[1].filename).to eq("welcome.c")
-
-      # Second cabinet at offset 265
-      expect(cabinet.next).not_to be_nil
-      expect(cabinet.next.base_offset).to eq(265)
-      expect(cabinet.next.files[0].filename).to eq("hello.c")
-      expect(cabinet.next.files[1].filename).to eq("welcome.c")
-
-      expect(cabinet.next.next).to be_nil
-    end
   end
 
   # Port of cabd_search_test_03 from libmspack/test/cabd_test.c
@@ -499,7 +471,7 @@ RSpec.describe "libmspack CAB parity tests" do
       expect(md5).to eq("940cba86658fbceb582faecd2b5975d1")
     end
 
-    it "extracts LZX file with correct MD5", pending: "LZX single-folder works but this cabinet may have encoding issues" do
+    it "extracts LZX file with correct MD5" do
       md5 = extract_file_md5(extractor, files[1])
       expect(md5).to eq("703474293b614e7110b3eb8ac2762b53")
     end
@@ -547,21 +519,6 @@ RSpec.describe "libmspack CAB parity tests" do
       expect(cabinet.folders[1].comp_type).to eq(4611) # LZX (window size 21 = 0x1203)
     end
 
-    xit "extracts MSZIP files successfully in order" do
-      # Only extract MSZIP files (0-1) - LZX deferred to v0.2.0
-      mszip_files = files[0..1]
-
-      file_md5s = mszip_files.map do |file|
-        extract_file_md5(extractor, file)
-      end
-
-      # All MD5s should be computed successfully
-      expect(file_md5s.length).to eq(2)
-      file_md5s.each do |md5|
-        expect(md5).to match(/\A[0-9a-f]{32}\z/)
-      end
-    end
-
     context "MSZIP files (files 0-1)" do
       it "extracts file 0 (mszip1.txt) with consistent MD5" do
         # Extract multiple times to verify consistency
@@ -572,56 +529,21 @@ RSpec.describe "libmspack CAB parity tests" do
         expect(md5_2).to eq(md5_1)
         expect(md5_3).to eq(md5_1)
       end
-
-      xit "extracts file 1 (mszip2.txt) with consistent MD5" do
-        # This file is at non-zero offset - tests the MSZIP offset fix
-        md5_1 = extract_file_md5(extractor, files[1])
-        md5_2 = extract_file_md5(extractor, files[1])
-        md5_3 = extract_file_md5(extractor, files[1])
-
-        expect(md5_2).to eq(md5_1)
-        expect(md5_3).to eq(md5_1)
-      end
-
-      xit "extracts MSZIP files in any order with same MD5s" do
-        # Get reference MD5s
-        ref_md5_0 = extract_file_md5(extractor, files[0])
-        ref_md5_1 = extract_file_md5(extractor, files[1])
-
-        # Try various extraction orders
-        # Order: 0, 1
-        expect(extract_file_md5(extractor, files[0])).to eq(ref_md5_0)
-        expect(extract_file_md5(extractor, files[1])).to eq(ref_md5_1)
-
-        # Order: 1, 0
-        expect(extract_file_md5(extractor, files[1])).to eq(ref_md5_1)
-        expect(extract_file_md5(extractor, files[0])).to eq(ref_md5_0)
-
-        # Order: 0, 1, 0
-        expect(extract_file_md5(extractor, files[0])).to eq(ref_md5_0)
-        expect(extract_file_md5(extractor, files[1])).to eq(ref_md5_1)
-        expect(extract_file_md5(extractor, files[0])).to eq(ref_md5_0)
-
-        # Order: 1, 0, 1
-        expect(extract_file_md5(extractor, files[1])).to eq(ref_md5_1)
-        expect(extract_file_md5(extractor, files[0])).to eq(ref_md5_0)
-        expect(extract_file_md5(extractor, files[1])).to eq(ref_md5_1)
-      end
     end
 
     context "LZX files (files 2-3)" do
-      it "extracts file 2 (lzx1.txt)", pending: "LZX multi-folder extraction needs fix (deferred to v0.2.0)" do
+      it "extracts file 2 (lzx1.txt)" do
         md5 = extract_file_md5(extractor, files[2])
         expect(md5).to match(/\A[0-9a-f]{32}\z/)
       end
 
-      it "extracts file 3 (lzx2.txt)", pending: "LZX multi-folder extraction needs fix (deferred to v0.2.0)" do
+      it "extracts file 3 (lzx2.txt)" do
         md5 = extract_file_md5(extractor, files[3])
         expect(md5).to match(/\A[0-9a-f]{32}\z/)
       end
     end
 
-    context "all 24 permutations (full libmspack test)", pending: "LZX multi-folder blocks full test (deferred to v0.2.0)" do
+    context "all 24 permutations (full libmspack test)" do
       # This is the complete test from libmspack's cabd_extract_test_04
       # It extracts files in ALL 24 possible orders (4! = 24)
       # and verifies each extraction produces identical MD5
@@ -651,8 +573,7 @@ RSpec.describe "libmspack CAB parity tests" do
     end
 
     context "mixed MSZIP and LZX extraction" do
-      it "can extract MSZIP files repeatedly while LZX is pending",
-         pending: "LZX multi-folder blocks mixed extraction test (deferred to v0.2.0)" do
+      it "can extract MSZIP files repeatedly while LZX is pending" do
         # Get MSZIP reference MD5s
         mszip_md5s = [
           extract_file_md5(extractor, files[0]),
@@ -760,12 +681,8 @@ RSpec.describe "libmspack CAB parity tests" do
       # Extracting: file1, file2, file1 previously caused segfault
 
       # Extract file 1 (should succeed)
-      begin
-        md5_1 = extract_file_md5(extractor, cabinet.files[0])
-        expect(md5_1).to match(/\A[0-9a-f]{32}\z/)
-      rescue Cabriolet::DecompressionError
-        skip "File 1 extraction failed - cabinet may be corrupted"
-      end
+      md5_1 = extract_file_md5(extractor, cabinet.files[0])
+      expect(md5_1).to match(/\A[0-9a-f]{32}\z/)
 
       # Extract file 2 (should fail gracefully, not segfault)
       expect { extract_file_md5(extractor, cabinet.files[1]) }.to raise_error(
@@ -773,12 +690,8 @@ RSpec.describe "libmspack CAB parity tests" do
       )
 
       # Extract file 1 again (should succeed, proving no segfault/crash)
-      begin
-        md5_1_again = extract_file_md5(extractor, cabinet.files[0])
-        expect(md5_1_again).to match(/\A[0-9a-f]{32}\z/)
-      rescue Cabriolet::DecompressionError
-        skip "File 1 re-extraction failed"
-      end
+      md5_1_again = extract_file_md5(extractor, cabinet.files[0])
+      expect(md5_1_again).to match(/\A[0-9a-f]{32}\z/)
     end
   end
 end

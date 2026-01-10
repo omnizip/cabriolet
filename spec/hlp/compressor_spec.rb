@@ -132,14 +132,50 @@ RSpec.describe Cabriolet::HLP::Compressor do
   end
 
   describe "round-trip with decompressor" do
-    it "creates HLP that can be decompressed",
-       skip: "QuickHelp decompressor needs parser.rb adjustment for generated files" do
-      # Will work after parser adjustment
+    let(:io_system) { Cabriolet::System::IOSystem.new }
+    let(:compressor) { described_class.new(io_system) }
+    let(:decompressor) { Cabriolet::HLP::Decompressor.new(io_system) }
+
+    around do |example|
+      Dir.mktmpdir do |tmpdir|
+        @tmpdir = tmpdir
+        example.run
+      end
     end
 
-    it "handles multiple files in round-trip",
-       skip: "QuickHelp decompressor needs parser.rb adjustment for generated files" do
-      # Will work after parser adjustment
+    it "creates HLP that can be decompressed" do
+      compressor.add_data("Hello, World!", "test.txt")
+
+      output_file = File.join(@tmpdir, "test.hlp")
+      compressor.generate(output_file)
+
+      header = decompressor.open(output_file)
+      expect(header).to be_a(Cabriolet::Models::HLPHeader)
+      expect(header.topics).not_to be_empty
+
+      topic = header.topics.first
+      content = decompressor.extract_file_to_memory(header, topic)
+      expect(content).to eq("Hello, World!")
+
+      decompressor.close(header)
+    end
+
+    it "handles multiple files in round-trip" do
+      compressor.add_data("Content 1", "file1.txt")
+      compressor.add_data("Content 2", "file2.txt")
+
+      output_file = File.join(@tmpdir, "multi.hlp")
+      compressor.generate(output_file)
+
+      header = decompressor.open(output_file)
+      expect(header.topics.size).to eq(2)
+
+      header.topics.each_with_index do |topic, index|
+        content = decompressor.extract_file_to_memory(header, topic)
+        expect(content).to eq("Content #{index + 1}")
+      end
+
+      decompressor.close(header)
     end
   end
 end

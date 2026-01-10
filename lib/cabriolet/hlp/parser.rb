@@ -64,9 +64,9 @@ module Cabriolet
           magic_word = sig_data[0..1].unpack1("v")
           return :winhelp if magic_word == 0x35F3
 
-          # Check WinHelp 4.x magic (0x3F5F in lower 16 bits of 32-bit value)
+          # Check WinHelp 4.x magic (0x5F3F or 0x3F5F in lower 16 bits of 32-bit value)
           magic_dword = sig_data.unpack1("V")
-          return :winhelp if (magic_dword & 0xFFFF) == 0x3F5F
+          return :winhelp if (magic_dword & 0xFFFF) == 0x5F3F || (magic_dword & 0xFFFF) == 0x3F5F
 
           # Unknown format
           raise Cabriolet::ParseError,
