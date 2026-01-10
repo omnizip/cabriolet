@@ -1,0 +1,631 @@
+---
+title: KWAJ Format
+parent: Format Guides
+grand_parent: Guides
+nav_order: 4
+---
+
+== KWAJ Format Guide
+
+=== Purpose
+
+This guide provides comprehensive documentation for working with Microsoft KWAJ compressed installation files using Cabriolet. KWAJ is a flexible compression format used in Microsoft installation packages with support for multiple compression algorithms.
+
+=== References
+
+* <<../../getting-started/quick-start#,Quick Start Guide>>
+* <<../../reference/cli/kwaj-commands#,KWAJ Commands Reference>>
+* <<../../reference/api/kwaj-api#,KWAJ API Reference>>
+* <<../compression/index#,Compression Algorithms>>
+
+=== Concepts
+
+==== What is a KWAJ File?
+
+KWAJ files are Microsoft's installation file compression format, commonly used for:
+
+* Software installation packages
+* Setup program data files
+* Compressed installer components
+* Distribution archives
+* Single-file compression with metadata
+
+The format supports multiple compression methods and can embed original filenames.
+
+==== KWAJ File Structure
+
+A KWAJ file has a flexible header structure:
+
+[source,text]
+----
+┌─────────────────────────┐
+│   KWAJ Header           │  Variable-length header
+│   - Signature: "KWAJ"   │
+│   - Compression type    │
+│   - Data offset         │
+│   - Optional filename   │
+│   - Optional length     │
+│   - Optional extra data │
+├─────────────────────────┤
+│   Compressed Data       │  Compressed with selected algorithm
+│                         │
+└─────────────────────────┘
+----
+
+**KWAJ Header**: Contains signature, compression method, and optional metadata.
+
+**Compression Type**: Identifies which algorithm is used (none, XOR, SZDD, MSZIP).
+
+**Optional Fields**: Filename, uncompressed length, and extra data can be included.
+
+**Compressed Data**: File content compressed with the specified algorithm.
+
+==== Compression Support
+
+KWAJ files support multiple compression algorithms:
+
+* **None** (Type 0) - Uncompressed storage
+* **XOR** (Type 1) - Simple XOR obfuscation
+* **SZDD** (Type 2) - LZSS compression
+* **MSZIP** (Type 3) - DEFLATE compression
+
+For detailed algorithm information, see <<../compression/index#,Compression Algorithms>>.
+
+==== Filename Embedding
+
+KWAJ can embed the original filename in the header:
+
+* Preserves original name during compression
+* Enables automatic filename reconstruction
+* Optional feature controlled at compression time
+
+==== Extra Data
+
+KWAJ supports embedding extra metadata:
+
+* Custom application data
+* Version information
+* Checksums or signatures
+* Arbitrary binary data
+
+=== Basic Operations
+
+==== Extracting KWAJ Files
+
+Decompress KWAJ files:
+
+.Command-line
+[source,bash]
+----
+# Auto-detect output filename from header
+cabriolet kwaj-extract setup.kwj
+
+# Specify output filename
+cabriolet kwaj-extract setup.kwj setup.exe
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::KWAJ::Decompressor.new
+header = decompressor.open('setup.kwj')
+
+# Auto-detect output name from embedded filename
+output = decompressor.auto_output_filename('setup.kwj', header)
+
+# Extract the file
+bytes = decompressor.extract(header, 'setup.kwj', output)
+decompressor.close(header)
+
+puts "Extracted to #{output} (#{bytes} bytes)"
+----
+
+.Example Output
+[source,text]
+----
+Extracted setup.kwj to setup.exe (1,048,576 bytes)
+----
+
+==== Getting KWAJ Information
+
+Display KWAJ file metadata:
+
+.Command-line
+[source,bash]
+----
+cabriolet kwaj-info setup.kwj
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::KWAJ::Decompressor.new
+header = decompressor.open('setup.kwj')
+
+puts "Compression: #{header.compression_name}"
+puts "Data offset: #{header.data_offset}"
+puts "Uncompressed size: #{header.length || 'unknown'}"
+puts "Original filename: #{header.filename}" if header.filename
+
+if header.extra && !header.extra.empty?
+  puts "Extra data: #{header.extra_length} bytes"
+end
+
+decompressor.close(header)
+----
+
+.Example Output
+[source,text]
+----
+KWAJ File Information
+==================================================
+Filename: setup.kwj
+Compression: MSZIP
+Data offset: 64 bytes
+Uncompressed size: 1,048,576 bytes
+Original filename: setup.exe
+Extra data: 16 bytes
+  Version: 1.0.0.0
+----
+
+==== Compressing Files
+
+Create KWAJ compressed files:
+
+.Command-line
+[source,bash]
+----
+# Compress with default SZDD compression
+cabriolet kwaj-compress setup.exe setup.kwj
+
+# Compress with MSZIP
+cabriolet kwaj-compress --compression=mszip setup.exe setup.kwj
+
+# Include original filename in header
+cabriolet kwaj-compress --filename=setup.exe data.kwj
+
+# Include extra metadata
+cabriolet kwaj-compress --extra-data="Version: 1.0" setup.exe setup.kwj
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::KWAJ::Compressor.new
+
+# Compress with MSZIP
+bytes = compressor.compress(
+  'setup.exe',
+  'setup.kwj',
+  compression: :mszip,
+  filename: 'setup.exe',
+  include_length: true
+)
+
+puts "Compressed to setup.kwj (#{bytes} bytes)"
+----
+
+=== Advanced Features
+
+==== Compression Method Selection
+
+Choose the appropriate compression method:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::KWAJ::Compressor.new
+
+# No compression (fast, larger)
+bytes = compressor.compress(
+  'data.bin',
+  'data.kwj',
+  compression: :none
+)
+
+# XOR obfuscation (very fast, minimal size reduction)
+bytes = compressor.compress(
+  'data.bin',
+  'data.kwj',
+  compression: :xor
+)
+
+# SZDD compression (fast, good for text)
+bytes = compressor.compress(
+  'readme.txt',
+  'readme.kwj',
+  compression: :szdd
+)
+
+# MSZIP compression (best ratio, slower)
+bytes = compressor.compress(
+  'large.dat',
+  'large.kwj',
+  compression: :mszip
+)
+----
+
+==== Filename Embedding
+
+Embed original filename for automatic reconstruction:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::KWAJ::Compressor.new
+
+# Compress with embedded filename
+bytes = compressor.compress(
+  'original-name.exe',
+  'compressed.kwj',
+  compression: :mszip,
+  filename: 'original-name.exe'
+)
+
+# Later, extract with automatic filename
+decompressor = Cabriolet::KWAJ::Decompressor.new
+header = decompressor.open('compressed.kwj')
+
+if header.filename
+  puts "Original filename: #{header.filename}"
+  output = header.filename
+else
+  output = 'compressed.out'
+end
+
+decompressor.extract(header, 'compressed.kwj', output)
+decompressor.close(header)
+----
+
+==== Extra Data Storage
+
+Store custom metadata:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::KWAJ::Compressor.new
+
+# Compress with extra metadata
+metadata = "Version: 2.0.1\nBuild: 12345"
+bytes = compressor.compress(
+  'setup.exe',
+  'setup.kwj',
+  compression: :mszip,
+  extra_data: metadata
+)
+
+# Read extra data
+decompressor = Cabriolet::KWAJ::Decompressor.new
+header = decompressor.open('setup.kwj')
+
+if header.extra && !header.extra.empty?
+  puts "Metadata:"
+  puts header.extra
+end
+
+decompressor.close(header)
+----
+
+==== Length Field Control
+
+Control whether uncompressed length is stored:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::KWAJ::Compressor.new
+
+# Include length in header
+bytes = compressor.compress(
+  'data.bin',
+  'data.kwj',
+  compression: :mszip,
+  include_length: true
+)
+
+# Omit length (saves 4 bytes in header)
+bytes = compressor.compress(
+  'data.bin',
+  'data-nolen.kwj',
+  compression: :mszip,
+  include_length: false
+)
+----
+
+=== Performance Optimization
+
+==== Compression Algorithm Selection
+
+Choose compression based on file type:
+
+[cols="1,2,2"]
+|===
+|Algorithm |Best For |Trade-off
+
+|None
+|Pre-compressed files, testing
+|No compression, fastest
+
+|XOR
+|Obfuscation, speed
+|Minimal compression, very fast
+
+|SZDD
+|Text files, moderate size
+|Good for text, fast
+
+|MSZIP
+|General purpose, maximum compression
+|Best ratio, slower
+|===
+
+==== Header Size Optimization
+
+Minimize header size:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::KWAJ::Compressor.new
+
+# Minimal header (no filename, no length, no extra)
+bytes = compressor.compress(
+  'data.bin',
+  'minimal.kwj',
+  compression: :mszip
+)
+
+# Full header (filename, length, extra data)
+bytes = compressor.compress(
+  'data.bin',
+  'full.kwj',
+  compression: :mszip,
+  filename: 'data.bin',
+  include_length: true,
+  extra_data: 'metadata'
+)
+----
+
+=== Common Use Cases
+
+==== Installation File Compression
+
+Compress setup files:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::KWAJ::Compressor.new
+
+# Compress installer components
+['setup.exe', 'readme.txt', 'license.txt'].each do |file|
+  output = "#{file}.kwj"
+
+  bytes = compressor.compress(
+    file,
+    output,
+    compression: :mszip,
+    filename: file,
+    include_length: true
+  )
+
+  puts "Compressed #{file} → #{output} (#{bytes} bytes)"
+end
+----
+
+==== Batch Extraction
+
+Extract multiple KWAJ files:
+
+[source,ruby]
+----
+require 'cabriolet'
+require 'fileutils'
+
+decompressor = Cabriolet::KWAJ::Decompressor.new
+FileUtils.mkdir_p('extracted')
+
+Dir.glob('installer/*.kwj').each do |kwaj_file|
+  header = decompressor.open(kwaj_file)
+
+  # Use embedded filename or generate from .kwj name
+  output = if header.filename
+    File.join('extracted', header.filename)
+  else
+    File.join('extracted', File.basename(kwaj_file, '.kwj'))
+  end
+
+  bytes = decompressor.extract(header, kwaj_file, output)
+  decompressor.close(header)
+
+  puts "Extracted: #{File.basename(output)} (#{bytes} bytes)"
+end
+----
+
+==== Version Information Storage
+
+Store version data in extra field:
+
+[source,ruby]
+----
+require 'cabriolet'
+require 'json'
+
+compressor = Cabriolet::KWAJ::Compressor.new
+
+# Create version metadata
+version_info = {
+  version: '2.1.0',
+  build: 12345,
+  date: '2024-01-15'
+}
+
+# Compress with version info
+bytes = compressor.compress(
+  'application.exe',
+  'application.kwj',
+  compression: :mszip,
+  filename: 'application.exe',
+  extra_data: JSON.generate(version_info)
+)
+
+# Extract and read version
+decompressor = Cabriolet::KWAJ::Decompressor.new
+header = decompressor.open('application.kwj')
+
+if header.extra
+  info = JSON.parse(header.extra)
+  puts "Version: #{info['version']}"
+  puts "Build: #{info['build']}"
+  puts "Date: #{info['date']}"
+end
+
+decompressor.close(header)
+----
+
+=== Troubleshooting
+
+==== Common Errors
+
+**"Invalid KWAJ signature"**
+
+The file is not a valid KWAJ file:
+
+[source,bash]
+----
+# Check file signature
+hexdump -C setup.kwj | head -1
+# Should show: "KWAJ" (4B 57 41 4A)
+----
+
+**"Unsupported compression type"**
+
+Unknown compression method:
+
+[source,bash]
+----
+cabriolet kwaj-info setup.kwj  # Shows compression type
+----
+
+**"Decompression failed"**
+
+Corrupted compressed data. Check compression type:
+
+[source,bash]
+----
+cabriolet kwaj-info setup.kwj
+# Verify compression method is supported
+----
+
+**"Missing filename in header"**
+
+No embedded filename. Specify output explicitly:
+
+[source,bash]
+----
+cabriolet kwaj-extract setup.kwj output.exe
+----
+
+==== Validation
+
+Verify KWAJ file integrity:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+begin
+  decompressor = Cabriolet::KWAJ::Decompressor.new
+  header = decompressor.open('setup.kwj')
+
+  puts "KWAJ file is valid"
+  puts "Compression: #{header.compression_name}"
+  puts "Data offset: #{header.data_offset}"
+
+  if header.length
+    puts "Uncompressed size: #{header.length} bytes"
+  end
+
+  decompressor.close(header)
+rescue Cabriolet::FormatError => e
+  puts "Invalid KWAJ file: #{e.message}"
+rescue Cabriolet::CorruptionError => e
+  puts "Corrupted KWAJ: #{e.message}"
+end
+----
+
+=== Best Practices
+
+1. **Include metadata**: Store filename and length for better usability
+
+2. **Choose appropriate compression**:
+   * MSZIP for general files
+   * SZDD for text files
+   * None for pre-compressed files
+   * XOR only for obfuscation
+
+3. **Use extra data wisely**: Store version info or checksums
+
+4. **Validate after compression**: Test extraction before distribution
+
+5. **Handle missing filename**: Always have fallback for output naming
+
+6. **Document compression method**: Note which algorithm was used
+
+=== Format Specifications
+
+==== File Signature
+
+KWAJ files start with the signature "KWAJ":
+
+[source,text]
+----
+Offset  Bytes  Description
+0x0000  4      Signature: "KWAJ" (0x4B 0x57 0x41 0x4A)
+0x0004  2      Compression method
+0x0006  2      Data offset (header size)
+0x0008  ...    Optional fields (flags determine presence)
+----
+
+==== Compression Types
+
+* `0` - None (uncompressed)
+* `1` - XOR (simple obfuscation)
+* `2` - SZDD (LZSS compression)
+* `3` - MSZIP (DEFLATE compression)
+
+==== Optional Fields
+
+Header can include:
+
+* **Filename**: Null-terminated string
+* **Length**: 4-byte uncompressed size
+* **Extra data**: Variable-length custom data
+
+For complete format specifications, see <<../../reference/formats/kwaj-specification#,KWAJ Specification>>.
+
+=== Next Steps
+
+* Learn about <<../compression/index#,compression algorithms>>
+* Review <<../../reference/cli/kwaj-commands#,complete KWAJ command reference>>
+* Study <<../../reference/api/kwaj-api#,KWAJ API documentation>>
+
+=== Bibliography
+
+* <<../../reference/cli/kwaj-commands#,KWAJ Commands Reference>>
+* <<../../reference/api/kwaj-api#,KWAJ API Reference>>
+* <<../../reference/formats/kwaj-specification#,KWAJ Format Specification>>
+* https://www.cabextract.org.uk/[cabextract Documentation]

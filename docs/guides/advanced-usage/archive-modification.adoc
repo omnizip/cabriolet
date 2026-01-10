@@ -1,0 +1,71 @@
+---
+layout: default
+title: Archive Modification
+parent: Advanced Usage
+grand_parent: Guides
+nav_order: 3
+---
+
+== Archive Modification
+
+=== Purpose
+
+This document explains how to modify existing archives by adding, updating, removing, or renaming files without full re-compression.
+
+Use this guide when you need to:
+* Update configuration files in archives
+* Add files to existing distributions
+* Remove deprecated files
+* Rename files for consistency
+
+=== References
+
+* xref:reference/api/modifier-api.adoc[Modifier API Reference]
+* xref:guides/basic-usage/creating-archives.adoc[Creating Archives]
+
+=== Concepts
+
+==== In-Place Modification
+
+Modifying an archive rebuilds it with the changes applied.
+
+==== Modification Queue
+
+Changes are queued and applied atomically when `save()` is called.
+
+=== Basic Operations
+
+[example]
+====
+[source,ruby]
+----
+require 'cabriolet'
+
+# Create modifier
+modifier = Cabriolet::Modifier.new('archive.cab')
+
+# Add file
+modifier.add_file('new.txt', data: "New content")
+
+# Update file
+modifier.update_file('config.xml', source: 'new_config.xml')
+
+# Remove file
+modifier.remove_file('deprecated.dll')
+
+# Rename file
+modifier.rename_file('old.txt', 'new.txt')
+
+# Preview changes
+modifier.preview.each { |change| puts change }
+
+# Save modifications
+report = modifier.save(output: 'modified.cab')
+puts report.summary
+----
+====
+
+=== See Also
+
+* xref:guides/basic-usage/creating-archives.adoc[Creating Archives]
+* xref:reference/api/modifier-api.adoc[Modifier API]

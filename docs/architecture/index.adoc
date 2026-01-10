@@ -1,0 +1,50 @@
+---
+layout: default
+title: Architecture
+nav_order: 5
+has_children: true
+---
+
+== Architecture
+
+This section describes Cabriolet's system architecture and design principles.
+
+=== Topics
+
+==== xref:design-principles.adoc[Design Principles]
+
+Core design philosophy: OOP, MECE, separation of concerns.
+
+==== xref:system-layer.adoc[System Layer]
+
+I/O abstraction and platform independence.
+
+==== xref:binary-layer.adoc[Binary Layer]
+
+Binary I/O and bitstream processing.
+
+==== xref:compression-layer.adoc[Compression Layer]
+
+Decompressor and compressor architecture.
+
+==== xref:format-layer.adoc[Format Layer]
+
+Format-specific implementations (CAB, CHM, SZDD, etc.).
+
+==== xref:extending.adoc[Extending]
+
+Adding new formats and algorithms.
+
+=== Purpose
+
+Understanding Cabriolet's architecture helps with:
+
+* Contributing to the project
+* Implementing custom formats
+* Optimizing performance
+* Debugging issues
+
+=== Related Sections
+
+* xref:../concepts/index.adoc[Concepts] - Theoretical foundations
+* xref:../developer/index.adoc[Developer] - Contributing guide

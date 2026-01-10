@@ -1,0 +1,595 @@
+---
+title: CAB Format
+parent: Format Guides
+grand_parent: Guides
+nav_order: 1
+---
+
+== CAB Format Guide
+
+=== Purpose
+
+This guide provides comprehensive documentation for working with Microsoft Cabinet (CAB) files using Cabriolet. CAB is the most widely used Microsoft compression format, designed for software distribution and system file packaging.
+
+=== References
+
+* <<../../getting-started/quick-start#,Quick Start Guide>>
+* <<../../reference/cli/cab-commands#,CAB Commands Reference>>
+* <<../../reference/api/cab-api#,CAB API Reference>>
+* <<../compression/index#,Compression Algorithms>>
+* <<../advanced-usage/multi-part-cabinets#,Multi-part Cabinets>>
+
+=== Concepts
+
+==== What is a CAB File?
+
+CAB (Cabinet) files are Microsoft's archive format for bundling multiple files with compression. They are used extensively in Windows for:
+
+* Software installers and updates
+* System file distribution
+* Windows Update packages
+* Driver packages
+* Application deployment
+
+==== CAB File Structure
+
+A CAB file consists of three main components:
+
+[source,text]
+----
+┌─────────────────────────┐
+│   Cabinet Header        │  File metadata and settings
+├─────────────────────────┤
+│   Folder Entries        │  Compression blocks
+│   ┌─────────────────┐   │
+│   │ Compressed Data │   │  Files grouped into folders
+│   └─────────────────┘   │
+├─────────────────────────┤
+│   File Entries          │  File metadata (names, sizes)
+└─────────────────────────┘
+----
+
+**Cabinet Header**: Contains global settings, cabinet ID, and pointers to folders and files.
+
+**Folders**: Compression units containing one or more files compressed together. Each folder uses a single compression algorithm.
+
+**Files**: Individual files within the cabinet, stored in folders with metadata like name, size, and attributes.
+
+==== Compression Support
+
+CAB files support multiple compression algorithms:
+
+* **None** (Type 0) - Uncompressed storage
+* **MSZIP** (Type 1) - Deflate-based compression, ZIP-compatible
+* **Quantum** (Type 2) - Configurable window size
+* **LZX** (Type 3) - High compression ratio
+
+For detailed algorithm information, see <<../compression/index#,Compression Algorithms>>.
+
+==== Multi-part Archives
+
+Large CAB files can be split across multiple volumes:
+
+[source,text]
+----
+large-archive.cab  (part 1)
+large-archive.ca2  (part 2)
+large-archive.ca3  (part 3)
+----
+
+Each part references the next, enabling extraction across volumes. See <<../advanced-usage/multi-part-cabinets#,Multi-part Cabinets>> for details.
+
+=== Basic Operations
+
+==== Listing CAB Contents
+
+View files without extracting:
+
+.Command-line
+[source,bash]
+----
+cabriolet list archive.cab
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+decompressor.each_file do |file|
+  puts "#{file.name} (#{file.size} bytes)"
+end
+----
+
+.Example Output
+[source,text]
+----
+Files in archive.cab:
+  readme.txt (1,245 bytes)
+  setup.exe (524,288 bytes)
+  config/settings.ini (512 bytes)
+
+Total: 3 files, 526,045 bytes
+Compression: MSZIP
+----
+
+==== Extracting Files
+
+Extract all files to a directory:
+
+.Command-line
+[source,bash]
+----
+# Extract to current directory
+cabriolet extract archive.cab
+
+# Extract to specific directory
+cabriolet extract archive.cab output/
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+# Extract all files
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+decompressor.extract('output/')
+
+# Extract specific file
+decompressor.extract_file('readme.txt', 'output/readme.txt')
+----
+
+==== Getting Archive Information
+
+Display detailed cabinet information:
+
+.Command-line
+[source,bash]
+----
+cabriolet info archive.cab
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+cabinet = decompressor.cabinet
+
+puts "Set ID: #{cabinet.set_id}"
+puts "Folders: #{cabinet.folders.count}"
+puts "Files: #{cabinet.files.count}"
+
+cabinet.folders.each_with_index do |folder, i|
+  puts "Folder #{i + 1}: #{folder.compression} compression"
+end
+----
+
+==== Testing Integrity
+
+Verify archive is not corrupted:
+
+.Command-line
+[source,bash]
+----
+cabriolet test archive.cab
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+valid = decompressor.test
+
+if valid
+  puts "Archive is valid"
+else
+  puts "Archive is corrupted"
+end
+----
+
+==== Creating CAB Archives
+
+Build new CAB files from source files:
+
+.Command-line
+[source,bash]
+----
+# Create with default MSZIP compression
+cabriolet create archive.cab file1.txt file2.txt
+
+# Create with LZX for maximum compression
+cabriolet create --compression=lzx small.cab files/
+
+# Create uncompressed
+cabriolet create --compression=none fast.cab data/
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+# Create with MSZIP (default)
+compressor = Cabriolet::CAB::Compressor.new
+compressor.add_file('readme.txt')
+compressor.add_file('setup.exe')
+compressor.write('archive.cab')
+
+# Create with LZX compression
+compressor = Cabriolet::CAB::Compressor.new(compression: :lzx)
+compressor.add_file('large-file.dat')
+compressor.write('compressed.cab')
+----
+
+==== Searching for Embedded CABs
+
+Many executables contain embedded CAB files:
+
+.Command-line
+[source,bash]
+----
+cabriolet search installer.exe
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+searcher = Cabriolet::CAB::Searcher.new('installer.exe')
+searcher.search do |offset, size|
+  puts "Found CAB at offset #{offset} (#{size} bytes)"
+end
+----
+
+=== Advanced Features
+
+==== Working with Folders
+
+CAB files organize files into folders (compression blocks):
+
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+cabinet = decompressor.cabinet
+
+cabinet.folders.each_with_index do |folder, i|
+  puts "Folder #{i + 1}:"
+  puts "  Compression: #{folder.compression}"
+  puts "  Data size: #{folder.data_size} bytes"
+
+  # Files in this folder
+  folder.files.each do |file|
+    puts "    #{file.name}"
+  end
+end
+----
+
+==== File Attributes
+
+CAB files preserve file attributes:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+decompressor.each_file do |file|
+  puts "#{file.name}:"
+  puts "  Read-only: #{file.read_only?}"
+  puts "  Hidden: #{file.hidden?}"
+  puts "  System: #{file.system?}"
+  puts "  Archive: #{file.archive?}"
+  puts "  Modified: #{file.time}"
+end
+----
+
+==== Cabinet Sets
+
+Multi-cabinet archives use set IDs to link volumes:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+cabinet = decompressor.cabinet
+
+puts "Set ID: #{cabinet.set_id}"
+puts "Cabinet number: #{cabinet.cabinet_number}"
+
+if cabinet.has_next?
+  puts "Next cabinet: #{cabinet.next_cabinet}"
+end
+
+if cabinet.has_prev?
+  puts "Previous cabinet: #{cabinet.prev_cabinet}"
+end
+----
+
+==== Reserve Space
+
+CAB files can reserve space for digital signatures:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Create CAB with reserved header space
+compressor = Cabriolet::CAB::Compressor.new(
+  header_reserve: 6144,  # Reserve for signature
+  folder_reserve: 0,
+  data_reserve: 0
+)
+compressor.add_file('setup.exe')
+compressor.write('signed.cab')
+----
+
+=== Performance Optimization
+
+==== Choosing Compression
+
+Select compression based on your needs:
+
+[cols="1,2,2"]
+|===
+|Algorithm |Use Case |Trade-off
+
+|None
+|Pre-compressed files, testing
+|No compression, fastest
+
+|MSZIP
+|General purpose, default
+|Balanced speed/ratio
+
+|LZX
+|Distribution packages
+|Best ratio, slower compression
+
+|Quantum
+|Legacy compatibility
+|Configurable window size
+|===
+
+See <<../compression/choosing-algorithm#,Choosing a Compression Algorithm>> for detailed guidance.
+
+==== Extraction Performance
+
+Tips for faster extraction:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Efficient: Extract to specific directory
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+decompressor.extract('output/')
+
+# Less efficient: Extract files one-by-one
+decompressor.each_file do |file|
+  # Individual extraction has overhead
+  decompressor.extract_file(file.name, "output/#{file.name}")
+end
+----
+
+==== Memory Usage
+
+For large CABs, use streaming:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Low memory: Stream files
+decompressor = Cabriolet::CAB::Decompressor.new('large.cab')
+decompressor.each_file do |file|
+  File.open("output/#{file.name}", 'wb') do |output|
+    file.extract_to(output)
+  end
+end
+
+# Higher memory: Load entire cabinet structure
+cabinet = decompressor.cabinet
+# Now entire structure is in memory
+----
+
+=== Common Use Cases
+
+==== Software Distribution
+
+Creating installer packages:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Create installer CAB with LZX
+compressor = Cabriolet::CAB::Compressor.new(compression: :lzx)
+
+# Add application files
+compressor.add_file('bin/program.exe')
+compressor.add_file('bin/library.dll')
+
+# Add documentation
+compressor.add_file('docs/readme.txt')
+compressor.add_file('docs/license.txt')
+
+# Add configuration
+compressor.add_file('config/settings.xml')
+
+compressor.write('installer.cab')
+----
+
+==== Windows Update Packages
+
+Analyzing Windows update files:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Extract Windows update CAB
+decompressor = Cabriolet::CAB::Decompressor.new('windows-update.cab')
+
+# List contents
+decompressor.each_file do |file|
+  puts "#{file.name} - #{file.size} bytes"
+end
+
+# Extract specific files
+decompressor.extract_file('update.msu', 'extracted/update.msu')
+----
+
+==== Driver Packages
+
+Working with driver CABs:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Extract driver package
+decompressor = Cabriolet::CAB::Decompressor.new('driver.cab')
+decompressor.extract('drivers/')
+
+# Find INF files
+decompressor.each_file do |file|
+  if file.name.end_with?('.inf')
+    puts "Driver INF: #{file.name}"
+  end
+end
+----
+
+=== Troubleshooting
+
+==== Common Errors
+
+**"Invalid CAB signature"**
+
+The file is not a valid CAB file or is corrupted. Verify with:
+
+[source,bash]
+----
+file archive.cab  # Should show "Microsoft Cabinet archive data"
+----
+
+**"Unsupported compression type"**
+
+The CAB uses an unsupported compression algorithm. Check with:
+
+[source,bash]
+----
+cabriolet info archive.cab  # Shows compression type
+----
+
+**"Corrupt data block"**
+
+The CAB file is damaged. Try salvage mode:
+
+[source,bash]
+----
+cabriolet extract --salvage damaged.cab output/
+----
+
+**"Cannot find next cabinet"**
+
+Multi-part archive is missing volumes. Ensure all parts are present:
+
+[source,bash]
+----
+ls archive.cab archive.ca*
+----
+
+==== Validation
+
+Verify CAB integrity before use:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+begin
+  decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+
+  # Test archive
+  if decompressor.test
+    puts "Archive is valid"
+    decompressor.extract('output/')
+  else
+    puts "Archive is corrupted"
+  end
+rescue Cabriolet::FormatError => e
+  puts "Invalid CAB file: #{e.message}"
+rescue Cabriolet::CorruptionError => e
+  puts "Corrupted data: #{e.message}"
+end
+----
+
+=== Best Practices
+
+1. **Test before distributing**: Always verify created CABs with `test` command
+
+2. **Choose appropriate compression**:
+   * MSZIP for general use
+   * LZX for distribution (smaller size)
+   * None for already-compressed files
+
+3. **Preserve file attributes**: Use `extract` to maintain timestamps and attributes
+
+4. **Handle multi-part archives**: Keep all parts together and in order
+
+5. **Validate inputs**: Check file integrity before extraction
+
+6. **Use salvage mode for recovery**: When dealing with potentially corrupted files
+
+=== Format Specifications
+
+==== File Signature
+
+CAB files start with the signature `MSCF` (0x4D534346):
+
+[source,text]
+----
+Offset  Bytes  Description
+0x0000  4      Signature: "MSCF" (0x4D 0x53 0x43 0x46)
+0x0004  4      Reserved1
+0x0008  4      Cabinet size
+0x000C  4      Reserved2
+0x0010  4      Files offset
+----
+
+For complete format specifications, see <<../../reference/formats/cab-specification#,CAB Specification>>.
+
+==== Compression Type Codes
+
+* `0` - None (uncompressed)
+* `1` - MSZIP (Deflate)
+* `2` - Quantum
+* `3` - LZX
+
+See <<../../reference/formats/compression-types#,Compression Type Codes>> for details.
+
+=== Next Steps
+
+* Learn about <<../compression/index#,compression algorithms>> in detail
+* Explore <<../advanced-usage/multi-part-cabinets#,multi-part cabinet handling>>
+* Review <<../../reference/cli/cab-commands#,complete CAB command reference>>
+* Study <<../../reference/api/cab-api#,CAB API documentation>>
+
+=== Bibliography
+
+* <<../../reference/cli/cab-commands#,CAB Commands Reference>>
+* <<../../reference/api/cab-api#,CAB API Reference>>
+* <<../../reference/formats/cab-specification#,CAB Format Specification>>
+* https://docs.microsoft.com/en-us/previous-versions/bb417343(v=msdn.10)[Microsoft Cabinet SDK Documentation]
+* https://www.cabextract.org.uk/[cabextract - CAB extraction tool]
+* https://en.wikipedia.org/wiki/Cabinet_(file_format)[Wikipedia: Cabinet (file format)]

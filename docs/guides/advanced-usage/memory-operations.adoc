@@ -1,0 +1,706 @@
+---
+layout: default
+title: Memory Operations
+parent: Advanced Usage
+grand_parent: Guides
+nav_order: 7
+---
+
+== Memory Operations
+:toc:
+
+=== Purpose
+
+This guide covers in-memory archive processing, including creating, manipulating, and extracting archives without touching the file system.
+
+=== References
+
+* xref:../../reference/api/system-io.adoc[System I/O API]
+* xref:custom-io-handlers.adoc[Custom I/O Handlers]
+* xref:performance-tuning.adoc[Performance Tuning]
+
+=== Understanding In-Memory Operations
+
+==== Benefits
+
+In-memory operations provide several advantages:
+
+* **Speed**: Eliminate disk I/O overhead
+* **Security**: No temporary files on disk
+* **Atomicity**: All-or-nothing operations
+* **Flexibility**: Process data in pipelines
+* **Testing**: Simplify unit testing
+
+==== Use Cases
+
+Common scenarios for memory operations:
+
+* **Web applications**: Process uploads without disk storage
+* **Data pipelines**: Transform archives in memory
+* **Testing**: Create test fixtures dynamically
+* **Embedded systems**: Limited or no disk storage
+* **Security**: Sensitive data that shouldn't touch disk
+
+=== MemoryHandle Basics
+
+==== Creating Memory Handles
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Create from binary data
+data = File.binread('archive.cab')
+memory_handle = Cabriolet::System::MemoryHandle.new(data)
+
+# Use with decompressor
+decompressor = Cabriolet::CAB::Decompressor.new(memory_handle)
+decompressor.files.each do |file|
+  puts file.filename
+end
+----
+
+==== Basic Operations
+
+[source,ruby]
+----
+# Create memory handle
+handle = Cabriolet::System::MemoryHandle.new
+
+# Write data
+handle.write("MSCF")  # CAB signature
+handle.write([0, 0, 0, 0].pack('L<'))  # Reserved
+
+# Read data
+handle.seek(0)
+signature = handle.read(4)  # => "MSCF"
+
+# Get position
+position = handle.tell  # => 4
+
+# Get size
+total_size = handle.size
+
+# Check EOF
+at_end = handle.eof?
+----
+
+=== Extracting to Memory
+
+==== Single File Extraction
+
+Extract a specific file to memory:
+
+[source,ruby]
+----
+# Load cabinet from disk
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+
+# Extract file to memory
+data = decompressor.extract_to_memory('readme.txt')
+
+# Use the extracted data
+puts data  # File contents as string
+
+# Process binary data
+if data.start_with?("\x89PNG")
+  # It's a PNG image
+  process_image(data)
+end
+----
+
+==== Extracting All Files
+
+Extract entire archive to memory:
+
+[source,ruby]
+----
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+
+# Extract all files to hash
+files = {}
+decompressor.files.each do |file|
+  files[file.filename] = decompressor.extract_to_memory(file.filename)
+end
+
+# Access extracted data
+config_data = files['config.json']
+parsed_config = JSON.parse(config_data)
+
+image_data = files['logo.png']
+# Process image data
+----
+
+==== Streaming from Memory
+
+Process data as it's decompressed:
+
+[source,ruby]
+----
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+
+decompressor.each_file do |filename, data_stream|
+  # data_stream is enumerable
+  data_stream.each_chunk do |chunk|
+    # Process chunk immediately
+    process_chunk(chunk)
+
+    # Or accumulate
+    accumulated_data << chunk
+  end
+end
+----
+
+=== Creating Archives in Memory
+
+==== Building Cabinet in Memory
+
+[source,ruby]
+----
+require 'stringio'
+
+class MemoryCabinetBuilder
+  def initialize
+    @compressor = Cabriolet::CAB::Compressor.new
+    @output = StringIO.new
+  end
+
+  def add_file(filename, data)
+    # Create temporary memory handle for input
+    memory_handle = Cabriolet::System::MemoryHandle.new(data)
+    @compressor.add_file_from_handle(filename, memory_handle)
+  end
+
+  def add_directory_contents(hash)
+    hash.each do |filename, data|
+      add_file(filename, data)
+    end
+  end
+
+  def build
+    # Compress to memory
+    output_handle = Cabriolet::System::MemoryHandle.new
+    @compressor.compress_to_handle(output_handle)
+
+    output_handle.seek(0)
+    output_handle.read
+  end
+end
+
+# Usage
+builder = MemoryCabinetBuilder.new
+builder.add_file('readme.txt', 'This is a readme file')
+builder.add_file('data.json', JSON.generate({key: 'value'}))
+
+# Get cabinet as binary data
+cabinet_data = builder.build
+
+# Save to disk if needed
+File.binwrite('output.cab', cabinet_data)
+
+# Or send over network
+http.post('/upload', cabinet_data)
+----
+
+==== Dynamic Archive Generation
+
+Generate archives on-the-fly:
+
+[source,ruby]
+----
+class DynamicArchiveGenerator
+  def self.generate_report_archive(report_data)
+    compressor = Cabriolet::CAB::Compressor.new
+
+    # Generate report.txt
+    report_text = format_report(report_data)
+    compressor.add_from_memory('report.txt', report_text)
+
+    # Generate summary.json
+    summary = {
+      generated: Time.now.iso8601,
+      records: report_data.size,
+      total: report_data.sum { |r| r[:amount] }
+    }
+    compressor.add_from_memory('summary.json', JSON.generate(summary))
+
+    # Generate CSV
+    csv_data = CSV.generate do |csv|
+      csv << ['ID', 'Name', 'Amount']
+      report_data.each do |record|
+        csv << [record[:id], record[:name], record[:amount]]
+      end
+    end
+    compressor.add_from_memory('data.csv', csv_data)
+
+    # Build archive in memory
+    output = StringIO.new
+    compressor.compress_to_stream(output)
+    output.string
+  end
+
+  def self.format_report(data)
+    # Format report as text
+    lines = ["Report Generated: #{Time.now}"]
+    lines << "=" * 50
+    data.each do |record|
+      lines << "#{record[:name]}: $#{record[:amount]}"
+    end
+    lines.join("\n")
+  end
+end
+
+# Usage
+report_data = [
+  {id: 1, name: 'Item A', amount: 100},
+  {id: 2, name: 'Item B', amount: 200}
+]
+
+archive_bytes = DynamicArchiveGenerator.generate_report_archive(report_data)
+
+# Send as HTTP response
+response.headers['Content-Type'] = 'application/vnd.ms-cab-compressed'
+response.headers['Content-Disposition'] = 'attachment; filename="report.cab"'
+response.write(archive_bytes)
+----
+
+=== Web Application Integration
+
+==== Processing Upload Streams
+
+Handle uploaded cabinet files in Rack/Rails:
+
+[source,ruby]
+----
+class ArchiveController < ApplicationController
+  def upload
+    # Get uploaded file
+    uploaded_file = params[:archive]
+
+    # Read into memory
+    cabinet_data = uploaded_file.read
+
+    # Process in memory
+    memory_handle = Cabriolet::System::MemoryHandle.new(cabinet_data)
+    decompressor = Cabriolet::CAB::Decompressor.new(memory_handle)
+
+    # Extract and process files
+    processed_files = []
+    decompressor.files.each do |file|
+      data = decompressor.extract_to_memory(file.filename)
+
+      # Process based on file type
+      case File.extname(file.filename)
+      when '.json'
+        processed_files << process_json(data)
+      when '.csv'
+        processed_files << process_csv(data)
+      when '.xml'
+        processed_files << process_xml(data)
+      end
+    end
+
+    render json: {
+      status: 'success',
+      files_processed: processed_files.size,
+      files: processed_files
+    }
+  rescue Cabriolet::Error => e
+    render json: {status: 'error', message: e.message}, status: 400
+  end
+
+  private
+
+  def process_json(data)
+    JSON.parse(data)
+  end
+
+  def process_csv(data)
+    CSV.parse(data, headers: true).map(&:to_h)
+  end
+
+  def process_xml(data)
+    Nokogiri::XML(data)
+  end
+end
+----
+
+==== Generating Download Responses
+
+Create archives for download:
+
+[source,ruby]
+----
+class ReportController < ApplicationController
+  def download_data
+    # Generate data archive on-the-fly
+    compressor = Cabriolet::CAB::Compressor.new
+
+    # Add user data
+    user_data = current_user.export_data
+    compressor.add_from_memory('user_data.json', JSON.generate(user_data))
+
+    # Add activity log
+    activities = current_user.activities.map(&:to_h)
+    compressor.add_from_memory('activities.json', JSON.generate(activities))
+
+    # Build archive
+    output = StringIO.new
+    compressor.compress_to_stream(output)
+
+    # Send to client
+    send_data output.string,
+      filename: "user_#{current_user.id}_data.cab",
+      type: 'application/vnd.ms-cab-compressed',
+      disposition: 'attachment'
+  end
+end
+----
+
+=== Memory-Efficient Patterns
+
+==== Chunked Processing
+
+Process large archives in chunks:
+
+[source,ruby]
+----
+class ChunkedMemoryProcessor
+  CHUNK_SIZE = 1 * 1024 * 1024  # 1 MB chunks
+
+  def self.process_large_file(cabinet_path, target_file)
+    decompressor = Cabriolet::CAB::Decompressor.new(cabinet_path)
+
+    output = StringIO.new
+
+    decompressor.extract_file_chunked(target_file) do |chunk|
+      # Process each chunk
+      processed = process_chunk(chunk)
+      output << processed
+
+      # Clear chunk to free memory
+      chunk.clear
+    end
+
+    output.string
+  end
+
+  def self.process_chunk(data)
+    # Transform data chunk
+    data.upcase  # Example transformation
+  end
+end
+----
+
+==== Lazy Loading
+
+Load data only when needed:
+
+[source,ruby]
+----
+class LazyArchiveReader
+  def initialize(filename)
+    @filename = filename
+    @decompressor = nil
+    @file_cache = {}
+  end
+
+  def [](filename)
+    # Cache to avoid re-extraction
+    @file_cache[filename] ||= begin
+      decompressor.extract_to_memory(filename)
+    end
+  end
+
+  def each_file
+    decompressor.files.each do |file|
+      yield file.filename, self[file.filename]
+    end
+  end
+
+  private
+
+  def decompressor
+    @decompressor ||= Cabriolet::CAB::Decompressor.new(@filename)
+  end
+end
+
+# Usage - files are only extracted when accessed
+reader = LazyArchiveReader.new('archive.cab')
+
+# Only extracts config.json
+config = JSON.parse(reader['config.json'])
+
+# Only extracts data.csv when needed
+if config['include_data']
+  data = CSV.parse(reader['data.csv'])
+end
+----
+
+==== Memory Pool
+
+Reuse memory buffers:
+
+[source,ruby]
+----
+class MemoryBufferPool
+  def initialize(buffer_size: 64 * 1024, pool_size: 10)
+    @buffer_size = buffer_size
+    @pool = Array.new(pool_size) do
+      Cabriolet::System::MemoryHandle.new
+    end
+    @available = @pool.dup
+    @mutex = Mutex.new
+  end
+
+  def with_buffer
+    buffer = acquire
+    begin
+      yield buffer
+    ensure
+      release(buffer)
+    end
+  end
+
+  private
+
+  def acquire
+    @mutex.synchronize do
+      @available.pop || Cabriolet::System::MemoryHandle.new
+    end
+  end
+
+  def release(buffer)
+    @mutex.synchronize do
+      buffer.clear
+      @available.push(buffer) if @available.size < @pool.size
+    end
+  end
+end
+
+# Usage
+pool = MemoryBufferPool.new
+
+10.times do |i|
+  pool.with_buffer do |buffer|
+    # Use buffer for extraction
+    decompressor.extract_file_to_handle("file_#{i}.dat", buffer)
+    # Process data in buffer
+    process(buffer.read)
+  end
+end
+----
+
+=== Advanced Patterns
+
+==== Archive Transformation
+
+Transform archives in memory:
+
+[source,ruby]
+----
+class ArchiveTransformer
+  def self.transform(input_cab, &block)
+    # Load input archive
+    input_data = File.binread(input_cab)
+    memory_handle = Cabriolet::System::MemoryHandle.new(input_data)
+    decompressor = Cabriolet::CAB::Decompressor.new(memory_handle)
+
+    # Create output archive
+    compressor = Cabriolet::CAB::Compressor.new
+
+    # Transform each file
+    decompressor.files.each do |file|
+      original_data = decompressor.extract_to_memory(file.filename)
+
+      # Apply transformation
+      transformed_data = block.call(file.filename, original_data)
+
+      # Add to output
+      if transformed_data
+        compressor.add_from_memory(file.filename, transformed_data)
+      end
+    end
+
+    # Build output archive
+    output_handle = Cabriolet::System::MemoryHandle.new
+    compressor.compress_to_handle(output_handle)
+    output_handle.read
+  end
+end
+
+# Usage - encrypt all files
+encrypted_cab = ArchiveTransformer.transform('input.cab') do |filename, data|
+  encrypt(data, key: ENV['ENCRYPTION_KEY'])
+end
+
+File.binwrite('encrypted.cab', encrypted_cab)
+
+# Usage - filter files
+filtered_cab = ArchiveTransformer.transform('input.cab') do |filename, data|
+  # Only include .txt files
+  data if filename.end_with?('.txt')
+end
+----
+
+==== Merging Archives
+
+Merge multiple archives in memory:
+
+[source,ruby]
+----
+class ArchiveMerger
+  def self.merge(*archive_paths)
+    compressor = Cabriolet::CAB::Compressor.new
+
+    archive_paths.each do |path|
+      data = File.binread(path)
+      memory_handle = Cabriolet::System::MemoryHandle.new(data)
+      decompressor = Cabriolet::CAB::Decompressor.new(memory_handle)
+
+      decompressor.files.each do |file|
+        # Avoid filename conflicts
+        prefixed_name = "#{File.basename(path, '.cab')}/#{file.filename}"
+
+        file_data = decompressor.extract_to_memory(file.filename)
+        compressor.add_from_memory(prefixed_name, file_data)
+      end
+    end
+
+    # Build merged archive
+    output_handle = Cabriolet::System::MemoryHandle.new
+    compressor.compress_to_handle(output_handle)
+    output_handle.read
+  end
+end
+
+# Usage
+merged = ArchiveMerger.merge('archive1.cab', 'archive2.cab', 'archive3.cab')
+File.binwrite('merged.cab', merged)
+----
+
+==== Archive Comparison
+
+Compare archives in memory:
+
+[source,ruby]
+----
+class ArchiveComparer
+  def self.compare(path1, path2)
+    # Load both archives
+    data1 = File.binread(path1)
+    data2 = File.binread(path2)
+
+    handle1 = Cabriolet::System::MemoryHandle.new(data1)
+    handle2 = Cabriolet::System::MemoryHandle.new(data2)
+
+    decomp1 = Cabriolet::CAB::Decompressor.new(handle1)
+    decomp2 = Cabriolet::CAB::Decompressor.new(handle2)
+
+    # Get file lists
+    files1 = decomp1.files.map(&:filename).to_set
+    files2 = decomp2.files.map(&:filename).to_set
+
+    # Find differences
+    only_in_1 = files1 - files2
+    only_in_2 = files2 - files1
+    in_both = files1 & files2
+
+    # Compare content of common files
+    differences = []
+    in_both.each do |filename|
+      data1 = decomp1.extract_to_memory(filename)
+      data2 = decomp2.extract_to_memory(filename)
+
+      unless data1 == data2
+        differences << {
+          filename: filename,
+          size1: data1.bytesize,
+          size2: data2.bytesize,
+          checksum1: Digest::MD5.hexdigest(data1),
+          checksum2: Digest::MD5.hexdigest(data2)
+        }
+      end
+    end
+
+    {
+      only_in_first: only_in_1.to_a,
+      only_in_second: only_in_2.to_a,
+      different_content: differences
+    }
+  end
+end
+
+# Usage
+result = ArchiveComparer.compare('old_version.cab', 'new_version.cab')
+
+puts "Files only in old version: #{result[:only_in_first].join(', ')}"
+puts "Files only in new version: #{result[:only_in_second].join(', ')}"
+puts "Files with different content: #{result[:different_content].size}"
+----
+
+=== Testing with Memory Operations
+
+==== Unit Test Fixtures
+
+Create test fixtures in memory:
+
+[source,ruby]
+----
+RSpec.describe 'Archive Processing' do
+  def create_test_archive
+    compressor = Cabriolet::CAB::Compressor.new
+    compressor.add_from_memory('test1.txt', 'Test content 1')
+    compressor.add_from_memory('test2.txt', 'Test content 2')
+
+    output = Cabriolet::System::MemoryHandle.new
+    compressor.compress_to_handle(output)
+    output.read
+  end
+
+  it 'extracts files correctly' do
+    archive_data = create_test_archive
+
+    memory_handle = Cabriolet::System::MemoryHandle.new(archive_data)
+    decompressor = Cabriolet::CAB::Decompressor.new(memory_handle)
+
+    expect(decompressor.files.size).to eq(2)
+
+    content1 = decompressor.extract_to_memory('test1.txt')
+    expect(content1).to eq('Test content 1')
+  end
+end
+----
+
+=== Best Practices
+
+==== Memory Management
+
+1. **Clear buffers explicitly**: Use `clear` to free memory
+2. **Use buffer pools**: Reuse memory allocations
+3. **Stream when possible**: Don't load entire archive at once
+4. **Monitor memory usage**: Track allocation patterns
+5. **Set limits**: Prevent unbounded memory growth
+
+==== Performance
+
+1. **Batch operations**: Group related operations
+2. **Cache judiciously**: Balance memory vs computation
+3. **Profile first**: Measure before optimizing
+4. **Use native operations**: Leverage Ruby's C extensions
+5. **Consider alternatives**: Sometimes disk is faster
+
+==== Safety
+
+1. **Validate sizes**: Check before allocating large buffers
+2. **Handle errors**: Memory allocation can fail
+3. **Limit input size**: Prevent denial of service
+4. **Sanitize data**: Don't trust extracted content
+5. **Clear sensitive data**: Overwrite before freeing
+
+==== Bibliography
+
+* xref:../../reference/api/system-io.adoc[System I/O API Reference]
+* xref:custom-io-handlers.adoc[Custom I/O Handlers]
+* xref:performance-tuning.adoc[Performance Tuning Guide]
+* Ruby Memory Management Best Practices

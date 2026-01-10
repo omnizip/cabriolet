@@ -1,0 +1,164 @@
+---
+layout: default
+title: CHM API
+parent: API Reference
+grand_parent: Reference
+nav_order: 2
+---
+
+== CHM API Reference
+:toc:
+
+=== Purpose
+
+API reference for [`Cabriolet::CHM::Decompressor`](lib/cabriolet/chm/decompressor.rb) and [`Cabriolet::CHM::Compressor`](lib/cabriolet/chm/compressor.rb) classes for Compiled HTML Help files.
+
+=== References
+
+* xref:../../guides/formats/chm-format.adoc[CHM Format Guide]
+* xref:models.adoc[Model Classes]
+
+== CHM::Decompressor
+
+=== Constructor
+
+==== `new(source, options = {})`
+
+**Parameters:**
+* `source` (String, IO, Handle) - CHM file path or handle
+* `options` (Hash) - Configuration options
+
+**Options:**
+* `:salvage` (Boolean) - Enable salvage mode (default: `false`)
+* `:read_buffer` (Integer) - Buffer size (default: `32768`)
+
+**Example:**
+[source,ruby]
+----
+decompressor = Cabriolet::CHM::Decompressor.new('help.chm')
+----
+
+=== Instance Methods
+
+==== `header`
+
+Returns CHM header information.
+
+**Returns:** [`Cabriolet::Models::CHMHeader`](lib/cabriolet/models/chm_header.rb)
+
+==== `files`
+
+Returns all files in the CHM archive.
+
+**Returns:** `Array<Cabriolet::Models::CHMFile>`
+
+==== `sections`
+
+Returns CHM sections (directory, content, etc.).
+
+**Returns:** `Array<Cabriolet::Models::CHMSection>`
+
+==== `extract_file(filename, output_path)`
+
+Extracts a single file.
+
+**Parameters:**
+* `filename` (String) - File to extract
+* `output_path` (String) - Destination path
+
+**Example:**
+[source,ruby]
+----
+decompressor.extract_file('index.html', 'output/index.html')
+----
+
+==== `extract_all(output_dir)`
+
+Extracts all files.
+
+**Parameters:**
+* `output_dir` (String) - Output directory
+
+**Returns:** `Integer` - Number of files extracted
+
+==== `extract_to_memory(filename)`
+
+Extracts file to memory.
+
+**Returns:** `String` (binary) - File contents
+
+==== `find_topic(query)`
+
+Searches for topics in the help file.
+
+**Parameters:**
+* `query` (String) - Search query
+
+**Returns:** `Array<Hash>` - Matching topics
+
+**Example:**
+[source,ruby]
+----
+results = decompressor.find_topic('installation')
+results.each do |topic|
+  puts "#{topic[:title]}: #{topic[:url]}"
+end
+----
+
+== CHM::Compressor
+
+=== Constructor
+
+==== `new(options = {})`
+
+**Options:**
+* `:compression` (Symbol) - Compression type (`:lzx` default)
+* `:language` (Integer) - Language code
+* `:title` (String) - Help file title
+
+**Example:**
+[source,ruby]
+----
+compressor = Cabriolet::CHM::Compressor.new(
+  title: 'My Application Help',
+  language: 0x0409  # English (US)
+)
+----
+
+=== Instance Methods
+
+==== `add_html_file(path, options = {})`
+
+Adds an HTML file.
+
+**Parameters:**
+* `path` (String) - HTML file path
+* `options` (Hash) - File options
+
+==== `add_topic(title, url, keywords = [])`
+
+Adds a topic to the index.
+
+**Parameters:**
+* `title` (String) - Topic title
+* `url` (String) - Topic URL
+* `keywords` (Array<String>) - Associated keywords
+
+==== `set_default_page(url)`
+
+Sets the default page.
+
+**Parameters:**
+* `url` (String) - Default page URL
+
+==== `compress(output_path)`
+
+Creates the CHM file.
+
+**Parameters:**
+* `output_path` (String) - Output CHM path
+
+=== Bibliography
+
+* xref:../../guides/formats/chm-format.adoc[CHM Format Guide]
+* xref:../../reference/cli/chm-commands.adoc[CHM Commands]

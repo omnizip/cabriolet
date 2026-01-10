@@ -58,17 +58,10 @@ module Cabriolet
         # Ensure we have enough bits in the buffer
         while @bits_left < num_bits
           byte = read_byte
-          if byte.nil?
-            # First EOF: pad with zeros (matches libmspack read_input behavior)
-            # On second EOF, read_byte will raise DecompressionError
-            if @salvage
-              # In salvage mode, pad indefinitely
-              byte = 0
-            else
-              # Pad with 0 on first EOF (read_byte already set @input_end)
-              byte = 0
-            end
-          end
+          # First EOF: pad with zeros (matches libmspack read_input behavior)
+          # On second EOF, read_byte will raise DecompressionError
+          # In salvage mode, pad indefinitely; otherwise pad on first EOF
+          byte = 0 if byte.nil?
 
           # DEBUG
           $stderr.puts "DEBUG LSB read_byte: buffer_pos=#{@buffer_pos} byte=#{byte} (#{byte.to_s(2).rjust(8, '0')}) bits_left=#{@bits_left}" if ENV['DEBUG_BITSTREAM']

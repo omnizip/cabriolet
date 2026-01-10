@@ -1,0 +1,103 @@
+---
+layout: default
+title: Performance Issues
+parent: Troubleshooting
+---
+
+== Performance and Memory Problems
+
+=== Slow Decompression
+
+**Symptoms**: Extraction taking excessive time
+
+**Causes and Solutions**:
+
+1. **Large LZX window**
+   - Use MSZIP instead of LZX for faster extraction
+   - Reduce LZX window size when creating archives
+
+2. **Many small files**
+   - Extract in parallel if possible
+   - Consider batch processing
+
+3. **Slow I/O**
+   - Use SSD instead of HDD
+   - Check disk space and fragmentation
+
+=== High Memory Usage
+
+**Symptoms**: Excessive RAM consumption
+
+**Solutions**:
+
+[source,ruby]
+----
+# Use streaming for large files
+File.open('output.dat', 'wb') do |output|
+  cab.extract_file('large.dat') do |chunk|
+    output.write(chunk)
+  end
+end
+
+# Process files individually
+cab.files.each do |file|
+  # Extract one at a time
+  data = file.data
+  File.write(file.name, data)
+  data = nil  # Allow GC
+  GC.start
+end
+----
+
+=== Memory Allocation Failures
+
+**Error**: `NoMemoryError` or `Errno::ENOMEM`
+
+**Solutions**:
+
+1. Increase system memory
+2. Use smaller compression windows
+3. Close other applications
+4. Process in smaller batches
+
+=== CPU Usage
+
+**Issue**: High CPU during compression/decompression
+
+**Normal**: LZX compression is CPU-intensive
+
+**Solutions**:
+
+* Use faster algorithms (MSZIP, None)
+* Reduce compression level
+* Use parallel processing for multiple files
+
+=== Optimization Tips
+
+1. **Choose appropriate algorithm**:
+   - Fast: None, LZSS
+   - Balanced: MSZIP
+   - Maximum compression: LZX
+
+2. **Tune for your use case**:
+   - One-time: Use maximum compression
+   - Frequent access: Use faster algorithms
+
+3. **Monitor resources**:
+
+[source,ruby]
+----
+require 'benchmark'
+
+time = Benchmark.measure do
+  cab.extract_all('output/')
+end
+
+puts "Extraction took #{time.real} seconds"
+----
+
+=== See Also
+
+* link:common-errors.html[Common Errors]
+* xref:guides/advanced-usage/performance-tuning.adoc[Performance Tuning]
+* xref:appendix/benchmarks/index.adoc[Benchmarks]

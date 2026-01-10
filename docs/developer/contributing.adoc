@@ -1,0 +1,33 @@
+---
+layout: default
+title: Contributing
+parent: Developer
+nav_order: 1
+---
+
+== Contributing
+
+=== Getting Started
+
+1. Fork the repository
+2. Clone your fork
+3. Create a feature branch
+4. Make changes
+5. Run tests
+6. Submit pull request
+
+=== Code of Conduct
+
+Be respectful and professional in all interactions.
+
+=== Pull Request Process
+
+1. Ensure tests pass
+2. Update documentation
+3. Follow code style guidelines
+4. Write clear commit messages
+
+=== Bibliography
+
+* xref:../architecture/extending.adoc[Extending Cabriolet]
+* xref:code-style.adoc[Code Style Guide]

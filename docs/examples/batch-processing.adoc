@@ -1,0 +1,280 @@
+---
+layout: default
+title: Batch Processing Multiple Archives
+parent: Examples
+---
+
+== Batch Processing Multiple Archives
+
+=== Overview
+
+Process large numbers of CAB archives efficiently with parallel processing, error handling, and progress reporting.
+
+=== Simple Batch Extractor
+
+[source,ruby]
+----
+#!/usr/bin/env ruby
+require 'cabriolet'
+require 'fileutils'
+require 'find'
+
+class BatchProcessor
+  def initialize(input_dir, output_dir)
+    @input_dir = input_dir
+    @output_dir = output_dir
+    @results = { success: [], failed: [], total: 0 }
+  end
+
+  def process_all
+    cab_files = find_cab_files
+
+    puts "Found #{cab_files.count} CAB files to process\n"
+
+    cab_files.each_with_index do |cab_file, index|
+      process_cabinet(cab_file, index + 1, cab_files.count)
+    end
+
+    print_summary
+  end
+
+  private
+
+  def find_cab_files
+    files = []
+    Find.find(@input_dir) do |path|
+      files << path if File.file?(path) && path.downcase.end_with?('.cab')
+    end
+    files.sort
+  end
+
+  def process_cabinet(cab_file, current, total)
+    @results[:total] += 1
+    rel_path = cab_file.sub(@input_dir + '/', '')
+
+    print "[#{current}/#{total}] #{rel_path}... "
+
+    begin
+      cabinet = Cabriolet::CAB::Parser.new.parse(cab_file)
+      output_subdir = File.join(@output_dir, File.basename(cab_file, '.*'))
+
+      FileUtils.mkdir_p(output_subdir)
+
+      cabinet.files.each do |file|
+        output_path = File.join(output_subdir, file.name.gsub('\\', '/'))
+        FileUtils.mkdir_p(File.dirname(output_path))
+        File.write(output_path, file.data, mode: 'wb')
+      end
+
+      @results[:success] << rel_path
+      puts "OK (#{cabinet.files.count} files)"
+    rescue => e
+      @results[:failed] << { file: rel_path, error: e.message }
+      puts "FAILED: #{e.message}"
+    end
+  end
+
+  def print_summary
+    puts "\n" + "="*60
+    puts "BATCH PROCESSING SUMMARY"
+    puts "="*60
+    puts "Total:   #{@results[:total]}"
+    puts "Success: #{@results[:success].count}"
+    puts "Failed:  #{@results[:failed].count}"
+
+    if @results[:failed].any?
+      puts "\nFailed files:"
+      @results[:failed].each do |f|
+        puts "  - #{f[:file]}: #{f[:error]}"
+      end
+    end
+  end
+end
+
+# Usage
+processor = BatchProcessor.new(ARGV[0] || 'cabs', ARGV[1] || 'extracted')
+processor.process_all
+----
+
+=== Parallel Processing
+
+[source,ruby]
+----
+require 'cabriolet'
+require 'parallel'
+
+class ParallelBatchProcessor
+  def initialize(input_dir, output_dir, threads: 4)
+    @input_dir = input_dir
+    @output_dir = output_dir
+    @threads = threads
+  end
+
+  def process_all
+    cab_files = Dir.glob(File.join(@input_dir, '**', '*.cab'))
+
+    puts "Processing #{cab_files.count} files with #{@threads} threads\n"
+
+    results = Parallel.map(cab_files, in_threads: @threads) do |cab_file|
+      process_one(cab_file)
+    end
+
+    print_results(results)
+  end
+
+  private
+
+  def process_one(cab_file)
+    cabinet = Cabriolet::CAB::Parser.new.parse(cab_file)
+    output_dir = File.join(@output_dir, File.basename(cab_file, '.*'))
+
+    FileUtils.mkdir_p(output_dir)
+
+    cabinet.files.each do |file|
+      output_path = File.join(output_dir, file.name.gsub('\\', '/'))
+      FileUtils.mkdir_p(File.dirname(output_path))
+      File.write(output_path, file.data, mode: 'wb')
+    end
+
+    { file: cab_file, status: :success, count: cabinet.files.count }
+  rescue => e
+    { file: cab_file, status: :failed, error: e.message }
+  end
+
+  def print_results(results)
+    success = results.count { |r| r[:status] == :success }
+    failed = results.count { |r| r[:status] == :failed }
+
+    puts "\nProcessed: #{results.count}"
+    puts "Success:   #{success}"
+    puts "Failed:    #{failed}"
+  end
+end
+
+# Usage
+processor = ParallelBatchProcessor.new('cabs', 'extracted', threads: 8)
+processor.process_all
+----
+
+=== Progress Reporting
+
+[source,ruby]
+----
+require 'cabriolet'
+require 'ruby-progressbar'
+
+class ProgressBatchProcessor
+  def initialize(input_dir, output_dir)
+    @input_dir = input_dir
+    @output_dir = output_dir
+  end
+
+  def process_all
+    cab_files = Dir.glob(File.join(@input_dir, '**', '*.cab'))
+
+    progress = ProgressBar.create(
+      title: "Extracting",
+      total: cab_files.count,
+      format: '%t: |%B| %p%% %e'
+    )
+
+    cab_files.each do |cab_file|
+      process_cabinet(cab_file)
+      progress.increment
+    end
+  end
+
+  private
+
+  def process_cabinet(cab_file)
+    cabinet = Cabriolet::CAB::Parser.new.parse(cab_file)
+    output_dir = File.join(@output_dir, File.basename(cab_file, '.*'))
+
+    FileUtils.mkdir_p(output_dir)
+
+    cabinet.files.each do |file|
+      output_path = File.join(output_dir, file.name.gsub('\\', '/'))
+      FileUtils.mkdir_p(File.dirname(output_path))
+      File.write(output_path, file.data, mode: 'wb')
+    end
+  end
+end
+
+# Usage
+processor = ProgressBatchProcessor.new('cabs', 'extracted')
+processor.process_all
+----
+
+=== Error Recovery and Logging
+
+[source,ruby]
+----
+require 'cabriolet'
+require 'logger'
+
+class RobustBatchProcessor
+  def initialize(input_dir, output_dir, log_file: 'batch.log')
+    @input_dir = input_dir
+    @output_dir = output_dir
+    @logger = Logger.new(log_file)
+    @logger.level = Logger::INFO
+  end
+
+  def process_all
+    cab_files = Dir.glob(File.join(@input_dir, '**', '*.cab'))
+
+    @logger.info "Starting batch processing of #{cab_files.count} files"
+
+    cab_files.each do |cab_file|
+      process_with_retry(cab_file, max_retries: 3)
+    end
+
+    @logger.info "Batch processing complete"
+  end
+
+  private
+
+  def process_with_retry(cab_file, max_retries: 3)
+    retries = 0
+
+    begin
+      process_cabinet(cab_file)
+      @logger.info "Success: #{cab_file}"
+    rescue => e
+      retries += 1
+
+      if retries < max_retries
+        @logger.warn "Retry #{retries}/#{max_retries} for #{cab_file}: #{e.message}"
+        sleep 1
+        retry
+      else
+        @logger.error "Failed after #{max_retries} attempts: #{cab_file} - #{e.message}"
+        @logger.error e.backtrace.join("\n")
+      end
+    end
+  end
+
+  def process_cabinet(cab_file)
+    cabinet = Cabriolet::CAB::Parser.new.parse(cab_file)
+    output_dir = File.join(@output_dir, File.basename(cab_file, '.*'))
+
+    FileUtils.mkdir_p(output_dir)
+
+    cabinet.files.each do |file|
+      output_path = File.join(output_dir, file.name.gsub('\\', '/'))
+      FileUtils.mkdir_p(File.dirname(output_path))
+      File.write(output_path, file.data, mode: 'wb')
+    end
+  end
+end
+
+# Usage
+processor = RobustBatchProcessor.new('cabs', 'extracted', log_file: 'extraction.log')
+processor.process_all
+----
+
+=== See Also
+
+* xref:guides/basic-usage/extracting-files.adoc[Extracting Files]
+* xref:guides/advanced-usage/error-handling.adoc[Error Handling]
+* xref:guides/advanced-usage/performance-tuning.adoc[Performance Tuning]

@@ -1,0 +1,59 @@
+---
+layout: default
+title: Migration Guide
+parent: Appendix
+nav_order: 6
+---
+
+== Migration Guide
+
+=== From cabextract
+
+==== Command Line
+
+[options="header"]
+|===
+| cabextract | Cabriolet
+| `cabextract archive.cab` | `cabriolet cab extract archive.cab`
+| `cabextract -d output archive.cab` | `cabriolet cab extract archive.cab -o output`
+| `cabextract -l archive.cab` | `cabriolet cab list archive.cab`
+| `cabextract -t archive.cab` | `cabriolet cab test archive.cab`
+|===
+
+==== Ruby API
+
+Cabextract doesn't provide Ruby API. Cabriolet offers full programmatic access.
+
+=== From libmspack
+
+==== C to Ruby
+
+libmspack (C):
+[source,c]
+----
+mscab_decompressor *cabd = mspack_create_cab_decompressor(NULL);
+mscabd_cabinet *cab = cabd->open(cabd, "archive.cab");
+----
+
+Cabriolet (Ruby):
+[source,ruby]
+----
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+----
+
+=== From 7-Zip
+
+[options="header"]
+|===
+| 7-Zip | Cabriolet
+| `7z x archive.cab` | `cabriolet cab extract archive.cab`
+| `7z l archive.cab` | `cabriolet cab list archive.cab`
+| `7z a archive.cab files/*` | `cabriolet cab compress files/ archive.cab`
+|===
+
+=== Key Differences
+
+* **Ruby-native**: No external dependencies
+* **Model-based**: Type-safe data structures
+* **Modern API**: Object-oriented design
+* **Extensible**: Easy to add custom handlers

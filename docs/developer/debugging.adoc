@@ -1,0 +1,39 @@
+---
+layout: default
+title: Debugging
+parent: Developer
+nav_order: 4
+---
+
+== Debugging
+
+=== Verbose Output
+
+Enable verbose logging:
+
+[source,shell]
+----
+cabriolet cab extract archive.cab --verbose
+----
+
+=== Binary Inspection
+
+Use hex editors to inspect binary data:
+
+[source,shell]
+----
+hexdump -C archive.cab | head -20
+----
+
+=== Debug Mode
+
+[source,ruby]
+----
+Cabriolet.logger.level = Logger::DEBUG
+----
+
+=== Common Issues
+
+* Checksum errors: Try salvage mode
+* Format errors: Verify file is correct format
+* I/O errors: Check file permissions

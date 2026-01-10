@@ -1,0 +1,266 @@
+---
+title: CLI Reference
+parent: Reference
+has_children: true
+nav_order: 1
+---
+
+== Command-Line Interface Reference
+
+=== Purpose
+
+Complete reference for all Cabriolet command-line tools, organized by format. Use this section to look up command syntax, options, and examples.
+
+=== References
+
+* <<../../guides/basic-usage/index#,Basic Usage Guides>>
+* <<../api/index#,API Reference>>
+* <<global-options#,Global Options>>
+
+=== Concepts
+
+Cabriolet provides command-line tools for all supported formats. Commands follow a consistent pattern, with format-specific prefixes (e.g., `chm-`, `kwaj-`) for non-CAB formats.
+
+=== Quick Command Index
+
+[cols="2,3,1"]
+|===
+|Command |Purpose |Format
+
+|`list`
+|List CAB contents
+|<<cab-commands#list,CAB>>
+
+|`extract`
+|Extract CAB files
+|<<cab-commands#extract,CAB>>
+
+|`info`
+|Show CAB details
+|<<cab-commands#info,CAB>>
+
+|`test`
+|Test CAB integrity
+|<<cab-commands#test,CAB>>
+
+|`search`
+|Find embedded CABs
+|<<cab-commands#search,CAB>>
+
+|`create`
+|Create CAB archive
+|<<cab-commands#create,CAB>>
+
+|`chm-list`
+|List CHM contents
+|<<chm-commands#chm-list,CHM>>
+
+|`chm-extract`
+|Extract CHM files
+|<<chm-commands#chm-extract,CHM>>
+
+|`chm-info`
+|Show CHM details
+|<<chm-commands#chm-info,CHM>>
+
+|`chm-create`
+|Create CHM file
+|<<chm-commands#chm-create,CHM>>
+
+|`expand`
+|Expand SZDD file
+|<<szdd-commands#expand,SZDD>>
+
+|`compress`
+|Compress to SZDD
+|<<szdd-commands#compress,SZDD>>
+
+|`szdd-info`
+|Show SZDD details
+|<<szdd-commands#szdd-info,SZDD>>
+
+|`kwaj-extract`
+|Extract KWAJ file
+|<<kwaj-commands#kwaj-extract,KWAJ>>
+
+|`kwaj-compress`
+|Compress to KWAJ
+|<<kwaj-commands#kwaj-compress,KWAJ>>
+
+|`kwaj-info`
+|Show KWAJ details
+|<<kwaj-commands#kwaj-info,KWAJ>>
+
+|`hlp-extract`
+|Extract HLP file
+|<<hlp-commands#hlp-extract,HLP>>
+
+|`hlp-create`
+|Create HLP file
+|<<hlp-commands#hlp-create,HLP>>
+
+|`hlp-info`
+|Show HLP details
+|<<hlp-commands#hlp-info,HLP>>
+
+|`lit-extract`
+|Extract LIT file
+|<<lit-commands#lit-extract,LIT>>
+
+|`lit-create`
+|Create LIT file
+|<<lit-commands#lit-create,LIT>>
+
+|`lit-info`
+|Show LIT details
+|<<lit-commands#lit-info,LIT>>
+
+|`oab-extract`
+|Extract OAB file
+|<<oab-commands#oab-extract,OAB>>
+
+|`oab-create`
+|Create OAB file
+|<<oab-commands#oab-create,OAB>>
+
+|`oab-info`
+|Show OAB details
+|<<oab-commands#oab-info,OAB>>
+|===
+
+=== Commands by Format
+
+==== CAB (Cabinet Files)
+
+See <<cab-commands#,CAB Commands>> for complete documentation:
+
+* `list FILE` - List archive contents
+* `extract FILE [OUTPUT_DIR]` - Extract all files
+* `info FILE` - Show detailed information
+* `test FILE` - Verify archive integrity
+* `search FILE` - Find embedded CAB files
+* `create OUTPUT FILES...` - Create new archive
+
+==== CHM (Compiled HTML Help)
+
+See <<chm-commands#,CHM Commands>> for complete documentation:
+
+* `chm-list FILE` - List CHM contents
+* `chm-extract FILE [OUTPUT_DIR]` - Extract CHM files
+* `chm-info FILE` - Show CHM details
+* `chm-create OUTPUT FILES...` - Create CHM file
+
+==== SZDD (Single-file LZSS)
+
+See <<szdd-commands#,SZDD Commands>> for complete documentation:
+
+* `expand FILE [OUTPUT]` - Expand compressed file
+* `compress FILE [OUTPUT]` - Compress to SZDD
+* `szdd-info FILE` - Show file details
+
+==== KWAJ (KWAJ Compression)
+
+See <<kwaj-commands#,KWAJ Commands>> for complete documentation:
+
+* `kwaj-extract FILE [OUTPUT]` - Extract KWAJ file
+* `kwaj-compress FILE [OUTPUT]` - Compress to KWAJ
+* `kwaj-info FILE` - Show file details
+
+==== HLP (Windows Help)
+
+See <<hlp-commands#,HLP Commands>> for complete documentation:
+
+* `hlp-extract FILE [OUTPUT_DIR]` - Extract HLP file
+* `hlp-create OUTPUT FILES...` - Create HLP file
+* `hlp-info FILE` - Show file details
+
+==== LIT (Microsoft Reader)
+
+See <<lit-commands#,LIT Commands>> for complete documentation:
+
+* `lit-extract FILE [OUTPUT_DIR]` - Extract LIT file
+* `lit-create OUTPUT FILES...` - Create LIT file
+* `lit-info FILE` - Show file details
+
+==== OAB (Offline Address Book)
+
+See <<oab-commands#,OAB Commands>> for complete documentation:
+
+* `oab-extract FILE [OUTPUT_DIR]` - Extract OAB file
+* `oab-create OUTPUT FILES...` - Create OAB file
+* `oab-info FILE` - Show file details
+
+=== Global Options
+
+All commands support these options:
+
+* `--verbose, -v` - Enable verbose output with detailed progress
+* `--help, -h` - Display command help and usage information
+* `--version` - Show Cabriolet version
+
+See <<global-options#,Global Options>> for complete details.
+
+=== Common Patterns
+
+==== Getting Help
+
+[source,bash]
+----
+# General help
+cabriolet --help
+
+# Command-specific help
+cabriolet extract --help
+cabriolet chm-list --help
+----
+
+==== Verbose Output
+
+[source,bash]
+----
+# Enable detailed progress
+cabriolet --verbose extract archive.cab
+cabriolet -v list archive.cab
+----
+
+==== Output Redirection
+
+[source,bash]
+----
+# Save list to file
+cabriolet list archive.cab > contents.txt
+
+# Extract with progress logging
+cabriolet --verbose extract archive.cab 2>&1 | tee extract.log
+----
+
+=== Exit Codes
+
+All commands use standard exit codes:
+
+* `0` - Success
+* `1` - General error
+* `2` - Invalid arguments
+* `3` - File not found
+* `4` - Permission denied
+* `5` - Corrupt archive
+* `6` - Unsupported format
+
+=== Environment Variables
+
+Commands respect these environment variables:
+
+* `TMPDIR` - Temporary directory for operations
+* `CABRIOLET_VERBOSE` - Enable verbose mode (set to `1`)
+
+=== Next Steps
+
+* Choose your format and review its command reference
+* Learn about <<global-options#,global options>> available to all commands
+* See <<../../guides/basic-usage/index#,Basic Usage Guides>> for usage examples
+
+=== Bibliography
+
+* <<../api/index#,API Reference>>
+* <<../../guides/index#,Usage Guides>>
+* https://github.com/omnizip/cabriolet[Cabriolet on GitHub]

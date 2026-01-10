@@ -1,0 +1,569 @@
+---
+title: CHM Commands
+parent: CLI Reference
+grand_parent: Reference
+nav_order: 2
+---
+
+== CHM Commands Reference
+
+=== Purpose
+
+Complete command-line reference for all CHM (Microsoft Compiled HTML Help) format operations. This document provides detailed syntax, options, and examples for the 4 CHM commands.
+
+=== References
+
+* <<../../guides/formats/chm-format#,CHM Format Guide>>
+* <<../api/chm-api#,CHM API Reference>>
+* <<global-options#,Global Options>>
+
+=== Concepts
+
+CHM commands follow the pattern: `cabriolet COMMAND [OPTIONS] FILE [ARGS]`. Each command operates on CHM (Compiled HTML Help) files for listing, extracting, creating, and getting information.
+
+=== Command Overview
+
+[cols="1,3"]
+|===
+|Command |Purpose
+
+|<<chm-list,chm-list>>
+|List contents of a CHM file
+
+|<<chm-extract,chm-extract>>
+|Extract files from a CHM archive
+
+|<<chm-info,chm-info>>
+|Display detailed CHM information
+
+|<<chm-create,chm-create>>
+|Create new CHM file
+|===
+
+'''
+
+[[chm-list]]
+=== chm-list - List CHM Contents
+
+Display files contained in a CHM archive without extracting them.
+
+==== Syntax
+
+[source,text]
+----
+cabriolet chm-list [OPTIONS] FILE
+----
+
+==== Parameters
+
+`FILE`:: (required) Path to the CHM file to list
+
+==== Options
+
+`--verbose, -v`:: Show detailed file information including section and size
+
+==== Returns
+
+* Exit code 0 on success
+* Exit code 1 on error
+* Exit code 3 if file not found
+
+==== Description
+
+The `chm-list` command displays all files contained in a CHM archive, showing file names, sizes, and which section (compressed or uncompressed) they are stored in.
+
+==== Examples
+
+.Basic listing
+[source,bash]
+----
+cabriolet chm-list help.chm
+----
+
+.Output
+[source,text]
+----
+CHM File: help.chm
+Version: 3
+Language: 1033
+Chunks: 512, Chunk Size: 4096
+
+Files:
+  /index.html (15,234 bytes, MSCompressed)
+  /style.css (2,048 bytes, MSCompressed)
+  /images/logo.png (8,192 bytes, Uncompressed)
+  /#SYSTEM (512 bytes, Uncompressed)
+
+Total: 4 files
+----
+
+.Verbose listing
+[source,bash]
+----
+cabriolet chm-list --verbose help.chm
+----
+
+.Output
+[source,text]
+----
+CHM File: help.chm
+Version: 3
+Language: 1033
+Chunks: 512
+Chunk Size: 4096
+Directory offset: 8192
+First PMGL: 0
+Last PMGL: 15
+
+Files:
+  /index.html
+    Size: 15,234 bytes
+    Section: 1 (MSCompressed)
+
+  /style.css
+    Size: 2,048 bytes
+    Section: 1 (MSCompressed)
+
+  /images/logo.png
+    Size: 8,192 bytes
+    Section: 0 (Uncompressed)
+
+  /#SYSTEM
+    Size: 512 bytes
+    Section: 0 (Uncompressed)
+    System file
+
+Total: 4 files
+Compressed files: 2
+Uncompressed files: 2
+----
+
+==== Common Errors
+
+* **File not found**: Verify the CHM file path is correct
+* **Invalid CHM signature**: File is not a valid CHM archive
+* **Permission denied**: Ensure read permissions on the CHM file
+
+==== See Also
+
+* <<chm-info,chm-info>> - For detailed archive information
+* <<../../guides/formats/chm-format#listing-chm-contents,CHM Format Guide - Listing Contents>>
+
+'''
+
+[[chm-extract]]
+=== chm-extract - Extract CHM Files
+
+Extract all files from a CHM archive to a directory.
+
+==== Syntax
+
+[source,text]
+----
+cabriolet chm-extract [OPTIONS] FILE [OUTPUT_DIR]
+----
+
+==== Parameters
+
+`FILE`:: (required) Path to the CHM file to extract
+
+`OUTPUT_DIR`:: (optional) Directory to extract files to (default: current directory)
+
+==== Options
+
+`--output, -o`:: Output directory (alternative to positional argument)
+
+`--verbose, -v`:: Show extraction progress for each file
+
+==== Returns
+
+* Exit code 0 on success
+* Exit code 1 on error
+* Exit code 3 if file not found
+* Exit code 4 if permission denied
+
+==== Description
+
+The `chm-extract` command extracts all files from a CHM archive, recreating the directory structure as stored in the CHM. System files (starting with `/`) are also extracted.
+
+==== Examples
+
+.Extract to current directory
+[source,bash]
+----
+cabriolet chm-extract help.chm
+----
+
+.Extract to specific directory
+[source,bash]
+----
+cabriolet chm-extract help.chm output/
+----
+
+.Output
+[source,text]
+----
+Extracted 15 file(s) to output/
+----
+
+.Extract with verbose output
+[source,bash]
+----
+cabriolet chm-extract --verbose help.chm extracted/
+----
+
+.Output
+[source,text]
+----
+Opening help.chm...
+Version: 3
+Language: 1033
+Files: 15
+
+Extracting to extracted/
+  /index.html (15,234 bytes)... OK
+  /style.css (2,048 bytes)... OK
+  /images/logo.png (8,192 bytes)... OK
+  /images/icon.gif (1,024 bytes)... OK
+  /#SYSTEM (512 bytes)... OK
+  ...
+
+Extraction complete
+Total: 15 files extracted
+----
+
+.Using output option
+[source,bash]
+----
+cabriolet chm-extract -o docs/ help.chm
+----
+
+==== Common Errors
+
+* **Cannot create output directory**: Verify write permissions
+* **Disk full**: Ensure sufficient disk space for extraction
+* **LZX decompression failed**: CHM compressed section is corrupted
+* **Invalid directory chunk**: CHM directory structure is damaged
+
+==== See Also
+
+* <<chm-info,chm-info>> - Check CHM structure before extraction
+* <<../../guides/formats/chm-format#extracting-files,CHM Format Guide - Extracting>>
+
+'''
+
+[[chm-info]]
+=== chm-info - Show CHM Information
+
+Display detailed information about a CHM archive including structure, sections, and files.
+
+==== Syntax
+
+[source,text]
+----
+cabriolet chm-info [OPTIONS] FILE
+----
+
+==== Parameters
+
+`FILE`:: (required) Path to the CHM file to analyze
+
+==== Options
+
+`--verbose, -v`:: Show additional technical details
+
+==== Returns
+
+* Exit code 0 on success
+* Exit code 1 on error
+* Exit code 3 if file not found
+
+==== Description
+
+The `chm-info` command provides comprehensive information about a CHM archive, including version, language, directory structure, sections, and file listings.
+
+==== Examples
+
+.Basic information
+[source,bash]
+----
+cabriolet chm-info help.chm
+----
+
+.Output
+[source,text]
+----
+CHM File Information
+==================================================
+Filename: help.chm
+Version: 3
+Language ID: 1033
+Timestamp: 2024-01-15 14:30:00
+Size: 524,288 bytes
+
+Directory:
+  Offset: 8192
+  Chunks: 512
+  Chunk Size: 4096
+  First PMGL: 0
+  Last PMGL: 15
+
+Sections:
+  Section 0 (Uncompressed): offset 2048
+  Section 1 (MSCompressed): LZX compression
+
+Files: 15 regular, 3 system
+
+Regular Files:
+  /index.html
+    Size: 15,234 bytes (Sec1)
+  /style.css
+    Size: 2,048 bytes (Sec1)
+  /images/logo.png
+    Size: 8,192 bytes (Sec0)
+----
+
+.Verbose information
+[source,bash]
+----
+cabriolet chm-info --verbose help.chm
+----
+
+.Output
+[source,text]
+----
+CHM File Information
+==================================================
+Filename: help.chm
+Version: 3
+Language ID: 1033 (English - United States)
+Timestamp: 2024-01-15 14:30:00
+Size: 524,288 bytes
+
+Directory Structure:
+  Offset: 8192
+  Chunks: 512
+  Chunk Size: 4096 bytes
+  First PMGL: 0
+  Last PMGL: 15
+  Directory pages: 16
+
+Sections:
+  Section 0 (Uncompressed):
+    Offset: 2048
+    Files: 5
+
+  Section 1 (MSCompressed):
+    Compression: LZX
+    Files: 10
+
+File Statistics:
+  Total files: 15
+  Regular files: 12
+  System files: 3
+
+  Compressed (Sec1): 10 files
+  Uncompressed (Sec0): 5 files
+
+Regular Files:
+  /index.html
+    Size: 15,234 bytes
+    Section: 1 (MSCompressed)
+
+  /style.css
+    Size: 2,048 bytes
+    Section: 1 (MSCompressed)
+
+  /images/logo.png
+    Size: 8,192 bytes
+    Section: 0 (Uncompressed)
+
+System Files:
+  /#SYSTEM
+    Size: 512 bytes
+    Section: 0 (Uncompressed)
+  /#TOPICS
+    Size: 1,024 bytes
+    Section: 0 (Uncompressed)
+  /#URLSTR
+    Size: 256 bytes
+    Section: 0 (Uncompressed)
+----
+
+==== Common Errors
+
+* **Invalid CHM signature**: File is not a valid CHM archive
+* **Corrupt directory**: CHM directory structure is damaged
+
+==== See Also
+
+* <<chm-list,chm-list>> - For simple file listing
+* <<../../guides/formats/chm-format#getting-chm-information,CHM Format Guide - Info>>
+
+'''
+
+[[chm-create]]
+=== chm-create - Create CHM File
+
+Create a new CHM file from HTML and other files.
+
+==== Syntax
+
+[source,text]
+----
+cabriolet chm-create [OPTIONS] OUTPUT FILES...
+----
+
+==== Parameters
+
+`OUTPUT`:: (required) Path for the new CHM file
+
+`FILES...`:: (required) One or more files to add
+
+==== Options
+
+`--window-bits=SIZE`:: LZX window size in bits: 15-21 (default: 16)
+
+`--verbose, -v`:: Show creation progress
+
+==== Returns
+
+* Exit code 0 on success
+* Exit code 1 on error
+* Exit code 2 if no files specified
+* Exit code 3 if source files not found
+* Exit code 4 if permission denied
+
+==== Description
+
+The `chm-create` command builds a new CHM archive from HTML and resource files. HTML files are compressed in Section 1 (MSCompressed), while images and other media are stored uncompressed in Section 0.
+
+==== Examples
+
+.Create with default settings
+[source,bash]
+----
+cabriolet chm-create help.chm index.html style.css logo.png
+----
+
+.Output
+[source,text]
+----
+Created help.chm (45,056 bytes, 3 files)
+----
+
+.Create with larger LZX window
+[source,bash]
+----
+cabriolet chm-create --window-bits=21 help.chm docs/*.html
+----
+
+.Output
+[source,text]
+----
+Created help.chm (128,512 bytes, 15 files)
+----
+
+.Create with verbose output
+[source,bash]
+----
+cabriolet chm-create --verbose --window-bits=18 help.chm index.html style.css
+----
+
+.Output
+[source,text]
+----
+Creating help.chm with window_bits: 18
+
+Adding files:
+  index.html -> /index.html (compressed)
+    Original: 15,234 bytes
+    Section: 1 (MSCompressed)
+
+  style.css -> /style.css (compressed)
+    Original: 2,048 bytes
+    Section: 1 (MSCompressed)
+
+Writing CHM structure...
+  ITSF header: 96 bytes
+  Directory chunks: 4,096 bytes
+  Section 0 (Uncompressed): 0 bytes
+  Section 1 (MSCompressed): 8,192 bytes
+
+Created help.chm
+  Total: 2 files
+  Compressed size: 12,384 bytes
+  Compression ratio: 28.1%
+----
+
+.Create from directory
+[source,bash]
+----
+cabriolet chm-create help.chm html/*.html images/*.png
+----
+
+==== Common Errors
+
+* **No files specified**: Provide at least one file to add
+* **Cannot create output file**: Verify write permissions and disk space
+* **Source file not found**: Check all file paths are correct
+* **Window bits out of range**: Use value between 15 and 21
+
+==== See Also
+
+* <<../../guides/formats/chm-format#creating-chm-files,CHM Format Guide - Creating>>
+* <<../../guides/compression/lzx-compression#,LZX Compression>>
+
+'''
+
+=== Global Options
+
+All CHM commands support these global options:
+
+`--verbose, -v`:: Enable verbose output with detailed progress
+
+`--help, -h`:: Display command help
+
+`--version`:: Show Cabriolet version
+
+See <<global-options#,Global Options>> for complete details.
+
+=== Exit Codes
+
+[cols="1,3"]
+|===
+|Code |Meaning
+
+|0
+|Success
+
+|1
+|General error
+
+|2
+|Invalid arguments
+
+|3
+|File not found
+
+|4
+|Permission denied
+
+|5
+|Corrupt archive
+
+|6
+|Unsupported format
+|===
+
+=== Next Steps
+
+* Review <<../../guides/formats/chm-format#,CHM Format Guide>> for usage examples
+* Study <<../api/chm-api#,CHM API Reference>> for Ruby integration
+* Learn about <<../../guides/compression/lzx-compression#,LZX compression>>
+
+=== Bibliography
+
+* <<../../guides/formats/chm-format#,CHM Format Guide>>
+* <<../api/chm-api#,CHM API Reference>>
+* https://www.nongnu.org/chmspec/latest/[Unofficial CHM Format Specification]

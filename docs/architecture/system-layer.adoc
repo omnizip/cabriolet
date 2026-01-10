@@ -1,0 +1,42 @@
+---
+layout: default
+title: System Layer
+parent: Architecture
+nav_order: 2
+---
+
+== System Layer
+:toc:
+
+=== Purpose
+
+The system layer provides platform-independent I/O abstraction.
+
+=== Components
+
+* **IOSystem**: Handle factory
+* **FileHandle**: File system I/O
+* **MemoryHandle**: In-memory buffers
+
+=== Design
+
+[source]
+----
+IOSystem
+   ├── open(filename, mode) → Handle
+   └── close(handle)
+
+Handle (interface)
+   ├── read(size) → data
+   ├── write(data) → bytes_written
+   ├── seek(offset, whence) → position
+   ├── tell() → position
+   ├── eof?() → boolean
+   ├── size() → total_size
+   └── close()
+----
+
+=== Bibliography
+
+* xref:../reference/api/system-io.adoc[System I/O API]
+* xref:../concepts/io-abstraction.adoc[I/O Abstraction]

@@ -1,0 +1,667 @@
+---
+layout: default
+title: Extracting from Windows Installer
+parent: Examples
+---
+
+== Extracting from Windows Installer
+
+=== Overview
+
+Many Windows installers (MSI packages, setup.exe files) contain embedded CAB archives. This guide shows how to identify, extract, and process these embedded archives using Cabriolet.
+
+=== Understanding Installer CAB Files
+
+==== Common Installer Types
+
+[cols="1,2,2", options="header"]
+|===
+| Type | Structure | CAB Location
+
+| MSI Package
+| Compound document
+| Embedded as stream in MSI database
+
+| Setup.exe (self-extracting)
+| PE executable + CAB
+| Appended to or embedded in EXE
+
+| InstallShield
+| Custom format
+| Multiple CABs referenced by setup
+
+| NSIS Installer
+| Custom archive
+| May contain CAB internally
+|===
+
+==== Identifying Embedded CABs
+
+CAB files have the magic signature `MSCF` (0x4D534346). Search for this signature in installer files.
+
+=== Basic Extraction from MSI
+
+==== Example 1: Extract CAB from MSI Database
+
+MSI files are OLE compound documents. Extract the CAB stream first:
+
+[source,ruby]
+----
+#!/usr/bin/env ruby
+require 'cabriolet'
+require 'tempfile'
+
+# Extract CAB from MSI using Windows API or OLE library
+# This example assumes you've already extracted the CAB stream
+def extract_msi_contents(msi_path, output_dir)
+  puts "Processing MSI: #{msi_path}"
+
+  # Step 1: Extract CAB from MSI database
+  # (In practice, use a library like ruby-ole or call msiexec)
+  cab_data = extract_cab_from_msi(msi_path)
+
+  # Step 2: Create temporary CAB file
+  Tempfile.create(['installer', '.cab']) do |temp_cab|
+    temp_cab.binmode
+    temp_cab.write(cab_data)
+    temp_cab.flush
+
+    # Step 3: Extract CAB contents
+    cabinet = Cabriolet::CAB::Parser.new.parse(temp_cab.path)
+
+    puts "Found #{cabinet.files.count} files in cabinet"
+
+    # Step 4: Extract all files
+    cabinet.files.each do |file|
+      output_path = File.join(output_dir, file.name)
+
+      # Create directory structure
+      FileUtils.mkdir_p(File.dirname(output_path))
+
+      # Extract file
+      puts "Extracting: #{file.name} (#{file.size} bytes)"
+      File.write(output_path, file.data, mode: 'wb')
+
+      # Preserve attributes if on Windows
+      if Gem.win_platform?
+        set_file_attributes(output_path, file.attributes)
+      end
+    end
+  end
+
+  puts "Extraction complete!"
+end
+
+# Helper: Extract CAB stream from MSI
+def extract_cab_from_msi(msi_path)
+  # Using Windows API through fiddle
+  require 'fiddle'
+  require 'fiddle/import'
+
+  # This is simplified - in production use a proper MSI library
+  File.binmode do |f|
+    File.open(msi_path, 'rb') do |msi|
+      # Search for MSCF signature
+      data = msi.read
+      cab_offset = data.index("MSCF")
+
+      if cab_offset
+        msi.seek(cab_offset)
+        # Extract CAB data (size determined by CAB header)
+        header = msi.read(36)
+        cab_size = header[8..11].unpack1('L<')
+        msi.seek(cab_offset)
+        msi.read(cab_size)
+      else
+        raise "No CAB found in MSI"
+      end
+    end
+  end
+end
+
+# Helper: Set Windows file attributes
+def set_file_attributes(path, attributes)
+  require 'fiddle'
+  require 'fiddle/import'
+
+  module Kernel32
+    extend Fiddle::Importer
+    dlload 'kernel32'
+    extern 'int SetFileAttributesW(void*, int)'
+  end
+
+  # Convert path to wide string
+  wide_path = (path + "\0").encode('UTF-16LE')
+  Kernel32.SetFileAttributesW(wide_path, attributes)
+end
+
+# Usage
+msi_file = ARGV[0] || 'setup.msi'
+output_dir = ARGV[1] || 'extracted'
+
+extract_msi_contents(msi_file, output_dir)
+----
+
+**Expected Output:**
+
+[source]
+----
+Processing MSI: setup.msi
+Found 145 files in cabinet
+Extracting: program.exe (524288 bytes)
+Extracting: readme.txt (1024 bytes)
+Extracting: data/config.xml (2048 bytes)
+...
+Extraction complete!
+----
+
+=== Cross-Platform MSI Extraction
+
+==== Example 2: Platform-Independent Approach
+
+[source,ruby]
+----
+#!/usr/bin/env ruby
+require 'cabriolet'
+require 'fileutils'
+
+class MSIExtractor
+  def initialize(msi_path)
+    @msi_path = msi_path
+  end
+
+  def extract_to(output_dir)
+    # Find all CAB signatures in the MSI
+    cabs = find_embedded_cabs
+
+    puts "Found #{cabs.count} embedded CAB(s)"
+
+    cabs.each_with_index do |cab_data, index|
+      extract_cab(cab_data, output_dir, index)
+    end
+  end
+
+  private
+
+  def find_embedded_cabs
+    cabs = []
+
+    File.open(@msi_path, 'rb') do |file|
+      data = file.read
+      offset = 0
+
+      # Search for all MSCF signatures
+      while (pos = data.index("MSCF", offset))
+        # Read CAB header to get size
+        file.seek(pos)
+        header = file.read(36)
+
+        # Parse cab size from header
+        cab_size = header[8..11].unpack1('L<')
+
+        # Extract full CAB
+        file.seek(pos)
+        cab_data = file.read(cab_size)
+
+        cabs << cab_data
+        offset = pos + 1
+      end
+    end
+
+    cabs
+  end
+
+  def extract_cab(cab_data, output_dir, index)
+    # Use memory I/O for embedded CAB
+    io = StringIO.new(cab_data)
+    io.set_encoding(Encoding::BINARY)
+
+    begin
+      # Parse CAB from memory
+      cabinet = Cabriolet::CAB::Parser.new.parse_io(io)
+
+      puts "\nCAB ##{index + 1}:"
+      puts "  Files: #{cabinet.files.count}"
+      puts "  Folders: #{cabinet.folders.count}"
+
+      # Extract files
+      cabinet.files.each do |file|
+        extract_file(file, output_dir)
+      end
+    rescue => e
+      puts "Error extracting CAB ##{index + 1}: #{e.message}"
+    end
+  end
+
+  def extract_file(file, output_dir)
+    # Clean filename (remove path separators, etc.)
+    safe_name = file.name.gsub('\\', '/')
+    output_path = File.join(output_dir, safe_name)
+
+    # Create directory
+    FileUtils.mkdir_p(File.dirname(output_path))
+
+    # Extract
+    puts "  #{file.name} (#{file.size} bytes)"
+    File.write(output_path, file.data, mode: 'wb')
+
+    # Set modification time if available
+    if file.date && file.time
+      File.utime(File.atime(output_path), file.datetime, output_path)
+    end
+  rescue => e
+    puts "  Error extracting #{file.name}: #{e.message}"
+  end
+end
+
+# Usage
+if ARGV.empty?
+  puts "Usage: #{$0} <msi_file> [output_dir]"
+  exit 1
+end
+
+extractor = MSIExtractor.new(ARGV[0])
+extractor.extract_to(ARGV[1] || 'extracted')
+----
+
+=== Extracting from Self-Extracting EXE
+
+==== Example 3: Setup.exe with Appended CAB
+
+[source,ruby]
+----
+#!/usr/bin/env ruby
+require 'cabriolet'
+
+class SetupExtractor
+  # Common CAB offset markers in setup files
+  COMMON_MARKERS = [
+    "MSCF",           # Direct CAB
+    "InstallShield",  # InstallShield marker
+    "NSIS",           # NSIS marker
+  ]
+
+  def self.extract(setup_exe, output_dir)
+    # Strategy 1: Look for MSCF signature
+    if cab_offset = find_cab_signature(setup_exe)
+      extract_appended_cab(setup_exe, cab_offset, output_dir)
+      return true
+    end
+
+    # Strategy 2: Try known offsets for common packagers
+    try_common_offsets(setup_exe, output_dir)
+  end
+
+  def self.find_cab_signature(setup_exe)
+    File.open(setup_exe, 'rb') do |file|
+      chunk_size = 1024 * 1024  # 1 MB chunks
+      offset = 0
+
+      while chunk = file.read(chunk_size)
+        if pos = chunk.index("MSCF")
+          return offset + pos
+        end
+        offset += chunk_size - 4  # Overlap to catch boundary cases
+        file.seek(offset)
+      end
+    end
+    nil
+  end
+
+  def self.extract_appended_cab(setup_exe, cab_offset, output_dir)
+    File.open(setup_exe, 'rb') do |file|
+      file.seek(cab_offset)
+
+      # Read CAB header to verify and get size
+      header = file.read(36)
+      return unless header[0..3] == "MSCF"
+
+      cab_size = header[8..11].unpack1('L<')
+
+      # Read full CAB
+      file.seek(cab_offset)
+      cab_data = file.read(cab_size)
+
+      # Extract using Cabriolet
+      io = StringIO.new(cab_data)
+      io.set_encoding(Encoding::BINARY)
+
+      cabinet = Cabriolet::CAB::Parser.new.parse_io(io)
+
+      puts "Found CAB at offset #{cab_offset}"
+      puts "Extracting #{cabinet.files.count} files..."
+
+      cabinet.files.each do |file|
+        output_path = File.join(output_dir, file.name.gsub('\\', '/'))
+        FileUtils.mkdir_p(File.dirname(output_path))
+        File.write(output_path, file.data, mode: 'wb')
+        puts "  #{file.name}"
+      end
+    end
+  end
+
+  def self.try_common_offsets(setup_exe, output_dir)
+    # Try scanning from common section boundaries
+    file_size = File.size(setup_exe)
+
+    # Try last 10MB (CAB usually at end)
+    search_start = [file_size - 10*1024*1024, 0].max
+
+    File.open(setup_exe, 'rb') do |file|
+      file.seek(search_start)
+      data = file.read
+
+      offset = 0
+      while pos = data.index("MSCF", offset)
+        begin
+          file.seek(search_start + pos)
+          extract_cab_at(file, output_dir)
+          return true
+        rescue
+          offset = pos + 1
+        end
+      end
+    end
+
+    puts "No CAB file found in #{setup_exe}"
+    false
+  end
+
+  def self.extract_cab_at(file, output_dir)
+    start_pos = file.pos
+    header = file.read(36)
+    cab_size = header[8..11].unpack1('L<')
+
+    file.seek(start_pos)
+    cab_data = file.read(cab_size)
+
+    io = StringIO.new(cab_data)
+    io.set_encoding(Encoding::BINARY)
+
+    cabinet = Cabriolet::CAB::Parser.new.parse_io(io)
+
+    cabinet.files.each do |f|
+      output_path = File.join(output_dir, f.name.gsub('\\', '/'))
+      FileUtils.mkdir_p(File.dirname(output_path))
+      File.write(output_path, f.data, mode: 'wb')
+    end
+  end
+end
+
+# Usage
+setup_file = ARGV[0] || 'setup.exe'
+output_dir = ARGV[1] || 'extracted'
+
+SetupExtractor.extract(setup_file, output_dir)
+----
+
+=== Batch Extraction
+
+==== Example 4: Extract Multiple Installers
+
+[source,ruby]
+----
+#!/usr/bin/env ruby
+require 'cabriolet'
+require 'fileutils'
+require 'find'
+
+class BatchInstaller Extractor
+  def initialize(input_dir, output_base)
+    @input_dir = input_dir
+    @output_base = output_base
+    @stats = { success: 0, failed: 0, skipped: 0 }
+  end
+
+  def process_all
+    Find.find(@input_dir) do |path|
+      next if File.directory?(path)
+      next unless installer_file?(path)
+
+      process_installer(path)
+    end
+
+    print_summary
+  end
+
+  private
+
+  def installer_file?(path)
+    ext = File.extname(path).downcase
+    ['.msi', '.exe', '.cab'].include?(ext)
+  end
+
+  def process_installer(path)
+    rel_path = path.sub(@input_dir, '')
+    output_dir = File.join(@output_base, rel_path + '_extracted')
+
+    puts "\n#{rel_path}"
+
+    begin
+      if File.extname(path).downcase == '.cab'
+        extract_cab_file(path, output_dir)
+      else
+        extract_embedded(path, output_dir)
+      end
+
+      @stats[:success] += 1
+      puts "  ✓ Success"
+    rescue => e
+      @stats[:failed] += 1
+      puts "  ✗ Failed: #{e.message}"
+      File.write(output_dir + '.error.log', e.full_message)
+    end
+  end
+
+  def extract_cab_file(cab_path, output_dir)
+    cabinet = Cabriolet::CAB::Parser.new.parse(cab_path)
+
+    FileUtils.mkdir_p(output_dir)
+
+    cabinet.files.each do |file|
+      output_path = File.join(output_dir, file.name.gsub('\\', '/'))
+      FileUtils.mkdir_p(File.dirname(output_path))
+      File.write(output_path, file.data, mode: 'wb')
+    end
+
+    puts "  Extracted #{cabinet.files.count} files"
+  end
+
+  def extract_embedded(installer_path, output_dir)
+    # Scan for CAB signature
+    cab_data = nil
+
+    File.open(installer_path, 'rb') do |file|
+      data = file.read
+      if pos = data.index("MSCF")
+        file.seek(pos)
+        header = file.read(36)
+        cab_size = header[8..11].unpack1('L<')
+        file.seek(pos)
+        cab_data = file.read(cab_size)
+      end
+    end
+
+    if cab_data
+      io = StringIO.new(cab_data)
+      io.set_encoding(Encoding::BINARY)
+      cabinet = Cabriolet::CAB::Parser.new.parse_io(io)
+
+      FileUtils.mkdir_p(output_dir)
+
+      cabinet.files.each do |file|
+        output_path = File.join(output_dir, file.name.gsub('\\', '/'))
+        FileUtils.mkdir_p(File.dirname(output_path))
+        File.write(output_path, file.data, mode: 'wb')
+      end
+
+      puts "  Extracted #{cabinet.files.count} files"
+    else
+      @stats[:skipped] += 1
+      puts "  ⊘ No CAB found"
+    end
+  end
+
+  def print_summary
+    puts "\n" + "="*50
+    puts "EXTRACTION SUMMARY"
+    puts "="*50
+    puts "Success: #{@stats[:success]}"
+    puts "Failed:  #{@stats[:failed]}"
+    puts "Skipped: #{@stats[:skipped]}"
+    puts "Total:   #{@stats.values.sum}"
+  end
+end
+
+# Usage
+input_dir = ARGV[0] || 'installers'
+output_dir = ARGV[1] || 'extracted'
+
+extractor = BatchInstallerExtractor.new(input_dir, output_dir)
+extractor.process_all
+----
+
+**Expected Output:**
+
+[source]
+----
+/installers/app1.msi
+  Extracted 45 files
+  ✓ Success
+
+/installers/setup.exe
+  Extracted 128 files
+  ✓ Success
+
+/installers/old_installer.exe
+  ⊘ No CAB found
+
+==================================================
+EXTRACTION SUMMARY
+==================================================
+Success: 2
+Failed:  0
+Skipped: 1
+Total:   3
+----
+
+=== Advanced: Multi-Volume Installer
+
+==== Example 5: Handle Installer Spanning Disks
+
+[source,ruby]
+----
+#!/usr/bin/env ruby
+require 'cabriolet'
+
+class MultiVolumeInstallerExtractor
+  def initialize(first_cab_path)
+    @first_cab = first_cab_path
+    @cab_dir = File.dirname(first_cab_path)
+  end
+
+  def extract_all(output_dir)
+    FileUtils.mkdir_p(output_dir)
+
+    # Parse first cabinet
+    cabinet = Cabriolet::CAB::Parser.new.parse(@first_cab)
+
+    puts "Multi-volume cabinet set detected"
+    puts "Set ID: #{cabinet.header.set_id}"
+    puts "This is cabinet #{cabinet.header.cabinet_number + 1}"
+
+    # Track all cabinets in set
+    cabinet_files = discover_cabinet_set(cabinet)
+
+    puts "\nFound #{cabinet_files.count} cabinets in set:"
+    cabinet_files.each { |cab| puts "  - #{File.basename(cab)}" }
+
+    # Extract spanning files
+    extract_with_continuation(cabinet_files, output_dir)
+  end
+
+  private
+
+  def discover_cabinet_set(cabinet)
+    base_name = File.basename(@first_cab, '.*')
+    cabs = [@first_cab]
+
+    # Look for numbered sequence
+    (1..99).each do |n|
+      next_name = File.join(@cab_dir, "#{base_name}#{n}.cab")
+      break unless File.exist?(next_name)
+      cabs << next_name
+    end
+
+    cabs
+  end
+
+  def extract_with_continuation(cabinet_paths, output_dir)
+    all_files = {}
+
+    cabinet_paths.each do |cab_path|
+      cabinet = Cabriolet::CAB::Parser.new.parse(cab_path)
+
+      cabinet.files.each do |file|
+        if file.continued_from_previous?
+          # Append to existing file
+          all_files[file.name] ||= ""
+          all_files[file.name] << file.data
+        elsif file.continued_to_next?
+          # Start new file
+          all_files[file.name] = file.data
+        else
+          # Complete file in this cabinet
+          output_path = File.join(output_dir, file.name.gsub('\\', '/'))
+          FileUtils.mkdir_p(File.dirname(output_path))
+          File.write(output_path, file.data, mode: 'wb')
+          puts "Extracted: #{file.name}"
+        end
+      end
+    end
+
+    # Write continued files
+    all_files.each do |name, data|
+      output_path = File.join(output_dir, name.gsub('\\', '/'))
+      FileUtils.mkdir_p(File.dirname(output_path))
+      File.write(output_path, data, mode: 'wb')
+      puts "Extracted (spanning): #{name} (#{data.bytesize} bytes)"
+    end
+  end
+end
+
+# Usage
+first_cab = ARGV[0] || 'DISK1.CAB'
+output_dir = ARGV[1] || 'extracted'
+
+extractor = MultiVolumeInstallerExtractor.new(first_cab)
+extractor.extract_all(output_dir)
+----
+
+=== Tips and Best Practices
+
+==== Performance Optimization
+
+1. **Use memory I/O for embedded CABs** - Faster than temp files
+2. **Process in parallel** - Handle multiple installers concurrently
+3. **Stream large files** - Don't load entire installer into memory
+
+==== Error Handling
+
+1. **Validate CAB headers** - Check magic bytes and size
+2. **Handle partial extraction** - Continue on individual file errors
+3. **Log failures** - Track which installers couldn't be processed
+
+==== Compatibility
+
+1. **Test on multiple installer types** - MSI, InstallShield, NSIS, etc.
+2. **Handle different CAB versions** - Version 1.1 through 1.3
+3. **Preserve file metadata** - Attributes, timestamps when possible
+
+=== See Also
+
+* xref:guides/basic-usage/extracting-files.adoc[Extracting Files Guide]
+* xref:guides/advanced-usage/embedded-cabinets.adoc[Embedded Cabinets]
+* xref:guides/advanced-usage/memory-operations.adoc[Memory Operations]
+* xref:guides/advanced-usage/salvage-mode.adoc[Salvage Mode]
+* xref:troubleshooting/corrupted-files.adoc[Handling Corrupted Files]

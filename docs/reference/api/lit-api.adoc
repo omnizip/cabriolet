@@ -1,0 +1,89 @@
+---
+layout: default
+title: LIT API
+parent: API Reference
+grand_parent: Reference
+nav_order: 6
+---
+
+== LIT API Reference
+:toc:
+
+=== Purpose
+
+API reference for [`Cabriolet::LIT::Decompressor`](lib/cabriolet/lit/decompressor.rb) and [`Cabriolet::LIT::Compressor`](lib/cabriolet/lit/compressor.rb) classes for Microsoft Reader LIT files.
+
+=== References
+
+* xref:../../guides/formats/lit-format.adoc[LIT Format Guide]
+* xref:../../reference/cli/lit-commands.adoc[LIT Commands]
+
+== LIT::Decompressor
+
+=== Constructor
+
+==== `new(source, options = {})`
+
+**Parameters:**
+* `source` (String, IO, Handle) - LIT file path or handle
+
+**Example:**
+[source,ruby]
+----
+decompressor = Cabriolet::LIT::Decompressor.new('ebook.lit')
+----
+
+=== Instance Methods
+
+==== `header`
+
+Returns LIT header.
+
+**Returns:** [`Cabriolet::Models::LITHeader`](lib/cabriolet/models/lit_header.rb)
+
+==== `metadata`
+
+Returns ebook metadata.
+
+**Returns:** `Hash` - Title, author, etc.
+
+==== `extract_content(output_dir)`
+
+Extracts ebook content.
+
+==== `extract_to_epub(output_path)`
+
+Converts to EPUB format.
+
+**Parameters:**
+* `output_path` (String) - Output EPUB path
+
+== LIT::Compressor
+
+=== Constructor
+
+==== `new(options = {})`
+
+**Options:**
+* `:title` (String) - Book title
+* `:author` (String) - Author name
+* `:drm` (Boolean) - Enable DRM (default: `false`)
+
+=== Instance Methods
+
+==== `add_chapter(title, content)`
+
+Adds a chapter.
+
+==== `set_metadata(metadata_hash)`
+
+Sets ebook metadata.
+
+==== `compress(output_path)`
+
+Creates LIT file.
+
+=== Bibliography
+
+* xref:../../guides/formats/lit-format.adoc[LIT Format Guide]
+* Microsoft Reader Documentation

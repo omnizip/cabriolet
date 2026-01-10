@@ -1,0 +1,699 @@
+---
+title: OAB Format
+parent: Format Guides
+grand_parent: Guides
+nav_order: 7
+---
+
+== OAB Format Guide
+
+=== Purpose
+
+This guide provides comprehensive documentation for working with Microsoft Outlook Offline Address Book (OAB) files using Cabriolet. OAB is Microsoft's format for distributing compressed address book data to Outlook clients.
+
+=== References
+
+* <<../../getting-started/quick-start#,Quick Start Guide>>
+* <<../../reference/cli/oab-commands#,OAB Commands Reference>>
+* <<../../reference/api/oab-api#,OAB API Reference>>
+* <<../compression/lzx-compression#,LZX Compression>>
+
+=== Concepts
+
+==== What is an OAB File?
+
+OAB (Offline Address Book) files are Microsoft's compressed format for Outlook address data, used in:
+
+* Microsoft Outlook offline mode
+* Exchange Server address book distribution
+* Contact synchronization
+* Incremental address book updates
+* Corporate directory downloads
+
+The format uses LZX compression and supports incremental patches.
+
+==== OAB File Structure
+
+An OAB file can be either a full dump or an incremental patch:
+
+.Full OAB File
+[source,text]
+----
+┌─────────────────────────┐
+│   Full Header           │  Version and metadata (16 bytes)
+│   - Version             │
+│   - Block size          │
+│   - Target size         │
+├─────────────────────────┤
+│   Compressed Blocks     │  LZX compressed data blocks
+│   ┌─────────────────┐   │
+│   │ Block 1         │   │  Address data
+│   ├─────────────────┤   │
+│   │ Block 2         │   │
+│   ├─────────────────┤   │
+│   │ ...             │   │
+│   └─────────────────┘   │
+└─────────────────────────┘
+----
+
+.Incremental Patch File
+[source,text]
+----
+┌─────────────────────────┐
+│   Patch Header          │  Extended header (28 bytes)
+│   - Version             │
+│   - Block size          │
+│   - Source size         │
+│   - Target size         │
+│   - Source CRC          │
+│   - Target CRC          │
+├─────────────────────────┤
+│   Patch Instructions    │  Delta compression
+│   ┌─────────────────┐   │
+│   │ Copy operations │   │  Copy from source
+│   ├─────────────────┤   │
+│   │ New data blocks │   │  LZX compressed
+│   └─────────────────┘   │
+└─────────────────────────┘
+----
+
+**Full Header**: Contains version, block size, and total uncompressed size.
+
+**Patch Header**: Extends full header with source/target information and CRCs.
+
+**Compressed Blocks**: Address data compressed in fixed-size blocks using LZX.
+
+**Patch Instructions**: Delta encoding for efficient incremental updates.
+
+==== Compression Support
+
+OAB files use LZX compression:
+
+* **LZX compression** - Efficient compression for address data
+* **Block-based** - Compressed in configurable block sizes
+* **Default block size** - 32KB (32,768 bytes)
+
+For detailed algorithm information, see <<../compression/lzx-compression#,LZX Compression>>.
+
+==== Incremental Patches
+
+OAB supports efficient incremental updates:
+
+* **Base file** - Full address book (initial download)
+* **Patch file** - Incremental changes (periodic updates)
+* **Delta encoding** - Only changed data transmitted
+* **CRC validation** - Ensures patch applies to correct base
+
+This minimizes bandwidth for address book synchronization.
+
+==== Block-based Compression
+
+OAB compresses data in blocks:
+
+* **Configurable block size** - Default 32KB
+* **Independent blocks** - Each block decompresses separately
+* **Random access** - Can decompress specific blocks
+* **Trade-off** - Larger blocks = better compression, smaller = faster random access
+
+=== Basic Operations
+
+==== Extracting Full OAB Files
+
+Decompress a complete OAB file:
+
+.Command-line
+[source,bash]
+----
+# Extract full OAB
+cabriolet oab-extract full.oab address.dat
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::OAB::Decompressor.new
+
+# Decompress full OAB file
+bytes = decompressor.decompress('full.oab', 'address.dat')
+
+puts "Extracted #{bytes} bytes to address.dat"
+----
+
+.Example Output
+[source,text]
+----
+Extracted full.oab -> address.dat (2,097,152 bytes)
+----
+
+==== Applying Incremental Patches
+
+Apply a patch to a base file:
+
+.Command-line
+[source,bash]
+----
+# Apply patch with base file
+cabriolet oab-extract --base=full.oab patch.oab updated.dat
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::OAB::Decompressor.new
+
+# Apply incremental patch
+bytes = decompressor.decompress_incremental(
+  'patch.oab',
+  'full.oab',
+  'updated.dat'
+)
+
+puts "Applied patch: #{bytes} bytes"
+----
+
+.Example Output
+[source,text]
+----
+Applying patch: patch.oab + full.oab -> updated.dat (2,105,344 bytes)
+----
+
+==== Getting OAB Information
+
+Display OAB file metadata:
+
+.Command-line
+[source,bash]
+----
+# Show full file info
+cabriolet oab-info full.oab
+
+# Show patch file info
+cabriolet oab-info patch.oab
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+io_system = Cabriolet::System::IOSystem.new
+handle = io_system.open('full.oab', Cabriolet::Constants::MODE_READ)
+
+header_data = io_system.read(handle, 16)
+full_header = Cabriolet::Binary::OABStructures::FullHeader.read(header_data)
+
+if full_header.valid?
+  puts "OAB File Information (Full)"
+  puts "Version: #{full_header.version_hi}.#{full_header.version_lo}"
+  puts "Block size: #{full_header.block_max} bytes"
+  puts "Target size: #{full_header.target_size} bytes"
+end
+
+io_system.close(handle)
+----
+
+.Example Output (Full)
+[source,text]
+----
+OAB File Information (Full)
+==================================================
+Filename: full.oab
+Version: 4.0
+Block size: 32768 bytes
+Target size: 2097152 bytes
+----
+
+.Example Output (Patch)
+[source,text]
+----
+OAB File Information (Patch)
+==================================================
+Filename: patch.oab
+Version: 4.0
+Block size: 32768 bytes
+Source size: 2097152 bytes
+Target size: 2105344 bytes
+Source CRC: 0x12345678
+Target CRC: 0x9abcdef0
+----
+
+==== Creating OAB Files
+
+Compress address data to OAB format:
+
+.Command-line
+[source,bash]
+----
+# Create full OAB with default 32KB blocks
+cabriolet oab-create address.dat full.oab
+
+# Create with custom block size
+cabriolet oab-create --block-size=65536 address.dat full.oab
+
+# Create incremental patch
+cabriolet oab-create --base=old.dat new.dat patch.oab
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::OAB::Compressor.new
+
+# Compress full file
+bytes = compressor.compress('address.dat', 'full.oab', block_size: 32_768)
+
+puts "Created full.oab (#{bytes} bytes)"
+----
+
+==== Creating Incremental Patches
+
+Generate patch files for updates:
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::OAB::Compressor.new
+
+# Create incremental patch
+bytes = compressor.compress_incremental(
+  'new-address.dat',
+  'old-address.dat',
+  'patch.oab',
+  block_size: 32_768
+)
+
+puts "Created patch: #{bytes} bytes"
+----
+
+=== Advanced Features
+
+==== Block Size Configuration
+
+Choose appropriate block size:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::OAB::Compressor.new
+
+# Small blocks (16KB) - faster random access
+bytes = compressor.compress(
+  'address.dat',
+  'small-blocks.oab',
+  block_size: 16_384
+)
+
+# Default blocks (32KB) - balanced
+bytes = compressor.compress(
+  'address.dat',
+  'default.oab',
+  block_size: 32_768
+)
+
+# Large blocks (64KB) - better compression
+bytes = compressor.compress(
+  'address.dat',
+  'large-blocks.oab',
+  block_size: 65_536
+)
+----
+
+==== CRC Validation
+
+Verify patch compatibility:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Read patch header
+io_system = Cabriolet::System::IOSystem.new
+handle = io_system.open('patch.oab', Cabriolet::Constants::MODE_READ)
+
+header_data = io_system.read(handle, 28)
+patch_header = Cabriolet::Binary::OABStructures::PatchHeader.read(header_data)
+
+if patch_header.valid?
+  puts "Patch requires base with CRC: 0x#{patch_header.source_crc.to_s(16)}"
+  puts "Patch will produce CRC: 0x#{patch_header.target_crc.to_s(16)}"
+
+  # Verify base file CRC matches
+  # (CRC calculation would be needed)
+end
+
+io_system.close(handle)
+----
+
+==== Version Detection
+
+Detect OAB version:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+io_system = Cabriolet::System::IOSystem.new
+handle = io_system.open('file.oab', Cabriolet::Constants::MODE_READ)
+
+header_data = io_system.read(handle, 16)
+full_header = Cabriolet::Binary::OABStructures::FullHeader.read(header_data)
+
+if full_header.valid?
+  version = "#{full_header.version_hi}.#{full_header.version_lo}"
+
+  case version
+  when "4.0"
+    puts "Outlook 2003/2007 OAB format"
+  when "5.0"
+    puts "Outlook 2010+ OAB format"
+  else
+    puts "Unknown OAB version: #{version}"
+  end
+end
+
+io_system.close(handle)
+----
+
+==== Differential Updates
+
+Create efficient update chains:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::OAB::Compressor.new
+
+# Initial full dump
+compressor.compress('v1.dat', 'full-v1.oab')
+
+# First update
+compressor.compress_incremental('v2.dat', 'v1.dat', 'patch-v1-v2.oab')
+
+# Second update
+compressor.compress_incremental('v3.dat', 'v2.dat', 'patch-v2-v3.oab')
+
+puts "Created update chain: full + 2 patches"
+----
+
+=== Performance Optimization
+
+==== Block Size Selection
+
+Choose block size based on use case:
+
+[cols="1,2,2"]
+|===
+|Block Size |Use Case |Trade-off
+
+|16 KB
+|Frequent random access
+|Faster access, lower compression
+
+|32 KB
+|General purpose (default)
+|Balanced performance
+
+|64 KB
+|Full sequential reads
+|Better compression, slower access
+
+|128 KB
+|Maximum compression
+|Best ratio, slowest access
+|===
+
+==== Incremental vs Full
+
+Decide when to use patches:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+def should_use_patch?(old_file, new_file)
+  old_size = File.size(old_file)
+  new_size = File.size(new_file)
+
+  # If files differ by <10%, use patch
+  change_ratio = (new_size - old_size).abs.to_f / old_size
+
+  change_ratio < 0.1
+end
+
+# Decide on distribution method
+if should_use_patch?('old.dat', 'new.dat')
+  puts "Use incremental patch (small change)"
+  # Create patch
+else
+  puts "Use full file (large change)"
+  # Create full OAB
+end
+----
+
+=== Common Use Cases
+
+==== Exchange Server Distribution
+
+Distribute address books:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::OAB::Compressor.new
+
+# Create initial full OAB
+compressor.compress(
+  'address-book.dat',
+  'full.oab',
+  block_size: 32_768
+)
+
+puts "Created full.oab for initial distribution"
+
+# Later: Create incremental update
+compressor.compress_incremental(
+  'updated-address-book.dat',
+  'address-book.dat',
+  'update-001.oab',
+  block_size: 32_768
+)
+
+puts "Created update-001.oab for incremental sync"
+----
+
+==== Outlook Client Synchronization
+
+Download and apply updates:
+
+[source,ruby]
+----
+require 'cabriolet'
+require 'fileutils'
+
+decompressor = Cabriolet::OAB::Decompressor.new
+
+# First sync: Download full OAB
+if !File.exist?('local-address-book.dat')
+  puts "Downloading full address book..."
+  decompressor.decompress('full.oab', 'local-address-book.dat')
+  puts "Initial sync complete"
+end
+
+# Later: Apply incremental patch
+if File.exist?('update-001.oab')
+  puts "Applying update..."
+
+  # Backup current version
+  FileUtils.cp('local-address-book.dat', 'local-address-book.bak')
+
+  # Apply patch
+  decompressor.decompress_incremental(
+    'update-001.oab',
+    'local-address-book.bak',
+    'local-address-book.dat'
+  )
+
+  puts "Update applied successfully"
+end
+----
+
+==== Bandwidth Optimization
+
+Minimize transfer size:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::OAB::Compressor.new
+
+# Create full and patch versions
+full_bytes = compressor.compress('new.dat', 'full.oab')
+patch_bytes = compressor.compress_incremental('new.dat', 'old.dat', 'patch.oab')
+
+puts "Full file: #{full_bytes} bytes"
+puts "Patch file: #{patch_bytes} bytes"
+puts "Savings: #{((1 - patch_bytes.to_f / full_bytes) * 100).round(1)}%"
+
+# Use patch if significantly smaller
+if patch_bytes < full_bytes * 0.3
+  puts "Decision: Use patch (70%+ savings)"
+else
+  puts "Decision: Use full file"
+end
+----
+
+=== Troubleshooting
+
+==== Common Errors
+
+**"Invalid OAB header"**
+
+The file is not a valid OAB file:
+
+[source,bash]
+----
+# Check file
+hexdump -C file.oab | head -2
+# Should show valid OAB header
+----
+
+**"Source CRC mismatch"**
+
+Patch doesn't match base file:
+
+[source,bash]
+----
+cabriolet oab-info patch.oab
+# Check Source CRC matches your base file
+----
+
+**"Decompression failed"**
+
+LZX decompression error:
+
+[source,bash]
+----
+# Try extracting with verbose output
+cabriolet oab-extract --verbose file.oab output.dat
+----
+
+**"Block size mismatch"**
+
+Patch and base use different block sizes. They must match.
+
+==== Validation
+
+Verify OAB file integrity:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+begin
+  io_system = Cabriolet::System::IOSystem.new
+  handle = io_system.open('file.oab', Cabriolet::Constants::MODE_READ)
+
+  header_data = io_system.read(handle, 28)
+
+  # Try as full header
+  full_header = Cabriolet::Binary::OABStructures::FullHeader.read(header_data[0, 16])
+
+  if full_header.valid?
+    puts "Valid OAB file"
+    puts "Type: Full"
+    puts "Version: #{full_header.version_hi}.#{full_header.version_lo}"
+  else
+    # Try as patch header
+    patch_header = Cabriolet::Binary::OABStructures::PatchHeader.read(header_data)
+
+    if patch_header.valid?
+      puts "Valid OAB file"
+      puts "Type: Patch"
+      puts "Version: #{patch_header.version_hi}.#{patch_header.version_lo}"
+    else
+      puts "Invalid OAB file"
+    end
+  end
+
+  io_system.close(handle)
+rescue StandardError => e
+  puts "Error validating OAB: #{e.message}"
+end
+----
+
+=== Best Practices
+
+1. **Use appropriate block size**:
+   * 32KB for general use
+   * Larger for better compression
+   * Smaller for random access
+
+2. **Validate CRCs**: Always check patch CRCs match base file
+
+3. **Test patches**: Verify patches apply correctly before distribution
+
+4. **Keep base files**: Store base versions for patch creation
+
+5. **Monitor patch size**: Use full file if patch is >30% of full size
+
+6. **Version tracking**: Maintain version chain for updates
+
+=== Format Specifications
+
+==== Full File Header
+
+[source,text]
+----
+Offset  Bytes  Description
+0x0000  4      Version (2 bytes hi, 2 bytes lo)
+0x0004  4      Block max size (little-endian)
+0x0008  4      Target size (little-endian)
+0x000C  4      Reserved
+----
+
+==== Patch File Header
+
+[source,text]
+----
+Offset  Bytes  Description
+0x0000  4      Version (2 bytes hi, 2 bytes lo)
+0x0004  4      Block max size (little-endian)
+0x0008  4      Source size (little-endian)
+0x000C  4      Target size (little-endian)
+0x0010  4      Source CRC32
+0x0014  4      Target CRC32
+0x0018  4      Reserved (2 fields)
+----
+
+==== Compression Method
+
+* **Algorithm**: LZX
+* **Block-based**: Fixed-size blocks
+* **Default block size**: 32,768 bytes (32KB)
+
+For complete format specifications, see <<../../reference/formats/oab-specification#,OAB Specification>>.
+
+=== Next Steps
+
+* Learn about <<../compression/lzx-compression#,LZX compression algorithm>>
+* Review <<../../reference/cli/oab-commands#,complete OAB command reference>>
+* Study <<../../reference/api/oab-api#,OAB API documentation>>
+
+=== Bibliography
+
+* <<../../reference/cli/oab-commands#,OAB Commands Reference>>
+* <<../../reference/api/oab-api#,OAB API Reference>>
+* <<../../reference/formats/oab-specification#,OAB Format Specification>>
+* https://docs.microsoft.com/en-us/previous-versions/office/developer/exchange-server-2010/aa580288(v=exchg.140)[Microsoft Exchange OAB Documentation]

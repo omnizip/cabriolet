@@ -1,0 +1,73 @@
+---
+layout: default
+title: KWAJ API
+parent: API Reference
+grand_parent: Reference
+nav_order: 4
+---
+
+== KWAJ API Reference
+:toc:
+
+=== Purpose
+
+API reference for [`Cabriolet::KWAJ::Decompressor`](lib/cabriolet/kwaj/decompressor.rb) and [`Cabriolet::KWAJ::Compressor`](lib/cabriolet/kwaj/compressor.rb) classes for KWAJ compressed files.
+
+=== References
+
+* xref:../../reference/cli/kwaj-commands.adoc[KWAJ Commands]
+
+== KWAJ::Decompressor
+
+=== Constructor
+
+==== `new(source, options = {})`
+
+**Parameters:**
+* `source` (String, IO, Handle) - KWAJ file path or handle
+
+**Example:**
+[source,ruby]
+----
+decompressor = Cabriolet::KWAJ::Decompressor.new('file.kwj')
+----
+
+=== Instance Methods
+
+==== `header`
+
+Returns KWAJ header.
+
+**Returns:** [`Cabriolet::Models::KWAJHeader`](lib/cabriolet/models/kwaj_header.rb)
+
+==== `extract(output_path)`
+
+Decompresses file.
+
+**Parameters:**
+* `output_path` (String) - Output path
+
+==== `extract_to_memory`
+
+Decompresses to memory.
+
+**Returns:** `String` (binary)
+
+== KWAJ::Compressor
+
+=== Constructor
+
+==== `new(options = {})`
+
+**Options:**
+* `:compression_mode` (Symbol) - Compression mode
+
+=== Instance Methods
+
+==== `compress(input_path, output_path)`
+
+Compresses a file.
+
+=== Bibliography
+
+* Microsoft KWAJ Format Documentation

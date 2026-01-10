@@ -1,0 +1,69 @@
+---
+layout: default
+title: Bibliography
+parent: Appendix
+nav_order: 7
+---
+
+== Bibliography
+
+=== Specifications
+
+* Microsoft Cabinet SDK Documentation
+* Microsoft Cabinet File Format Specification
+* CHM (Compiled HTML Help) Format Specification
+* SZDD File Format Documentation
+* LZX Compression Algorithm Specification
+* RFC 1951 - DEFLATE Compressed Data Format Specification
+
+=== Books
+
+* "The Data Compression Book" by Mark Nelson and Jean-Loup Gailly
+* "Introduction to Data Compression" by Khalid Sayood
+* "Managing Gigabytes" by Ian H. Witten, Alistair Moffat, and Timothy C. Bell
+* "Design Patterns: Elements of Reusable Object-Oriented Software" by Gang of Four
+* "Clean Architecture" by Robert C. Martin
+
+=== Papers
+
+* "A Method for the Construction of Minimum-Redundancy Codes" by D.A. Huffman (1952)
+* "A Universal Algorithm for Sequential Data Compression" by Lempel and Ziv (1977)
+* "Data Compression Using Dynamic Markov Modelling" by Cormack and Horspool (1987)
+
+=== Tools and Libraries
+
+* cabextract - https://www.cabextract.org.uk/
+* libmspack - https://www.cabextract.org.uk/libmspack/
+* 7-Zip - https://www.7-zip.org/
+* Microsoft Cabinet SDK
+
+=== Online Resources
+
+* Microsoft Developer Network (MSDN)
+* Compression FAQ - https://compression.ca/
+* Data Compression Reference Center
+* Archive Team File Format Wiki
+
+=== Related Projects
+
+* Lutaml Model - https://github.com/lutaml/lutaml-model
+* Ruby Documentation - https://ruby-doc.org/
+
+=== Academic Resources
+
+* IEEE Data Compression Conference
+* ACM Transactions on Information Systems
+* Information Theory Society
+
+=== Standards
+
+* ISO/IEC 15948:2004 - PNG Format
+* ISO/IEC 10918 - JPEG Standard
+* RFC 1950, 1951, 1952 - zlib, DEFLATE, gzip
+
+=== Community
+
+* GitHub: https://github.com/[organization]/cabriolet
+* RubyGems: https://rubygems.org/gems/cabriolet
+* Issue Tracker: GitHub Issues
+* Discussions: GitHub Discussions

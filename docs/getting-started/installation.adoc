@@ -1,0 +1,169 @@
+---
+title: Installation
+parent: Getting Started
+nav_order: 1
+---
+
+== Installation
+
+=== Purpose
+
+This guide covers installing Cabriolet on your system. Cabriolet is a pure Ruby gem with no native dependencies, making installation straightforward on any platform that supports Ruby.
+
+=== References
+
+* <<quick-start#,Quick Start Guide>>
+* https://rubygems.org/gems/cabriolet[Cabriolet on RubyGems]
+* https://www.ruby-lang.org/en/documentation/installation/[Installing Ruby]
+
+=== Concepts
+
+Cabriolet is distributed as a Ruby gem through RubyGems.org. It requires Ruby 2.7 or later and has no native dependencies, ensuring compatibility across platforms including Linux, macOS, and Windows.
+
+=== Requirements
+
+==== Ruby Version
+
+Cabriolet requires Ruby 2.7 or later. Check your Ruby version:
+
+[source,bash]
+----
+ruby --version
+----
+
+If you need to install or update Ruby, see the https://www.ruby-lang.org/en/documentation/installation/[official Ruby installation guide].
+
+==== Operating System Support
+
+Cabriolet works on all platforms that support Ruby:
+
+* Linux (all distributions)
+* macOS (10.14+)
+* Windows (10+)
+* BSD systems
+* Any other Ruby-compatible platform
+
+=== Installation Methods
+
+==== Method 1: Installing from RubyGems (Recommended)
+
+Install the latest stable version:
+
+[source,bash]
+----
+gem install cabriolet
+----
+
+This installs both the library and command-line tools.
+
+==== Method 2: Installing from Source
+
+For development or to use unreleased features:
+
+[source,bash]
+----
+git clone https://github.com/omnizip/cabriolet.git
+cd cabriolet
+bundle install
+bundle exec rake install
+----
+
+==== Method 3: Using Bundler in Your Project
+
+Add to your `Gemfile`:
+
+[source,ruby]
+----
+gem 'cabriolet'
+----
+
+Then install:
+
+[source,bash]
+----
+bundle install
+----
+
+=== Verifying Installation
+
+After installation, verify Cabriolet is available:
+
+[source,bash]
+----
+cabriolet --version
+----
+
+You should see output like:
+
+[source,text]
+----
+Cabriolet version 0.1.0
+----
+
+Test basic functionality:
+
+[source,bash]
+----
+cabriolet --help
+----
+
+This displays the available commands.
+
+=== Troubleshooting
+
+==== Command Not Found
+
+If `cabriolet` is not found after installation:
+
+1. Ensure the gem binaries directory is in your PATH:
++
+[source,bash]
+----
+gem environment
+----
++
+Look for the "EXECUTABLE DIRECTORY" path.
+
+2. Add it to your PATH if needed (typically `~/.gem/ruby/X.X.X/bin`):
++
+[source,bash]
+----
+export PATH="$PATH:$(ruby -e 'puts Gem.user_dir')/bin"
+----
+
+==== Permission Errors
+
+If you get permission errors during installation:
+
+1. Use the `--user-install` flag:
++
+[source,bash]
+----
+gem install cabriolet --user-install
+----
+
+2. Or use a Ruby version manager like rbenv or RVM instead of the system Ruby.
+
+==== Version Conflicts
+
+If you encounter dependency conflicts:
+
+[source,bash]
+----
+gem update --system
+gem install cabriolet
+----
+
+=== Next Steps
+
+Now that Cabriolet is installed:
+
+* Continue to <<quick-start#,Quick Start>> to extract your first CAB file
+* Or jump to <<your-first-cab#,Your First CAB>> to create an archive
+* Review the <<../reference/cli/index#,CLI Reference>> for all available commands
+
+=== Bibliography
+
+* https://rubygems.org/gems/cabriolet[Cabriolet on RubyGems]
+* https://guides.rubygems.org/rubygems-basics/[RubyGems Basics]
+* https://bundler.io/[Bundler Documentation]

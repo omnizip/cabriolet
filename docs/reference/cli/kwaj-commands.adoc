@@ -1,0 +1,545 @@
+---
+title: KWAJ Commands
+parent: CLI Reference
+grand_parent: Reference
+nav_order: 4
+---
+
+== KWAJ Commands Reference
+
+=== Purpose
+
+Complete command-line reference for all KWAJ (Installation File) format operations. This document provides detailed syntax, options, and examples for the 3 KWAJ commands.
+
+=== References
+
+* <<../../guides/formats/kwaj-format#,KWAJ Format Guide>>
+* <<../api/kwaj-api#,KWAJ API Reference>>
+* <<global-options#,Global Options>>
+
+=== Concepts
+
+KWAJ commands operate on installation file archives with support for multiple compression methods (none, XOR, SZDD, MSZIP). Each command handles filename embedding and metadata storage.
+
+=== Command Overview
+
+[cols="1,3"]
+|===
+|Command |Purpose
+
+|<<kwaj-extract,kwaj-extract>>
+|Extract KWAJ compressed file
+
+|<<kwaj-compress,kwaj-compress>>
+|Compress file to KWAJ format
+
+|<<kwaj-info,kwaj-info>>
+|Show KWAJ file information
+|===
+
+'''
+
+[[kwaj-extract]]
+=== kwaj-extract - Extract KWAJ File
+
+Extract (decompress) a KWAJ compressed file.
+
+==== Syntax
+
+[source,text]
+----
+cabriolet kwaj-extract [OPTIONS] FILE [OUTPUT]
+----
+
+==== Parameters
+
+`FILE`:: (required) Path to the KWAJ file to extract
+
+`OUTPUT`:: (optional) Output file path (auto-detected from embedded filename if not specified)
+
+==== Options
+
+`--output, -o`:: Output file path (alternative to positional argument)
+
+`--verbose, -v`:: Show extraction progress
+
+==== Returns
+
+* Exit code 0 on success
+* Exit code 1 on error
+* Exit code 3 if file not found
+* Exit code 4 if permission denied
+
+==== Description
+
+The `kwaj-extract` command decompresses KWAJ files using the compression method stored in the header. If the KWAJ file contains an embedded filename, it will be used as the output filename when not explicitly specified.
+
+==== Examples
+
+.Extract with auto-detected name
+[source,bash]
+----
+cabriolet kwaj-extract setup.kwj
+----
+
+.Output
+[source,text]
+----
+Extracted setup.kwj to setup.exe (1,048,576 bytes)
+----
+
+.Extract to specific file
+[source,bash]
+----
+cabriolet kwaj-extract setup.kwj output.exe
+----
+
+.Extract with verbose output
+[source,bash]
+----
+cabriolet kwaj-extract --verbose setup.kwj
+----
+
+.Output
+[source,text]
+----
+Extracting setup.kwj -> setup.exe
+Compression: MSZIP
+Data offset: 64 bytes
+Uncompressed size: 1,048,576 bytes
+Original filename: setup.exe
+
+Decompressing...
+  Progress: 100%
+
+Extracted setup.kwj to setup.exe (1,048,576 bytes)
+----
+
+.Extract using output option
+[source,bash]
+----
+cabriolet kwaj-extract -o extracted.exe data.kwj
+----
+
+.Batch extract
+[source,bash]
+----
+for file in *.kwj; do
+  cabriolet kwaj-extract "$file"
+done
+----
+
+==== Common Errors
+
+* **Invalid KWAJ signature**: File is not a valid KWAJ file
+* **Unsupported compression type**: Unknown compression method
+* **Decompression failed**: Compressed data is corrupted
+* **Missing filename in header**: Output filename must be specified
+
+==== See Also
+
+* <<kwaj-compress,kwaj-compress>> - Compress files to KWAJ format
+* <<kwaj-info,kwaj-info>> - Show file information
+* <<../../guides/formats/kwaj-format#extracting-kwaj-files,KWAJ Format Guide - Extracting>>
+
+'''
+
+[[kwaj-compress]]
+=== kwaj-compress - Compress to KWAJ Format
+
+Compress a file to KWAJ format with configurable compression method.
+
+==== Syntax
+
+[source,text]
+----
+cabriolet kwaj-compress [OPTIONS] FILE [OUTPUT]
+----
+
+==== Parameters
+
+`FILE`:: (required) Path to the file to compress
+
+`OUTPUT`:: (optional) Output file path (default: `<filename>.kwj`)
+
+==== Options
+
+`--output, -o`:: Output file path (alternative to positional argument)
+
+`--compression=METHOD`:: Compression method: `none`, `xor`, `szdd`, `mszip` (default: `szdd`)
+
+`--include-length`:: Include uncompressed length in header
+
+`--filename=NAME`:: Original filename to embed in header
+
+`--extra-data=DATA`:: Extra metadata to include in header
+
+`--verbose, -v`:: Show compression progress
+
+==== Returns
+
+* Exit code 0 on success
+* Exit code 1 on error
+* Exit code 3 if source file not found
+* Exit code 4 if permission denied
+
+==== Description
+
+The `kwaj-compress` command creates KWAJ compressed files with configurable compression method and optional metadata embedding.
+
+==== Examples
+
+.Compress with default SZDD
+[source,bash]
+----
+cabriolet kwaj-compress setup.exe setup.kwj
+----
+
+.Output
+[source,text]
+----
+Compressed setup.exe to setup.kwj (524,288 bytes, szdd compression)
+----
+
+.Compress with MSZIP
+[source,bash]
+----
+cabriolet kwaj-compress --compression=mszip setup.exe setup.kwj
+----
+
+.Compress with embedded filename
+[source,bash]
+----
+cabriolet kwaj-compress --filename=setup.exe --include-length data.bin data.kwj
+----
+
+.Compress with no compression
+[source,bash]
+----
+cabriolet kwaj-compress --compression=none data.bin data.kwj
+----
+
+.Compress with extra metadata
+[source,bash]
+----
+cabriolet kwaj-compress --extra-data="Version: 1.0.0" setup.exe setup.kwj
+----
+
+.Compress with verbose output
+[source,bash]
+----
+cabriolet kwaj-compress --verbose --compression=mszip setup.exe setup.kwj
+----
+
+.Output
+[source,text]
+----
+Compressing setup.exe -> setup.kwj (mszip compression)
+Original size: 1,048,576 bytes
+Including filename: setup.exe
+Including length: yes
+
+Compressing with MSZIP...
+  Progress: 100%
+  Compressed: 524,288 bytes
+  Ratio: 50.0%
+
+Compressed setup.exe to setup.kwj (524,288 bytes, mszip compression)
+----
+
+.Batch compress with metadata
+[source,bash]
+----
+for file in dist/*.exe; do
+  base=$(basename "$file")
+  cabriolet kwaj-compress \
+    --compression=mszip \
+    --filename="$base" \
+    --include-length \
+    "$file" \
+    "compressed/${base}.kwj"
+done
+----
+
+==== Common Errors
+
+* **Source file not found**: Verify input file path
+* **Cannot create output file**: Check write permissions and disk space
+* **Compression failed**: Input file may be unreadable
+* **Invalid compression method**: Use none, xor, szdd, or mszip
+
+==== See Also
+
+* <<kwaj-extract,kwaj-extract>> - Extract KWAJ files
+* <<kwaj-info,kwaj-info>> - Show file information
+* <<../../guides/formats/kwaj-format#compressing-files,KWAJ Format Guide - Compressing>>
+
+'''
+
+[[kwaj-info]]
+=== kwaj-info - Show KWAJ Information
+
+Display detailed information about a KWAJ file.
+
+==== Syntax
+
+[source,text]
+----
+cabriolet kwaj-info [OPTIONS] FILE
+----
+
+==== Parameters
+
+`FILE`:: (required) Path to the KWAJ file to analyze
+
+==== Options
+
+`--verbose, -v`:: Show additional technical details
+
+==== Returns
+
+* Exit code 0 on success
+* Exit code 1 on error
+* Exit code 3 if file not found
+
+==== Description
+
+The `kwaj-info` command displays metadata about a KWAJ file, including compression method, data offset, embedded filename, and extra data.
+
+==== Examples
+
+.Basic information
+[source,bash]
+----
+cabriolet kwaj-info setup.kwj
+----
+
+.Output
+[source,text]
+----
+KWAJ File Information
+==================================================
+Filename: setup.kwj
+Compression: MSZIP
+Data offset: 64 bytes
+Uncompressed size: 1,048,576 bytes
+Original filename: setup.exe
+Extra data: 16 bytes
+  Version: 1.0.0.0
+----
+
+.File without embedded filename
+[source,bash]
+----
+cabriolet kwaj-info data.kwj
+----
+
+.Output
+[source,text]
+----
+KWAJ File Information
+==================================================
+Filename: data.kwj
+Compression: SZDD
+Data offset: 12 bytes
+Uncompressed size: unknown
+----
+
+.Verbose information
+[source,bash]
+----
+cabriolet kwaj-info --verbose setup.kwj
+----
+
+.Output
+[source,text]
+----
+KWAJ File Information
+==================================================
+Filename: setup.kwj
+File size: 524,288 bytes
+
+Header:
+  Signature: KWAJ (0x4B 0x57 0x41 0x4A)
+  Compression type: 3 (MSZIP)
+  Data offset: 64 bytes
+  Flags: filename, length
+
+Compression: MSZIP (DEFLATE-based)
+Uncompressed size: 1,048,576 bytes
+Original filename: setup.exe (9 bytes)
+
+Extra data: 16 bytes
+  Hex: 56 65 72 73 69 6F 6E 3A 20 31 2E 30 2E 30 2E 30
+  Text: Version: 1.0.0.0
+
+Compression Statistics:
+  Compressed size: 524,288 bytes
+  Uncompressed size: 1,048,576 bytes
+  Compression ratio: 50.0%
+  Space saved: 524,288 bytes (50.0%)
+----
+
+.Check multiple files
+[source,bash]
+----
+for file in *.kwj; do
+  echo "=== $file ==="
+  cabriolet kwaj-info "$file"
+  echo
+done
+----
+
+==== Common Errors
+
+* **Invalid KWAJ signature**: File is not a valid KWAJ file
+* **Unsupported compression type**: Unknown compression method in header
+
+==== See Also
+
+* <<kwaj-extract,kwaj-extract>> - Extract KWAJ files
+* <<../../guides/formats/kwaj-format#getting-kwaj-information,KWAJ Format Guide - Info>>
+
+'''
+
+=== Global Options
+
+All KWAJ commands support these global options:
+
+`--verbose, -v`:: Enable verbose output with detailed progress
+
+`--help, -h`:: Display command help
+
+`--version`:: Show Cabriolet version
+
+See <<global-options#,Global Options>> for complete details.
+
+=== Exit Codes
+
+[cols="1,3"]
+|===
+|Code |Meaning
+
+|0
+|Success
+
+|1
+|General error
+
+|2
+|Invalid arguments
+
+|3
+|File not found
+
+|4
+|Permission denied
+
+|5
+|Corrupt file
+
+|6
+|Unsupported format
+|===
+
+=== Compression Methods
+
+[cols="1,2,2"]
+|===
+|Method |Description |Use Case
+
+|none
+|No compression
+|Pre-compressed files, testing
+
+|xor
+|Simple XOR obfuscation
+|Minimal obfuscation, very fast
+
+|szdd
+|LZSS compression
+|Good for text files, balanced
+
+|mszip
+|DEFLATE compression
+|Best ratio, general purpose
+|===
+
+=== Common Workflows
+
+==== Extract Installation Files
+
+[source,bash]
+----
+# Extract all KWAJ files from installer
+mkdir -p extracted
+for file in installer/*.kwj; do
+  cabriolet kwaj-extract "$file" "extracted/$(basename "$file" .kwj)"
+done
+----
+
+==== Create Installer Package
+
+[source,bash]
+----
+# Compress installation files with metadata
+version="2.1.0"
+
+for file in dist/*; do
+  base=$(basename "$file")
+  cabriolet kwaj-compress \
+    --compression=mszip \
+    --filename="$base" \
+    --include-length \
+    --extra-data="Version: $version" \
+    "$file" \
+    "installer/${base}.kwj"
+done
+----
+
+==== Verify Package Integrity
+
+[source,bash]
+----
+# Check all KWAJ files before distribution
+echo "Verifying KWAJ package..."
+for file in package/*.kwj; do
+  if ! cabriolet kwaj-info "$file" > /dev/null 2>&1; then
+    echo "ERROR: Invalid file: $file"
+    exit 1
+  fi
+done
+echo "All files verified successfully"
+----
+
+==== Convert Between Compression Methods
+
+[source,bash]
+----
+# Convert SZDD to MSZIP for better compression
+for file in *.kwj; do
+  # Extract
+  cabriolet kwaj-extract "$file" temp.dat
+
+  # Re-compress with MSZIP
+  cabriolet kwaj-compress \
+    --compression=mszip \
+    --filename="$(basename "$file" .kwj)" \
+    temp.dat \
+    "optimized/$file"
+
+  rm temp.dat
+done
+----
+
+=== Next Steps
+
+* Review <<../../guides/formats/kwaj-format#,KWAJ Format Guide>> for usage examples
+* Study <<../api/kwaj-api#,KWAJ API Reference>> for Ruby integration
+* Learn about <<../../guides/compression/index#,compression algorithms>>
+
+=== Bibliography
+
+* <<../../guides/formats/kwaj-format#,KWAJ Format Guide>>
+* <<../api/kwaj-api#,KWAJ API Reference>>
+* https://www.cabextract.org.uk/[cabextract Documentation]

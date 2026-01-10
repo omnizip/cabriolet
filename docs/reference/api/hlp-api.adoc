@@ -1,0 +1,393 @@
+---
+layout: default
+title: HLP API
+parent: API Reference
+grand_parent: Reference
+nav_order: 5
+---
+
+== HLP API Reference
+:toc:
+
+=== Purpose
+
+API reference for HLP (Windows Help) file operations. Cabriolet supports both HLP format variants:
+
+* **QuickHelp** - DOS-based format (0x4C 0x4E signature)
+* **Windows Help** - Windows 3.x/4.x format (0x35F3/0x3F5F signatures)
+
+=== References
+
+* xref:../../reference/cli/hlp-commands.adoc[HLP Commands]
+* link:../../../specs/windows-help-format-spec.md[Windows Help Format Specification]
+
+== HLP::Decompressor
+
+Main decompressor class that automatically detects and routes to the correct format handler.
+
+=== Constructor
+
+==== `new(io_system = nil)`
+
+**Parameters:**
+* `io_system` (System::IOSystem, nil) - Custom I/O system (optional)
+
+**Example:**
+[source,ruby]
+----
+decompressor = Cabriolet::HLP::Decompressor.new
+----
+
+=== Instance Methods
+
+==== `open(filename)`
+
+Opens and parses an HLP file, automatically detecting format.
+
+**Parameters:**
+* `filename` (String) - Path to HLP file
+
+**Returns:** [`Cabriolet::Models::HLPHeader`](lib/cabriolet/models/hlp_header.rb) or [`Cabriolet::Models::WinHelpHeader`](lib/cabriolet/models/winhelp_header.rb)
+
+**Example:**
+[source,ruby]
+----
+header = decompressor.open('help.hlp')
+
+# Check format
+case header
+when Cabriolet::Models::HLPHeader
+  puts "QuickHelp format (DOS)"
+when Cabriolet::Models::WinHelpHeader
+  puts "Windows Help #{header.version_string}"
+end
+----
+
+==== `extract_all(header, output_dir)`
+
+Extracts all files/topics from HLP archive.
+
+**Parameters:**
+* `header` - Parsed header from `open()`
+* `output_dir` (String) - Output directory path
+
+**Returns:** Integer - Number of files extracted
+
+==== `close(header)`
+
+Closes the HLP file.
+
+**Parameters:**
+* `header` - Header to close
+
+**Returns:** nil
+
+=== Class Methods
+
+==== `extract(filename, output_dir, io_system = nil)`
+
+One-shot extraction.
+
+**Parameters:**
+* `filename` (String) - Path to HLP file
+* `output_dir` (String) - Output directory
+* `io_system` (System::IOSystem, nil) - Optional custom I/O
+
+**Returns:** Integer - Number of files extracted
+
+**Example:**
+[source,ruby]
+----
+count = Cabriolet::HLP::Decompressor.extract('help.hlp', 'output/')
+puts "Extracted #{count} files"
+----
+
+== HLP::Compressor
+
+Main compressor class (creates QuickHelp format by default).
+
+=== Constructor
+
+==== `new(io_system = nil)`
+
+**Parameters:**
+* `io_system` (System::IOSystem, nil) - Custom I/O system (optional)
+
+=== Instance Methods
+
+==== `add_file(source_path, hlp_path, compress: true)`
+
+Adds a file to the archive.
+
+**Parameters:**
+* `source_path` (String) - Source file path
+* `hlp_path` (String) - Path within HLP archive
+* `compress` (Boolean) - Whether to compress (default: true)
+
+==== `add_data(data, hlp_path, compress: true)`
+
+Adds data from memory.
+
+**Parameters:**
+* `data` (String) - Data to add
+* `hlp_path` (String) - Path within HLP archive
+* `compress` (Boolean) - Whether to compress (default: true)
+
+==== `generate(output_file, **options)`
+
+Generates QuickHelp format file.
+
+**Parameters:**
+* `output_file` (String) - Output file path
+* `options` (Hash) - Generation options
+
+**Options:**
+* `:database_name` (String) - Database name for external links (max 13 chars)
+* `:control_character` (Integer) - Control character (default: 0x3A ':')
+* `:case_sensitive` (Boolean) - Case-sensitive contexts (default: false)
+
+**Returns:** Integer - Bytes written
+
+**Example:**
+[source,ruby]
+----
+compressor = Cabriolet::HLP::Compressor.new
+compressor.add_data("Topic 1 text", "topic1")
+compressor.add_data("Topic 2 text", "topic2")
+
+bytes = compressor.generate('help.hlp',
+  database_name: "MyHelp",
+  control_character: 0x3A)
+----
+
+=== Class Methods
+
+==== `create_winhelp(io_system = nil)`
+
+Creates a Windows Help compressor.
+
+**Parameters:**
+* `io_system` (System::IOSystem, nil) - Optional custom I/O
+
+**Returns:** [`HLP::WinHelp::Compressor`](lib/cabriolet/hlp/winhelp/compressor.rb)
+
+**Example:**
+[source,ruby]
+----
+compressor = Cabriolet::HLP::Compressor.create_winhelp
+# Use WinHelp-specific API (see below)
+----
+
+== HLP::WinHelp::Decompressor
+
+Windows Help specific decompressor.
+
+=== Constructor
+
+==== `new(filename, io_system = nil)`
+
+**Parameters:**
+* `filename` (String) - Path to WinHelp file
+* `io_system` (System::IOSystem, nil) - Optional custom I/O
+
+=== Instance Methods
+
+==== `parse`
+
+Parses the WinHelp file structure.
+
+**Returns:** [`Cabriolet::Models::WinHelpHeader`](lib/cabriolet/models/winhelp_header.rb)
+
+==== `extract_internal_file(filename)`
+
+Extracts a specific internal file by name.
+
+**Parameters:**
+* `filename` (String) - Internal filename (e.g., "|SYSTEM", "|TOPIC")
+
+**Returns:** String - Raw file data, or nil if not found
+
+==== `extract_system_file`
+
+Extracts |SYSTEM file (metadata).
+
+**Returns:** String - System file data, or nil
+
+==== `extract_topic_file`
+
+Extracts |TOPIC file (compressed topics).
+
+**Returns:** String - Topic file data (compressed), or nil
+
+==== `decompress_topic(compressed_data, output_size)`
+
+Decompresses topic data using Zeck LZ77.
+
+**Parameters:**
+* `compressed_data` (String) - Compressed topic data
+* `output_size` (Integer) - Expected decompressed size
+
+**Returns:** String - Decompressed topic text
+
+==== `extract_all(output_dir)`
+
+Extracts all internal files to directory.
+
+**Parameters:**
+* `output_dir` (String) - Output directory path
+
+**Returns:** Integer - Number of files extracted
+
+**Example:**
+[source,ruby]
+----
+decompressor = Cabriolet::HLP::WinHelp::Decompressor.new('help.hlp')
+header = decompressor.parse
+
+puts "Version: #{header.version_string}"
+puts "Internal files: #{decompressor.internal_filenames.join(', ')}"
+
+# Extract specific file
+system = decompressor.extract_system_file
+
+# Extract all
+count = decompressor.extract_all('output/')
+----
+
+== HLP::WinHelp::Compressor
+
+Windows Help specific compressor.
+
+=== Constructor
+
+==== `new(io_system = nil)`
+
+**Parameters:**
+* `io_system` (System::IOSystem, nil) - Optional custom I/O
+
+=== Instance Methods
+
+==== `add_internal_file(name, data)`
+
+Adds an internal file.
+
+**Parameters:**
+* `name` (String) - Internal filename (e.g., "|SYSTEM", "|TOPIC")
+* `data` (String) - File data
+
+==== `add_system_file(**options)`
+
+Adds |SYSTEM file with metadata.
+
+**Options:**
+* `:title` (String) - Help file title
+* `:copyright` (String) - Copyright text
+* `:contents` (String) - Contents file path
+
+==== `add_topic_file(topics, compress: true)`
+
+Adds |TOPIC file with topics.
+
+**Parameters:**
+* `topics` (Array<String>) - Array of topic texts
+* `compress` (Boolean) - Whether to compress with Zeck LZ77 (default: true)
+
+==== `generate(output_file, **options)`
+
+Generates Windows Help file.
+
+**Parameters:**
+* `output_file` (String) - Output file path
+* `options` (Hash) - Generation options
+
+**Options:**
+* `:version` (Symbol) - Format version (`:winhelp3` or `:winhelp4`, default: `:winhelp3`)
+
+**Returns:** Integer - Bytes written
+
+**Example:**
+[source,ruby]
+----
+compressor = Cabriolet::HLP::WinHelp::Compressor.new
+
+# Add metadata
+compressor.add_system_file(
+  title: "My Help File",
+  copyright: "Copyright 2025",
+  contents: "contents.hlp")
+
+# Add topics (automatically compressed)
+compressor.add_topic_file([
+  "This is topic 1 with some text",
+  "This is topic 2 with more content"
+], compress: true)
+
+# Generate WinHelp 3.x file
+bytes = compressor.generate('help.hlp', version: :winhelp3)
+
+# Or WinHelp 4.x
+bytes = compressor.generate('help4.hlp', version: :winhelp4)
+----
+
+== HLP::WinHelp::ZeckLZ77
+
+Zeck LZ77 compression/decompression algorithm used by Windows Help files.
+
+=== Constructor
+
+==== `new`
+
+Creates a new Zeck LZ77 instance.
+
+=== Instance Methods
+
+==== `compress(input)`
+
+Compresses data using Zeck LZ77.
+
+**Parameters:**
+* `input` (String) - Uncompressed data
+
+**Returns:** String - Compressed data
+
+==== `decompress(input, output_size)`
+
+Decompresses Zeck LZ77 compressed data.
+
+**Parameters:**
+* `input` (String) - Compressed data
+* `output_size` (Integer) - Expected decompressed size
+
+**Returns:** String - Decompressed data
+
+**Example:**
+[source,ruby]
+----
+zeck = Cabriolet::HLP::WinHelp::ZeckLZ77.new
+
+# Compress
+compressed = zeck.compress("Hello World!")
+
+# Decompress
+decompressed = zeck.decompress(compressed, 12)
+# => "Hello World!"
+----
+
+=== Algorithm Details
+
+**Characteristics:**
+* Sliding window: 4KB (4096 bytes)
+* Minimum match: 3 bytes
+* Maximum match: 271 bytes
+* Flag-based token control (8 tokens per flag byte)
+* Variable-length match encoding (2-3 bytes per match)
+
+**Match Encoding:**
+* Offset: 12 bits (0-4095)
+* Length 3-18: 4 bits (encoded as 0-15)
+* Length 19-271: Extra byte (0-252, add 19)
+
+=== Bibliography
+
+* link:../../../specs/windows-help-format-spec.md[Windows Help Format Specification]
+* helpdeco project (https://github.com/martiniturbide/HelpDeco)

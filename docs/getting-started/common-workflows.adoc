@@ -1,0 +1,414 @@
+---
+layout: default
+title: Common Workflows
+parent: Getting Started
+nav_order: 4
+---
+
+== Common Workflows
+
+=== Purpose
+
+This document provides quick-reference workflows for the most common Cabriolet use cases. These workflows are designed for users who need to accomplish specific tasks quickly without reading extensive documentation.
+
+After reviewing these workflows, you will understand the most frequent operations and be able to perform them efficiently.
+
+Use this guide when you need a quick reference for standard operations.
+
+=== References
+
+* xref:getting-started/quick-start.adoc[Quick Start Guide]
+* xref:guides/basic-usage/index.adoc[Basic Usage Guide]
+* xref:guides/advanced-usage/index.adoc[Advanced Usage Guide]
+
+=== Concepts
+
+==== Workflow
+
+A workflow is a sequence of operations to accomplish a specific goal. Cabriolet supports both simple single-step workflows and complex multi-step processes.
+
+==== Auto-Detection
+
+Cabriolet can automatically detect archive formats, eliminating the need to specify the format type manually.
+
+==== Streaming
+
+For large archives, streaming processes files one at a time to minimize memory usage.
+
+=== Workflow 1: Extract Any Archive
+
+The most common operation - extract files from an archive without knowing its format.
+
+[example]
+====
+[source,ruby]
+----
+require 'cabriolet'
+
+# Auto-detect format and extract
+Cabriolet::Auto.extract('archive.unknown', 'output/')
+
+# Output: All files extracted to output/
+----
+
+Expected result: All files from the archive are extracted to the `output/` directory with directory structure preserved.
+====
+
+**When to use**: You have an archive and just want to extract everything.
+
+**See also**: xref:guides/basic-usage/auto-detection.adoc[Auto-Detection Guide]
+
+=== Workflow 2: List Archive Contents
+
+Preview what's in an archive before extracting.
+
+[example]
+====
+[source,ruby]
+----
+require 'cabriolet'
+
+# Get archive information
+info = Cabriolet::Auto.info('archive.cab')
+
+puts "Format: #{info[:format]}"
+puts "Files: #{info[:file_count]}"
+puts "Total size: #{info[:total_size]} bytes"
+puts "Compression: #{info[:compression_ratio]}%"
+
+# List all files
+info[:files].each do |file|
+  puts "  #{file[:name]} (#{file[:size]} bytes)"
+end
+----
+
+Expected output:
+[source]
+----
+Format: cab
+Files: 145
+Total size: 52428800 bytes
+Compression: 45.2%
+  app.exe (524288 bytes)
+  readme.txt (1024 bytes)
+  ...
+----
+====
+
+**When to use**: You want to see what's in an archive before extracting.
+
+**See also**: xref:guides/basic-usage/listing-contents.adoc[Listing Contents]
+
+=== Workflow 3: Validate Archive Integrity
+
+Check if an archive is corrupted before using it.
+
+[example]
+====
+[source,ruby]
+----
+require 'cabriolet'
+
+# Quick validation
+validator = Cabriolet::Validator.new('archive.cab', level: :quick)
+report = validator.validate
+
+if report.valid?
+  puts "✓ Archive is valid"
+  Cabriolet::Auto.extract('archive.cab', 'output/')
+else
+  puts "✗ Archive has errors:"
+  report.errors.each { |e| puts "  - #{e}" }
+end
+----
+
+Expected output:
+[source]
+----
+✓ Archive is valid
+----
+====
+
+**When to use**: You received an archive and want to verify it's not corrupted.
+
+**See also**: xref:guides/advanced-usage/validation-repair.adoc[Validation and Repair]
+
+=== Workflow 4: Recover from Corrupted Archive
+
+Salvage files from a damaged archive.
+
+[example]
+====
+[source,ruby]
+----
+require 'cabriolet'
+
+# Attempt salvage
+repairer = Cabriolet::Repairer.new('corrupted.cab')
+report = repairer.salvage(output_dir: 'recovered/')
+
+puts report.summary
+# => "Salvaged 140 files to recovered/, 5 failed"
+
+# Check what was recovered
+Dir.glob('recovered/**/*').each { |f| puts f }
+----
+
+Expected output:
+[source]
+----
+Salvaged 140 files to recovered/, 5 failed
+recovered/app.exe
+recovered/readme.txt
+...
+----
+====
+
+**When to use**: You have a corrupted archive and need to recover whatever is possible.
+
+**See also**: xref:examples/recover-corrupted-archive.adoc[Recovery Example]
+
+=== Workflow 5: Create Archive from Directory
+
+Package files into a CAB archive for distribution.
+
+[example]
+====
+[source,ruby]
+----
+require 'cabriolet'
+
+# Create CAB with LZX compression
+cab = Cabriolet::CAB::Compressor.new(
+  output: 'myapp-v1.0.cab',
+  compression: :lzx
+)
+
+# Add entire directory
+cab.add_directory('dist/')
+
+# Compress
+cab.compress
+
+puts "Created myapp-v1.0.cab"
+----
+
+Expected output:
+[source]
+----
+Created myapp-v1.0.cab
+----
+====
+
+**When to use**: You need to distribute files as a compressed archive.
+
+**See also**: xref:guides/basic-usage/creating-archives.adoc[Creating Archives]
+
+=== Workflow 6: Batch Process Multiple Archives
+
+Extract many archives efficiently.
+
+[example]
+====
+[source,ruby]
+----
+require 'cabriolet'
+
+# Process all CAB files in parallel
+stats = Cabriolet::Parallel.process_batch(
+  Dir.glob('archives/*.cab'),
+  'output/',
+  workers: 8
+)
+
+puts "Processed: #{stats[:total]}"
+puts "Success: #{stats[:successful]}"
+puts "Failed: #{stats[:failed]}"
+----
+
+Expected output:
+[source]
+----
+Processed: 50
+Success: 48
+Failed: 2
+----
+====
+
+**When to use**: You have many archives to process at once.
+
+**See also**: xref:examples/batch-processing.adoc[Batch Processing Example]
+
+=== Workflow 7: Modify Existing Archive
+
+Add or update files in an existing archive.
+
+[example]
+====
+[source,ruby]
+----
+require 'cabriolet'
+
+# Modify archive
+modifier = Cabriolet::Modifier.new('app-v1.0.cab')
+
+# Add new file
+modifier.add_file('changelog.txt', source: 'CHANGELOG.md')
+
+# Update existing file
+modifier.update_file('version.txt', data: "v1.1.0")
+
+# Save changes
+report = modifier.save(output: 'app-v1.1.cab')
+
+puts report.summary
+# => "Modified 2 items: +1 ~1 -0 →0"
+----
+
+Expected output:
+[source]
+----
+Modified 2 items: +1 ~1 -0 →0
+----
+====
+
+**When to use**: You need to update an archive without recreating it entirely.
+
+**See also**: xref:guides/advanced-usage/archive-modification.adoc[Archive Modification]
+
+=== Workflow 8: Process Large Archive (Memory-Efficient)
+
+Handle multi-GB archives without exhausting memory.
+
+[example]
+====
+[source,ruby]
+----
+require 'cabriolet'
+
+# Stream large archive
+parser = Cabriolet::Streaming::StreamParser.new('huge.cab')
+
+# Process one file at a time
+parser.each_file do |file|
+  puts "Processing: #{file.name}"
+
+  # Stream file data in chunks
+  File.open("output/#{file.name}", 'wb') do |out|
+    parser.stream_file_data(file) do |chunk|
+      out.write(chunk)  # 64KB at a time
+    end
+  end
+end
+
+puts "Extraction complete with minimal memory usage"
+----
+
+Expected output:
+[source]
+----
+Processing: large_file_1.dat
+Processing: large_file_2.dat
+...
+Extraction complete with minimal memory usage
+----
+====
+
+**When to use**: Working with large archives (>1GB) or on systems with limited RAM.
+
+**See also**: xref:guides/advanced-usage/streaming-large-files.adoc[Streaming Large Files]
+
+=== Workflow Comparison
+
+[cols="2,2,1,1,1", options="header"]
+|===
+| Workflow | Use Case | Complexity | Speed | Memory
+
+| Extract Any Archive
+| General extraction
+| Simple
+| Fast
+| Low
+
+| List Contents
+| Preview archive
+| Simple
+| Very Fast
+| Minimal
+
+| Validate Integrity
+| Verify before use
+| Simple
+| Fast
+| Low
+
+| Recover Corrupted
+| Salvage damaged files
+| Moderate
+| Variable
+| Medium
+
+| Create Archive
+| Package distribution
+| Simple
+| Moderate
+| Medium
+
+| Batch Process
+| Multiple archives
+| Moderate
+| Very Fast
+| Medium
+
+| Modify Archive
+| Update existing
+| Moderate
+| Moderate
+| Medium
+
+| Large Archive
+| Memory-constrained
+| Moderate
+| Moderate
+| Minimal
+|===
+
+=== Quick Command Reference
+
+[source,ruby]
+----
+# Auto-detect and extract
+Cabriolet::Auto.extract(path, output_dir)
+
+# Get info
+Cabriolet::Auto.info(path)
+
+# Validate
+Cabriolet::Validator.new(path).validate
+
+# Repair
+Cabriolet::Repairer.new(path).salvage(output_dir: dir)
+
+# Modify
+Cabriolet::Modifier.new(path).add_file(name, data: data).save
+
+# Stream
+Cabriolet::Streaming::StreamParser.new(path).each_file { |f| ... }
+
+# Parallel
+Cabriolet::Parallel.extract(archive, dir, workers: 8)
+----
+
+=== See Also
+
+* xref:getting-started/quick-start.adoc[Quick Start Guide]
+* xref:guides/basic-usage/index.adoc[Basic Usage]
+* xref:guides/advanced-usage/index.adoc[Advanced Usage]
+* xref:examples/index.adoc[Complete Examples]
+* xref:troubleshooting/index.adoc[Troubleshooting]
+
+=== Bibliography
+
+* Cabriolet API Documentation
+* Just the Docs Theme Documentation
+* Ruby Standard Library Reference

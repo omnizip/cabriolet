@@ -1,0 +1,107 @@
+---
+layout: default
+title: OAB API
+parent: API Reference
+grand_parent: Reference
+nav_order: 7
+---
+
+== OAB API Reference
+:toc:
+
+=== Purpose
+
+API reference for [`Cabriolet::OAB::Decompressor`](lib/cabriolet/oab/decompressor.rb) and [`Cabriolet::OAB::Compressor`](lib/cabriolet/oab/compressor.rb) classes for Offline Address Book files.
+
+=== References
+
+* xref:../../guides/formats/oab-format.adoc[OAB Format Guide]
+* xref:../../reference/cli/oab-commands.adoc[OAB Commands]
+
+== OAB::Decompressor
+
+=== Constructor
+
+==== `new(source, options = {})`
+
+**Parameters:**
+* `source` (String, IO, Handle) - OAB file path or handle
+
+**Example:**
+[source,ruby]
+----
+decompressor = Cabriolet::OAB::Decompressor.new('offline.oab')
+----
+
+=== Instance Methods
+
+==== `header`
+
+Returns OAB header.
+
+**Returns:** [`Cabriolet::Models::OABHeader`](lib/cabriolet/models/oab_header.rb)
+
+==== `records`
+
+Returns address book records.
+
+**Returns:** `Array<Hash>` - Contact records
+
+**Example:**
+[source,ruby]
+----
+decompressor.records.each do |record|
+  puts "#{record[:name]}: #{record[:email]}"
+end
+----
+
+==== `extract_vcard(output_dir)`
+
+Exports to vCard format.
+
+**Parameters:**
+* `output_dir` (String) - Output directory
+
+==== `extract_csv(output_path)`
+
+Exports to CSV format.
+
+**Parameters:**
+* `output_path` (String) - Output CSV file
+
+== OAB::Compressor
+
+=== Constructor
+
+==== `new(options = {})`
+
+**Options:**
+* `:version` (Integer) - OAB version
+
+=== Instance Methods
+
+==== `add_record(contact_hash)`
+
+Adds a contact record.
+
+**Parameters:**
+* `contact_hash` (Hash) - Contact information
+
+**Example:**
+[source,ruby]
+----
+compressor.add_record({
+  name: 'John Doe',
+  email: 'john@example.com',
+  phone: '555-1234'
+})
+----
+
+==== `compress(output_path)`
+
+Creates OAB file.
+
+=== Bibliography
+
+* xref:../../guides/formats/oab-format.adoc[OAB Format Guide]
+* Microsoft Exchange OAB Documentation

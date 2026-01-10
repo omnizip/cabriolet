@@ -1,0 +1,373 @@
+---
+layout: default
+title: Model Classes
+parent: API Reference
+grand_parent: Reference
+nav_order: 8
+---
+
+== Model Classes Reference
+:toc:
+
+=== Purpose
+
+API reference for all data model classes used throughout Cabriolet.
+
+=== References
+
+* xref:cab-api.adoc[CAB API]
+* xref:chm-api.adoc[CHM API]
+
+== CAB Models
+
+=== Cabinet
+
+Represents a CAB archive.
+
+**Location:** [`lib/cabriolet/models/cabinet.rb`](lib/cabriolet/models/cabinet.rb)
+
+**Attributes:**
+
+[source,ruby]
+----
+class Cabinet < Lutaml::Model::Serializable
+  attribute :signature, :string          # 'MSCF'
+  attribute :reserved1, :integer
+  attribute :cabinet_size, :integer      # Total size in bytes
+  attribute :reserved2, :integer
+  attribute :files_offset, :integer      # Offset to first CFFILE
+  attribute :reserved3, :integer
+  attribute :version_minor, :integer     # Minor version
+  attribute :version_major, :integer     # Major version
+  attribute :folder_count, :integer      # Number of folders
+  attribute :file_count, :integer        # Number of files
+  attribute :flags, :integer             # Option flags
+  attribute :set_id, :integer            # Cabinet set ID
+  attribute :cabinet_id, :integer        # Cabinet number in set
+
+  # Optional fields (if flags set)
+  attribute :reserve_header_size, :integer
+  attribute :reserve_folder_size, :integer
+  attribute :reserve_data_size, :integer
+  attribute :reserve_header, :string
+  attribute :prev_cabinet, :string       # Previous cabinet name
+  attribute :prev_disk, :string          # Previous disk label
+  attribute :next_cabinet, :string       # Next cabinet name
+  attribute :next_disk, :string          # Next disk label
+end
+----
+
+**Methods:**
+
+* `version` - Returns full version as string (e.g., "1.3")
+* `has_prev?` - Returns true if part of multi-part set with previous
+* `has_next?` - Returns true if part of multi-part set with next
+* `reserved?` - Returns true if reserve data present
+
+=== Folder
+
+Represents a compression folder.
+
+**Location:** [`lib/cabriolet/models/folder.rb`](lib/cabriolet/models/folder.rb)
+
+**Attributes:**
+
+[source,ruby]
+----
+class Folder < Lutaml::Model::Serializable
+  attribute :data_offset, :integer       # Offset to folder data
+  attribute :data_block_count, :integer  # Number of data blocks
+  attribute :compression_type, :integer  # Compression type code
+
+  # Relations
+  attribute :data_blocks, FolderData, collection: true
+end
+----
+
+**Methods:**
+
+* `compression_name` - Returns compression type as symbol (`:none`, `:mszip`, `:quantum`, `:lzx`)
+* `uncompressed_size` - Total uncompressed size of folder
+
+=== File
+
+Represents a file within a cabinet.
+
+**Location:** [`lib/cabriolet/models/file.rb`](lib/cabriolet/models/file.rb)
+
+**Attributes:**
+
+[source,ruby]
+----
+class File < Lutaml::Model::Serializable
+  attribute :uncompressed_size, :integer # Uncompressed file size
+  attribute :folder_offset, :integer     # Uncompressed offset in folder
+  attribute :folder_index, :integer      # Index of folder
+  attribute :date, :integer              # MS-DOS date
+  attribute :time, :integer              # MS-DOS time
+  attribute :attributes, :integer        # File attributes
+  attribute :filename, :string           # Filename with path
+end
+----
+
+**Methods:**
+
+* `datetime` - Returns Ruby Time object
+* `readonly?` - Returns true if read-only attribute set
+* `hidden?` - Returns true if hidden attribute set
+* `system?` - Returns true if system attribute set
+* `archive?` - Returns true if archive attribute set
+
+=== FolderData
+
+Represents a data block within a folder.
+
+**Location:** [`lib/cabriolet/models/folder_data.rb`](lib/cabriolet/models/folder_data.rb)
+
+**Attributes:**
+
+[source,ruby]
+----
+class FolderData < Lutaml::Model::Serializable
+  attribute :checksum, :integer          # Data checksum
+  attribute :compressed_size, :integer   # Compressed size
+  attribute :uncompressed_size, :integer # Uncompressed size
+  attribute :data, :string               # Compressed data
+end
+----
+
+== CHM Models
+
+=== CHMHeader
+
+CHM file header.
+
+**Location:** [`lib/cabriolet/models/chm_header.rb`](lib/cabriolet/models/chm_header.rb)
+
+**Attributes:**
+
+[source,ruby]
+----
+class CHMHeader < Lutaml::Model::Serializable
+  attribute :signature, :string          # 'ITSF'
+  attribute :version, :integer
+  attribute :header_length, :integer
+  attribute :unknown1, :integer
+  attribute :timestamp, :integer
+  attribute :language_id, :integer
+  attribute :dir_uuid, :string
+  attribute :stream_uuid, :string
+  attribute :dir_offset, :integer
+  attribute :dir_length, :integer
+  attribute :data_offset, :integer
+end
+----
+
+=== CHMFile
+
+File within CHM archive.
+
+**Location:** [`lib/cabriolet/models/chm_file.rb`](lib/cabriolet/models/chm_file.rb)
+
+**Attributes:**
+
+[source,ruby]
+----
+class CHMFile < Lutaml::Model::Serializable
+  attribute :name, :string
+  attribute :section, :integer
+  attribute :offset, :integer
+  attribute :length, :integer
+end
+----
+
+=== CHMSection
+
+CHM internal section.
+
+**Location:** [`lib/cabriolet/models/chm_section.rb`](lib/cabriolet/models/chm_section.rb)
+
+**Attributes:**
+
+[source,ruby]
+----
+class CHMSection < Lutaml::Model::Serializable
+  attribute :name, :string
+  attribute :offset, :integer
+  attribute :length, :integer
+  attribute :compression_type, :integer
+end
+----
+
+== Other Format Models
+
+=== SZDDHeader
+
+SZDD file header.
+
+**Location:** [`lib/cabriolet/models/szdd_header.rb`](lib/cabriolet/models/szdd_header.rb)
+
+**Attributes:**
+
+[source,ruby]
+----
+class SZDDHeader < Lutaml::Model::Serializable
+  attribute :signature, :string          # 'SZDD'
+  attribute :compression_mode, :integer
+  attribute :original_filename_char, :string
+  attribute :original_size, :integer
+end
+----
+
+**Methods:**
+
+* `original_filename` - Reconstructs original filename
+
+=== KWAJHeader
+
+KWAJ file header.
+
+**Location:** [`lib/cabriolet/models/kwaj_header.rb`](lib/cabriolet/models/kwaj_header.rb)
+
+**Attributes:**
+
+[source,ruby]
+----
+class KWAJHeader < Lutaml::Model::Serializable
+  attribute :signature, :string          # 'KWAJ'
+  attribute :compression_type, :integer
+  attribute :data_offset, :integer
+  attribute :header_extension_length, :integer
+end
+----
+
+=== HLPHeader
+
+Windows Help file header.
+
+**Location:** [`lib/cabriolet/models/hlp_header.rb`](lib/cabriolet/models/hlp_header.rb)
+
+**Attributes:**
+
+[source,ruby]
+----
+class HLPHeader < Lutaml::Model::Serializable
+  attribute :magic_number, :integer
+  attribute :directory_start, :integer
+  attribute :free_list_start, :integer
+  attribute :entire_file_size, :integer
+end
+----
+
+=== HLPFile
+
+Internal file in HLP archive.
+
+**Location:** [`lib/cabriolet/models/hlp_file.rb`](lib/cabriolet/models/hlp_file.rb)
+
+**Attributes:**
+
+[source,ruby]
+----
+class HLPFile < Lutaml::Model::Serializable
+  attribute :reserved_space, :integer
+  attribute :used_space, :integer
+  attribute :file_flags, :integer
+end
+----
+
+=== LITHeader
+
+Microsoft Reader LIT header.
+
+**Location:** [`lib/cabriolet/models/lit_header.rb`](lib/cabriolet/models/lit_header.rb)
+
+**Attributes:**
+
+[source,ruby]
+----
+class LITHeader < Lutaml::Model::Serializable
+  attribute :signature, :string          # 'ITOL'
+  attribute :version, :integer
+  attribute :header_length, :integer
+  attribute :identifier, :string
+end
+----
+
+=== OABHeader
+
+Offline Address Book header.
+
+**Location:** [`lib/cabriolet/models/oab_header.rb`](lib/cabriolet/models/oab_header.rb)
+
+**Attributes:**
+
+[source,ruby]
+----
+class OABHeader < Lutaml::Model::Serializable
+  attribute :version, :integer
+  attribute :serial_number, :integer
+  attribute :total_records, :integer
+  attribute :header_size, :integer
+end
+----
+
+== Usage Examples
+
+=== Accessing Cabinet Metadata
+
+[source,ruby]
+----
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+cabinet = decompressor.cabinet
+
+puts "Cabinet version: #{cabinet.version}"
+puts "Total files: #{cabinet.file_count}"
+puts "Total folders: #{cabinet.folder_count}"
+
+if cabinet.has_next?
+  puts "Next cabinet: #{cabinet.next_cabinet}"
+  puts "Next disk: #{cabinet.next_disk}"
+end
+----
+
+=== Enumerating Files
+
+[source,ruby]
+----
+decompressor.files.each do |file|
+  puts "File: #{file.filename}"
+  puts "  Size: #{file.uncompressed_size} bytes"
+  puts "  Date: #{file.datetime}"
+  puts "  Attributes: #{file.attributes}"
+  puts "  Readonly: #{file.readonly?}"
+  puts "  Hidden: #{file.hidden?}"
+end
+----
+
+=== Analyzing Compression
+
+[source,ruby]
+----
+decompressor.folders.each_with_index do |folder, idx|
+  puts "Folder #{idx}:"
+  puts "  Compression: #{folder.compression_name}"
+  puts "  Data blocks: #{folder.data_block_count}"
+  puts "  Uncompressed size: #{folder.uncompressed_size}"
+
+  folder.data_blocks.each_with_index do |block, bidx|
+    ratio = (block.compressed_size * 100.0 / block.uncompressed_size).round(1)
+    puts "  Block #{bidx}: #{block.compressed_size} / #{block.uncompressed_size} (#{ratio}%)"
+  end
+end
+----
+
+== Thread Safety
+
+All model classes are immutable after creation and thread-safe for read operations.
+
+== Bibliography
+
+* xref:../../guides/formats/cab-format.adoc[CAB Format Specification]
+* xref:../../guides/formats/chm-format.adoc[CHM Format Specification]
+* Microsoft Cabinet SDK Documentation

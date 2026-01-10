@@ -1,0 +1,659 @@
+---
+layout: default
+title: Performance Tuning
+parent: Advanced Usage
+grand_parent: Guides
+nav_order: 6
+---
+
+== Performance Tuning
+:toc:
+
+=== Purpose
+
+This guide covers optimization techniques for compression and extraction operations, including buffer management, algorithm selection, and performance benchmarking.
+
+=== References
+
+* xref:../../concepts/compression-algorithms.adoc[Compression Algorithms]
+* xref:memory-operations.adoc[Memory Operations Guide]
+* xref:../../architecture/compression-layer.adoc[Compression Layer]
+
+=== Understanding Performance Factors
+
+==== Key Performance Metrics
+
+[source]
+----
+Decompression Performance:
+├── I/O Speed
+│   ├── Read speed (disk/network)
+│   ├── Write speed (output)
+│   └── Buffer size
+├── CPU Utilization
+│   ├── Decompression algorithm
+│   ├── Checksum calculation
+│   └── Huffman decoding
+└── Memory Usage
+    ├── Buffer allocation
+    ├── Window size
+    └── Cache efficiency
+----
+
+==== Performance Trade-offs
+
+* **Speed vs Memory**: Larger buffers = faster but more memory
+* **Compression vs Speed**: Better compression = slower processing
+* **Validation vs Speed**: Checksums add overhead
+* **Parallelization vs Simplicity**: Threading adds complexity
+
+=== Buffer Size Optimization
+
+==== Default Buffer Sizes
+
+Cabriolet uses these default buffer sizes:
+
+[source,ruby]
+----
+DEFAULT_BUFFERS = {
+  read_buffer: 32 * 1024,      # 32 KB for reading
+  write_buffer: 32 * 1024,     # 32 KB for writing
+  decompress_buffer: 64 * 1024, # 64 KB for decompression
+  lzx_window: 2 ** 21          # 2 MB for LZX window
+}
+----
+
+==== Tuning for SSD/HDD
+
+Optimize for storage type:
+
+[source,ruby]
+----
+# For SSD (fast random access)
+ssd_options = {
+  read_buffer: 64 * 1024,      # Larger read buffer
+  write_buffer: 64 * 1024,     # Larger write buffer
+  prefetch: true               # Enable prefetching
+}
+
+decompressor = Cabriolet::CAB::Decompressor.new(
+  'archive.cab',
+  **ssd_options
+)
+
+# For HDD (sequential access preferred)
+hdd_options = {
+  read_buffer: 256 * 1024,     # Much larger buffer
+  write_buffer: 256 * 1024,    # Batch writes
+  sequential_hint: true        # Optimize for sequential
+}
+
+decompressor = Cabriolet::CAB::Decompressor.new(
+  'archive.cab',
+  **hdd_options
+)
+----
+
+==== Memory-Constrained Environments
+
+For systems with limited RAM:
+
+[source,ruby]
+----
+# Minimal memory footprint
+minimal_options = {
+  read_buffer: 4 * 1024,       # 4 KB read buffer
+  write_buffer: 4 * 1024,      # 4 KB write buffer
+  decompress_buffer: 8 * 1024, # 8 KB decompress
+  streaming: true              # Stream to disk immediately
+}
+
+decompressor = Cabriolet::CAB::Decompressor.new(
+  'archive.cab',
+  **minimal_options
+)
+----
+
+==== Network Operations
+
+Optimize for network-based archives:
+
+[source,ruby]
+----
+# Network-optimized settings
+network_options = {
+  read_buffer: 1 * 1024 * 1024,  # 1 MB buffer
+  prefetch_blocks: 5,            # Prefetch 5 blocks ahead
+  retry_on_error: true,          # Retry failed reads
+  timeout: 30                    # 30 second timeout
+}
+
+decompressor = Cabriolet::CAB::Decompressor.new(
+  'https://example.com/archive.cab',
+  **network_options
+)
+----
+
+=== Compression Algorithm Selection
+
+==== Algorithm Performance Comparison
+
+[source]
+----
+Algorithm     Speed    Compression  Memory   Best For
+---------------------------------------------------------
+NONE          ████     ○           ○        Uncompressible data
+MSZIP         ███      ██          ○        General purpose
+QUANTUM       ██       ███         ○○       Text files
+LZX           ○        ████        ███      Maximum compression
+---------------------------------------------------------
+Speed: ████ = fastest, ○ = slowest
+Compression: ████ = best, ○ = none
+Memory: ████ = highest, ○ = lowest
+----
+
+==== Choosing the Right Algorithm
+
+[source,ruby]
+----
+# For speed-critical applications
+fast_compressor = Cabriolet::CAB::Compressor.new
+fast_compressor.add_folder('data/', compression: :mszip)
+
+# For maximum compression
+small_compressor = Cabriolet::CAB::Compressor.new
+small_compressor.add_folder('data/', compression: :lzx, level: 21)
+
+# For text files
+text_compressor = Cabriolet::CAB::Compressor.new
+text_compressor.add_folder('docs/', compression: :quantum)
+
+# For already compressed data
+mixed_compressor = Cabriolet::CAB::Compressor.new
+mixed_compressor.add_folder('videos/', compression: :none)
+mixed_compressor.add_folder('text/', compression: :quantum)
+----
+
+==== Dynamic Algorithm Selection
+
+Select algorithm based on file analysis:
+
+[source,ruby]
+----
+class SmartCompressor
+  def self.analyze_file(filename)
+    # Sample file to determine compressibility
+    File.open(filename, 'rb') do |f|
+      sample = f.read(64 * 1024) # Read 64 KB sample
+
+      # Calculate entropy
+      entropy = calculate_entropy(sample)
+
+      if entropy > 7.5
+        :none  # High entropy = already compressed
+      elsif entropy > 6.0
+        :mszip # Medium entropy = general data
+      elsif entropy > 4.0
+        :quantum # Low entropy = text-like
+      else
+        :lzx # Very low entropy = maximum compression
+      end
+    end
+  end
+
+  def self.calculate_entropy(data)
+    frequencies = Hash.new(0)
+    data.each_byte { |byte| frequencies[byte] += 1 }
+
+    entropy = 0.0
+    data.bytesize.times do
+      frequencies.each do |_, count|
+        probability = count.to_f / data.bytesize
+        entropy -= probability * Math.log2(probability) if probability > 0
+      end
+    end
+
+    entropy
+  end
+
+  def self.compress_smart(input_dir, output_cab)
+    compressor = Cabriolet::CAB::Compressor.new
+
+    Dir.glob("#{input_dir}/**/*").each do |file|
+      next unless File.file?(file)
+
+      algorithm = analyze_file(file)
+      relative_path = file.sub("#{input_dir}/", '')
+
+      puts "#{relative_path}: using #{algorithm}"
+      compressor.add_file(file, compression: algorithm)
+    end
+
+    compressor.compress(output_cab)
+  end
+end
+
+# Usage
+SmartCompressor.compress_smart('mydata/', 'optimized.cab')
+----
+
+=== Parallel Processing
+
+==== Multi-threaded Extraction
+
+Extract multiple files concurrently:
+
+[source,ruby]
+----
+require 'concurrent'
+
+class ParallelExtractor
+  def initialize(filename, thread_count: 4)
+    @decompressor = Cabriolet::CAB::Decompressor.new(filename)
+    @thread_count = thread_count
+  end
+
+  def extract_all(output_dir)
+    files = @decompressor.files
+
+    # Create thread pool
+    pool = Concurrent::FixedThreadPool.new(@thread_count)
+
+    # Queue extraction tasks
+    futures = files.map do |file|
+      Concurrent::Future.execute(executor: pool) do
+        extract_single_file(file, output_dir)
+      end
+    end
+
+    # Wait for all to complete
+    futures.each(&:wait)
+
+    # Collect results
+    successes = futures.count { |f| f.value == :success }
+    failures = futures.count { |f| f.value == :failure }
+
+    puts "Extracted: #{successes} files"
+    puts "Failed: #{failures} files" if failures > 0
+  ensure
+    pool.shutdown
+    pool.wait_for_termination
+  end
+
+  private
+
+  def extract_single_file(file, output_dir)
+    output_path = File.join(output_dir, file.filename)
+    FileUtils.mkdir_p(File.dirname(output_path))
+
+    @decompressor.extract_file(file.filename, output_path)
+    :success
+  rescue => e
+    puts "Error extracting #{file.filename}: #{e.message}"
+    :failure
+  end
+end
+
+# Usage
+extractor = ParallelExtractor.new('large.cab', thread_count: 8)
+extractor.extract_all('output')
+----
+
+==== Batch Processing
+
+Process multiple archives in parallel:
+
+[source,ruby]
+----
+require 'concurrent'
+
+def process_archives_parallel(archive_list, output_base, workers: 4)
+  pool = Concurrent::FixedThreadPool.new(workers)
+
+  futures = archive_list.map do |archive|
+    Concurrent::Future.execute(executor: pool) do
+      archive_name = File.basename(archive, '.cab')
+      output_dir = File.join(output_base, archive_name)
+
+      begin
+        decompressor = Cabriolet::CAB::Decompressor.new(archive)
+        decompressor.extract_all(output_dir)
+        { archive: archive, status: :success }
+      rescue => e
+        { archive: archive, status: :failure, error: e.message }
+      end
+    end
+  end
+
+  results = futures.map(&:value)
+
+  pool.shutdown
+  pool.wait_for_termination
+
+  results
+end
+
+# Usage
+archives = Dir.glob('archives/*.cab')
+results = process_archives_parallel(archives, 'extracted', workers: 8)
+
+results.each do |result|
+  if result[:status] == :success
+    puts "✓ #{result[:archive]}"
+  else
+    puts "✗ #{result[:archive]}: #{result[:error]}"
+  end
+end
+----
+
+=== Memory Management
+
+==== Streaming vs Buffering
+
+[source,ruby]
+----
+# Buffered (faster, more memory)
+buffered_decompressor = Cabriolet::CAB::Decompressor.new(
+  'archive.cab',
+  mode: :buffered,
+  buffer_size: 10 * 1024 * 1024  # 10 MB buffer
+)
+
+# Streaming (slower, less memory)
+streaming_decompressor = Cabriolet::CAB::Decompressor.new(
+  'archive.cab',
+  mode: :streaming,
+  chunk_size: 64 * 1024  # 64 KB chunks
+)
+----
+
+==== Memory Pooling
+
+Reuse buffers across operations:
+
+[source,ruby]
+----
+class BufferPool
+  def initialize(buffer_size: 64 * 1024, pool_size: 10)
+    @buffer_size = buffer_size
+    @pool = Array.new(pool_size) { String.new(capacity: buffer_size) }
+    @available = @pool.dup
+    @mutex = Mutex.new
+  end
+
+  def acquire
+    @mutex.synchronize do
+      buffer = @available.pop
+      buffer ||= String.new(capacity: @buffer_size)
+      buffer.clear
+      buffer
+    end
+  end
+
+  def release(buffer)
+    @mutex.synchronize do
+      buffer.clear
+      @available.push(buffer) if @available.size < @pool.size
+    end
+  end
+
+  def with_buffer
+    buffer = acquire
+    begin
+      yield buffer
+    ensure
+      release(buffer)
+    end
+  end
+end
+
+# Usage
+pool = BufferPool.new(buffer_size: 64 * 1024)
+
+pool.with_buffer do |buffer|
+  # Use buffer for I/O operations
+  handle.read(buffer.capacity, buffer)
+  # Process data in buffer
+end
+----
+
+=== Benchmarking
+
+==== Measuring Performance
+
+[source,ruby]
+----
+require 'benchmark'
+
+def benchmark_extraction(filename, iterations: 3)
+  results = {}
+
+  # Test different buffer sizes
+  [4, 16, 64, 256].each do |kb|
+    buffer_size = kb * 1024
+
+    time = Benchmark.realtime do
+      iterations.times do
+        decompressor = Cabriolet::CAB::Decompressor.new(
+          filename,
+          read_buffer: buffer_size
+        )
+        decompressor.extract_all("test_output_#{kb}kb")
+      end
+    end
+
+    results[buffer_size] = time / iterations
+  end
+
+  # Print results
+  puts "Buffer Size  | Avg Time  | Throughput"
+  puts "-" * 45
+  results.each do |size, time|
+    file_size = File.size(filename)
+    throughput = file_size / time / 1024 / 1024  # MB/s
+
+    puts "#{size / 1024} KB".ljust(12) + " | " +
+         "#{time.round(3)}s".ljust(10) + " | " +
+         "#{throughput.round(2)} MB/s"
+  end
+end
+
+# Usage
+benchmark_extraction('test.cab')
+----
+
+==== Profiling
+
+Profile CPU and memory usage:
+
+[source,ruby]
+----
+require 'ruby-prof'
+
+def profile_extraction(filename)
+  # CPU profiling
+  RubyProf.start
+
+  decompressor = Cabriolet::CAB::Decompressor.new(filename)
+  decompressor.extract_all('profiled_output')
+
+  result = RubyProf.stop
+
+  # Print report
+  printer = RubyProf::FlatPrinter.new(result)
+  printer.print(STDOUT)
+
+  # Memory profiling
+  require 'memory_profiler'
+
+  report = MemoryProfiler.report do
+    decompressor = Cabriolet::CAB::Decompressor.new(filename)
+    decompressor.extract_all('memory_profiled_output')
+  end
+
+  report.pretty_print
+end
+----
+
+=== Optimization Checklist
+
+==== For Maximum Speed
+
+1. **Use largest feasible buffers** (1-4 MB for SSD)
+2. **Disable checksum verification** (if integrity not critical)
+3. **Use MSZIP or NONE** compression
+4. **Enable parallel processing** for multiple files
+5. **Use in-memory operations** when possible
+6. **Minimize I/O operations** through buffering
+
+==== For Minimum Memory
+
+1. **Use smallest buffers** (4-8 KB)
+2. **Enable streaming mode**
+3. **Process files sequentially**
+4. **Clear buffers explicitly**
+5. **Use block-level processing**
+6. **Avoid caching**
+
+==== For Best Compression
+
+1. **Use LZX algorithm** with maximum window
+2. **Group similar files** in same folder
+3. **Pre-analyze files** for optimal algorithm
+4. **Use maximum compression level**
+5. **Sort files by type** before compression
+
+==== For Network Operations
+
+1. **Use large buffers** (1 MB+)
+2. **Enable prefetching**
+3. **Implement retry logic**
+4. **Cache aggressively**
+5. **Compress before transmission**
+
+=== Real-World Examples
+
+==== High-Performance Server
+
+[source,ruby]
+----
+class HighPerformanceExtractor
+  def initialize
+    @thread_pool = Concurrent::FixedThreadPool.new(16)
+    @buffer_pool = BufferPool.new(
+      buffer_size: 1 * 1024 * 1024,  # 1 MB
+      pool_size: 32
+    )
+  end
+
+  def extract(filename, output_dir)
+    decompressor = Cabriolet::CAB::Decompressor.new(
+      filename,
+      read_buffer: 1 * 1024 * 1024,
+      verify_checksums: false  # Skip for speed
+    )
+
+    futures = decompressor.files.map do |file|
+      Concurrent::Future.execute(executor: @thread_pool) do
+        @buffer_pool.with_buffer do |buffer|
+          extract_with_buffer(decompressor, file, output_dir, buffer)
+        end
+      end
+    end
+
+    futures.each(&:wait)
+  end
+
+  private
+
+  def extract_with_buffer(decompressor, file, output_dir, buffer)
+    output_path = File.join(output_dir, file.filename)
+    FileUtils.mkdir_p(File.dirname(output_path))
+    decompressor.extract_file(file.filename, output_path, buffer: buffer)
+  end
+end
+----
+
+==== Embedded System
+
+[source,ruby]
+----
+class EmbeddedExtractor
+  def extract(filename, output_dir)
+    decompressor = Cabriolet::CAB::Decompressor.new(
+      filename,
+      read_buffer: 4 * 1024,      # Minimal buffer
+      write_buffer: 4 * 1024,
+      streaming: true,            # Stream to disk
+      verify_checksums: true      # Ensure integrity
+    )
+
+    # Extract one file at a time
+    decompressor.files.each do |file|
+      output_path = File.join(output_dir, file.filename)
+      FileUtils.mkdir_p(File.dirname(output_path))
+
+      decompressor.extract_file(file.filename, output_path)
+
+      # Force garbage collection to free memory
+      GC.start
+    end
+  end
+end
+----
+
+=== Performance Monitoring
+
+[source,ruby]
+----
+class PerformanceMonitor
+  def self.monitor_extraction(filename, output_dir)
+    start_time = Time.now
+    start_memory = `ps -o rss= -p #{Process.pid}`.to_i
+
+    decompressor = Cabriolet::CAB::Decompressor.new(filename)
+
+    # Track progress
+    total_files = decompressor.files.size
+    extracted = 0
+
+    decompressor.files.each do |file|
+      file_start = Time.now
+
+      output_path = File.join(output_dir, file.filename)
+      FileUtils.mkdir_p(File.dirname(output_path))
+      decompressor.extract_file(file.filename, output_path)
+
+      extracted += 1
+      file_time = Time.now - file_start
+
+      # Calculate statistics
+      progress = (extracted * 100.0 / total_files).round(1)
+      current_memory = `ps -o rss= -p #{Process.pid}`.to_i
+      memory_usage = (current_memory - start_memory) / 1024.0  # MB
+
+      puts "[#{progress}%] #{file.filename} (#{file_time.round(3)}s, #{memory_usage.round(1)} MB)"
+    end
+
+    total_time = Time.now - start_time
+    final_memory = `ps -o rss= -p #{Process.pid}`.to_i
+    peak_memory = (final_memory - start_memory) / 1024.0
+
+    puts "\nExtraction Summary:"
+    puts "  Total time: #{total_time.round(2)}s"
+    puts "  Files: #{total_files}"
+    puts "  Avg per file: #{(total_time / total_files).round(3)}s"
+    puts "  Peak memory: #{peak_memory.round(1)} MB"
+  end
+end
+
+# Usage
+PerformanceMonitor.monitor_extraction('archive.cab', 'output')
+----
+
+=== Bibliography
+
+* xref:../../concepts/compression-algorithms.adoc[Compression Algorithms]
+* xref:memory-operations.adoc[Memory Operations]
+* Ruby Performance Optimization Guide
+* Systems Performance by Brendan Gregg

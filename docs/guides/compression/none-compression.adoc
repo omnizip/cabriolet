@@ -1,0 +1,106 @@
+---
+title: None (Uncompressed)
+parent: Compression
+grand_parent: Guides
+nav_order: 2
+---
+
+== None (Uncompressed) Storage
+
+=== Purpose
+
+This guide explains uncompressed storage in Cabriolet - when and why to use no compression.
+
+=== References
+
+* <<choosing-algorithm#,Choosing a Compression Algorithm>>
+* <<../formats/cab-format#compression-support,CAB Format - Compression>>
+
+=== Concepts
+
+==== What is Uncompressed Storage?
+
+Uncompressed storage means files are stored exactly as-is, with no compression applied. This is useful when:
+
+* Files are already compressed (JPEG, PNG, MP3, ZIP)
+* Speed is critical
+* Files are very small
+* Testing or debugging
+
+==== When to Use None
+
+Use uncompressed storage for:
+
+* **Already-compressed files** - JPG, PNG, GIF, MP3, MP4, ZIP, GZ
+* **Very small files** - <1 KB (compression overhead too high)
+* **Speed-critical** - Real-time operations
+* **Testing** - Debugging compression issues
+* **Encrypted files** - DRM or encrypted content
+
+=== Usage
+
+==== CAB Files
+
+[source,ruby]
+----
+compressor = Cabriolet::CAB::Compressor.new(compression: :none)
+compressor.add_file('image.jpg')
+compressor.add_file('video.mp4')
+compressor.write('media.cab')
+----
+
+==== CHM Files
+
+[source,ruby]
+----
+compressor = Cabriolet::CHM::Compressor.new
+# Images go to uncompressed section
+compressor.add_file('logo.png', '/logo.png', section: :uncompressed)
+compressor.generate('help.chm')
+----
+
+==== Command Line
+
+[source,bash]
+----
+# CAB with no compression
+cabriolet create --compression=none media.cab *.jpg
+
+# KWAJ with no compression
+cabriolet kwaj-compress --compression=none data.bin data.kwj
+----
+
+=== Performance
+
+[cols="1,2"]
+|===
+|Metric |Value
+
+|Compression ratio
+|0% (no change)
+
+|Compression speed
+|Instant (copy only)
+
+|Decompression speed
+|Instant (copy only)
+
+|Memory usage
+|Minimal
+
+|CPU usage
+|Minimal
+|===
+
+=== Best Practices
+
+1. **Use for pre-compressed files** - Never compress JPG, PNG, MP3, etc.
+2. **Test first** - Verify compression doesn't help before using none
+3. **Consider hybrid** - Mix compressed text with uncompressed media
+4. **Document choice** - Note why files are uncompressed
+
+=== See Also
+
+* <<choosing-algorithm#,Choosing a Compression Algorithm>>
+* <<mszip-compression#,MSZIP Compression>> - General-purpose compression
+* <<lzx-compression#,LZX Compression>> - Maximum compression

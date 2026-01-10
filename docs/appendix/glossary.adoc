@@ -1,0 +1,46 @@
+---
+layout: default
+title: Glossary
+parent: Appendix
+nav_order: 1
+---
+
+== Glossary
+
+**Arithmetic Coding**:: Statistical compression encoding entire message as single number
+
+**Bitstream**:: Sequence of bits read/written one bit at a time
+
+**CAB**:: Microsoft Cabinet archive format
+
+**CFDATA**:: Compressed folder data block in CAB format
+
+**CFFILE**:: File entry structure in CAB format
+
+**CFFOLDER**:: Folder entry structure in CAB format
+
+**CFHEADER**:: Cabinet header structure
+
+**CHM**:: Compiled HTML Help format
+
+**Deflate**:: Compression algorithm combining LZ77 and Huffman coding
+
+**Folder**:: Compression unit in CAB files (not a directory)
+
+**Huffman Coding**:: Statistical compression using variable-length codes
+
+**LZX**:: Advanced dictionary compression algorithm
+
+**LZSS**:: Lempel-Ziv-Storer-Szymanski dictionary compression
+
+**MSZIP**:: Microsoft's DEFLATE implementation
+
+**OAB**:: Offline Address Book format
+
+**Quantum**:: Arithmetic coding compression algorithm
+
+**Salvage Mode**:: Error recovery mode for corrupted archives
+
+**SZDD**:: Single-file compression format
+
+**Window**:: Buffer of previously seen data in dictionary compression

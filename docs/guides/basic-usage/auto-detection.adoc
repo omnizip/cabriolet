@@ -1,0 +1,324 @@
+---
+layout: default
+title: Format Auto-Detection
+parent: Basic Usage
+grand_parent: Guides
+nav_order: 5
+---
+
+== Format Auto-Detection
+
+=== Purpose
+
+This document explains Cabriolet's automatic format detection capability, which allows you to work with archives without knowing their specific format in advance.
+
+Format auto-detection is designed for users who:
+
+* Work with archives of unknown or mixed formats
+* Process files from diverse sources
+* Need simplified APIs without format-specific code
+* Build tools that handle multiple archive types
+
+After reading this guide, you will understand how format detection works and when to use it versus format-specific APIs.
+
+Use this guide when building applications that need to handle various archive formats dynamically.
+
+=== References
+
+* xref:concepts/format-detection.adoc[Format Detection Concepts]
+* xref:reference/api/auto-api.adoc[Auto API Reference]
+* xref:format-comparison.adoc[Format Comparison]
+
+=== Concepts
+
+==== Magic Bytes
+
+Magic bytes are signature sequences at the beginning of files that identify their format. Each archive format has a unique magic byte signature:
+
+* CAB: `MSCF` (0x4D534346)
+* CHM: `ITSF` (0x49545346)
+* HLP: `?_` (0x3F5F) or `LN` (0x4C4E)
+* KWAJ: `KWAJ` (0x4B57414A)
+* SZDD: `SZDD` (0x535A4444)
+* LIT: `ITOLITLS`
+* OAB: Format-specific header
+
+==== Format Detection Strategy
+
+Cabriolet uses a two-stage detection process:
+
+1. **Primary**: Magic byte matching - Reads first 16 bytes, checks against known signatures
+2. **Fallback**: Extension-based detection - Uses file extension if magic bytes inconclusive
+
+==== Parser Selection
+
+Once format is detected, Cabriolet automatically selects the appropriate parser class to handle the archive.
+
+=== Basic Auto-Detection
+
+==== Auto-Open an Archive
+
+The simplest way to use auto-detection:
+
+[example]
+====
+[source,ruby]
+----
+require 'cabriolet'
+
+# Open archive with automatic format detection
+archive = Cabriolet::Auto.open('unknown.archive')
+
+# Use archive normally
+puts "Format: #{archive.class}"
+puts "Files: #{archive.files.count}"
+
+archive.files.each do |file|
+  puts "  #{file.name}: #{file.size} bytes"
+end
+----
+
+This works with any supported format. The returned object is the appropriate archive type (Cabinet, CHMFile, etc.).
+====
+
+==== Auto-Extract
+
+Extract without knowing the format:
+
+[example]
+====
+[source,ruby]
+----
+require 'cabriolet'
+
+# Extract with auto-detection
+stats = Cabriolet::Auto.extract('archive.file', 'output/')
+
+puts "Extracted #{stats[:extracted]} files"
+puts "Failed: #{stats[:failed]}"
+puts "Total bytes: #{stats[:bytes]}"
+----
+
+Expected output:
+[source]
+----
+Extracted 145 files
+Failed: 0
+Total bytes: 52428800
+----
+====
+
+==== Detect Format Only
+
+Sometimes you only need to know the format:
+
+[example]
+====
+[source,ruby]
+----
+require 'cabriolet'
+
+# Detect without parsing
+format = Cabriolet::Auto.detect_format('file.xyz')
+
+case format
+when :cab
+  puts "This is a CAB file"
+when :chm
+  puts "This is a CHM file"
+when nil
+  puts "Unknown format"
+end
+----
+====
+
+=== Advanced Auto-Detection
+
+==== With Options
+
+Pass options to the underlying parser:
+
+[example]
+====
+[source,ruby]
+----
+# Auto-detect with salvage mode enabled
+archive = Cabriolet::Auto.open('possibly_corrupted.cab',
+  salvage_mode: true,
+  skip_checksum: true
+)
+----
+====
+
+==== Get Detailed Information
+
+Retrieve comprehensive archive information:
+
+[example]
+====
+[source,ruby]
+----
+info = Cabriolet::Auto.info('archive.cab')
+
+# Full information hash
+puts info[:format]            # => :cab
+puts info[:file_count]        # => 145
+puts info[:total_size]        # => 52428800
+puts info[:compressed_size]   # => 23592960
+puts info[:compression_ratio] # => 45.0
+
+# Individual file information
+info[:files].each do |file_info|
+  puts "#{file_info[:name]}: #{file_info[:size]} bytes"
+  puts "  Attributes: 0x#{file_info[:attributes].to_s(16)}"
+  puts "  Date: #{file_info[:date]}"
+end
+----
+====
+
+=== Parallel Extraction with Auto-Detection
+
+Combine auto-detection with parallel processing:
+
+[example]
+====
+[source,ruby]
+----
+# Auto-detect and extract with 8 workers
+stats = Cabriolet::Auto.extract(
+  'large_archive.cab',
+  'output/',
+  parallel: true,
+  workers: 8
+)
+
+puts "Extracted #{stats[:extracted]} files using parallel processing"
+----
+
+This automatically:
+1. Detects the archive format
+2. Selects the appropriate parser
+3. Extracts using parallel workers
+4. Returns statistics
+====
+
+=== Error Handling
+
+==== Unknown Format
+
+[example]
+====
+[source,ruby]
+----
+begin
+  archive = Cabriolet::Auto.open('unknown.file')
+rescue Cabriolet::UnsupportedFormatError => e
+  puts "Could not detect format: #{e.message}"
+
+  # Try manual detection
+  File.open('unknown.file', 'rb') do |f|
+    magic = f.read(4)
+    puts "Magic bytes: #{magic.inspect}"
+  end
+end
+----
+====
+
+==== Corrupted Header
+
+[example]
+====
+[source,ruby]
+----
+begin
+  archive = Cabriolet::Auto.open('corrupted.cab')
+rescue Cabriolet::InvalidFormatError => e
+  puts "Invalid format: #{e.message}"
+
+  # Try salvage mode
+  repairer = Cabriolet::Repairer.new('corrupted.cab')
+  report = repairer.salvage(output_dir: 'recovered/')
+end
+----
+====
+
+=== When to Use Auto-Detection
+
+==== Use Auto-Detection When:
+
+* Processing files from unknown sources
+* Building generic archive handling tools
+* File format is determined at runtime
+* Handling mixed archive types in batch
+* Simplifying code for common operations
+
+==== Use Format-Specific APIs When:
+
+* Format is known in advance
+* Need format-specific features
+* Maximum performance required
+* Working with edge cases
+* Debugging format issues
+
+=== Performance Considerations
+
+==== Detection Overhead
+
+Format detection adds minimal overhead:
+
+* **Magic byte check**: <1ms
+* **File open/close**: ~1-5ms
+* **Total overhead**: Typically <10ms
+
+For batch operations on thousands of files, this is negligible compared to actual parsing time.
+
+==== Optimization Tips
+
+1. **Cache format detection**:
+
+[example]
+====
+[source,ruby]
+----
+# Detect once, use multiple times
+format = Cabriolet::Auto.detect_format('archive.cab')
+
+if format == :cab
+  # Use format-specific API for optimal performance
+  cab = Cabriolet::CAB::Parser.new.parse('archive.cab')
+end
+----
+====
+
+2. **Batch detection**:
+
+[example]
+====
+[source,ruby]
+----
+# Detect all formats first
+files_by_format = Dir.glob('*.{cab,chm,hlp}').group_by do |file|
+  Cabriolet::Auto.detect_format(file)
+end
+
+# Process by format
+files_by_format.each do |format, files|
+  parser_class = Cabriolet::FormatDetector.format_to_parser(format)
+  files.each { |f| parser_class.new.parse(f) }
+end
+----
+====
+
+=== See Also
+
+* xref:concepts/format-detection.adoc[Format Detection Concepts]
+* xref:reference/api/auto-api.adoc[Auto API Reference]
+* xref:reference/api/format-detector-api.adoc[FormatDetector API]
+* xref:guides/basic-usage/extracting-files.adoc[Extracting Files]
+* xref:examples/batch-processing.adoc[Batch Processing Example]
+
+=== Bibliography
+
+* ISO/IEC 9899 - C Standard (for binary data type definitions)
+* Microsoft Cabinet Format Specification
+* File Signature Database - https://www.filesignatures.net/

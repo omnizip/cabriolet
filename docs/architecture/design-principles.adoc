@@ -1,0 +1,70 @@
+---
+layout: default
+title: Design Principles
+parent: Architecture
+nav_order: 1
+---
+
+== Design Principles
+:toc:
+
+=== Core Principles
+
+Cabriolet follows these design principles:
+
+==== Object-Oriented Programming
+
+* Everything is an object with clear responsibilities
+* Inheritance for shared behavior
+* Composition over complex inheritance
+
+==== MECE (Mutually Exclusive, Collectively Exhaustive)
+
+* Classes handle distinct, non-overlapping concerns
+* All functionality covered without gaps
+* No duplication of responsibility
+
+==== Separation of Concerns
+
+* I/O layer separate from compression logic
+* Format parsing separate from decompression
+* Clear boundaries between components
+
+==== Model-Driven Architecture
+
+* All data structures are model classes
+* Models use Lutaml::Model for serialization
+* Type-safe attribute definitions
+
+=== Implementation
+
+[source,ruby]
+----
+# Good: Clear separation
+class CABDecompressor
+  def initialize(handle)
+    @parser = CAB::Parser.new(handle)
+    @cabinet = @parser.parse
+  end
+
+  def extract_file(filename, output)
+    file = find_file(filename)
+    folder = @cabinet.folders[file.folder_index]
+    decompressor = create_decompressor(folder.compression_type)
+    decompressor.decompress(folder.data, output)
+  end
+end
+
+# Bad: Mixed concerns
+class BadDecompressor
+  def extract(filename)
+    # Parsing, decompression, I/O all mixed together
+  end
+end
+----
+
+=== Bibliography
+
+* SOLID Principles
+* Design Patterns by Gang of Four
+* Clean Architecture by Robert Martin

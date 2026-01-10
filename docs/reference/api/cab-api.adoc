@@ -1,0 +1,592 @@
+---
+layout: default
+title: CAB API
+parent: API Reference
+grand_parent: Reference
+nav_order: 1
+---
+
+== CAB API Reference
+:toc:
+
+=== Purpose
+
+Complete API reference for [`Cabriolet::CAB::Decompressor`](lib/cabriolet/cab/decompressor.rb) and [`Cabriolet::CAB::Compressor`](lib/cabriolet/cab/compressor.rb) classes.
+
+=== References
+
+* xref:../../guides/formats/cab-format.adoc[CAB Format Guide]
+* xref:models.adoc[Model Classes]
+* xref:system-io.adoc[System I/O Classes]
+
+== CAB::Decompressor
+
+=== Class Overview
+
+The [`Cabriolet::CAB::Decompressor`](lib/cabriolet/cab/decompressor.rb) class handles extraction and parsing of Microsoft Cabinet archives.
+
+[source,ruby]
+----
+module Cabriolet
+  module CAB
+    class Decompressor
+      # Main decompressor implementation
+    end
+  end
+end
+----
+
+=== Constructor
+
+==== `new(source, options = {})`
+
+Creates a new CAB decompressor instance.
+
+**Parameters:**
+
+* `source` (String, IO, Handle) - Cabinet file path, IO object, or custom handle
+* `options` (Hash) - Optional configuration
+
+**Options:**
+
+* `:salvage` (Boolean) - Enable salvage mode for corrupted archives (default: `false`)
+* `:verify_checksums` (Boolean) - Verify file checksums (default: `true`)
+* `:read_buffer` (Integer) - Read buffer size in bytes (default: `32768`)
+* `:io_system` (IOSystem) - Custom I/O system (default: `System::IOSystem.new`)
+* `:offset` (Integer) - Starting offset for embedded cabinets (default: `0`)
+
+**Returns:** New `Decompressor` instance
+
+**Raises:**
+* [`Cabriolet::IOError`](lib/cabriolet/errors.rb:10) - File not found or not readable
+* [`Cabriolet::InvalidHeaderError`](lib/cabriolet/errors.rb:25) - Invalid cabinet header
+* [`Cabriolet::UnsupportedFormatError`](lib/cabriolet/errors.rb:50) - Unsupported cabinet version
+
+**Example:**
+
+[source,ruby]
+----
+# From file path
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+
+# With options
+decompressor = Cabriolet::CAB::Decompressor.new(
+  'archive.cab',
+  salvage: true,
+  verify_checksums: false
+)
+
+# From IO object
+File.open('archive.cab', 'rb') do |io|
+  decompressor = Cabriolet::CAB::Decompressor.new(io)
+end
+
+# From memory
+data = File.binread('archive.cab')
+memory_handle = Cabriolet::System::MemoryHandle.new(data)
+decompressor = Cabriolet::CAB::Decompressor.new(memory_handle)
+----
+
+**Thread Safety:** Constructor is thread-safe. The returned instance is not thread-safe by default.
+
+=== Instance Methods
+
+==== `cabinet`
+
+Returns the cabinet metadata.
+
+**Returns:** [`Cabriolet::Models::Cabinet`](lib/cabriolet/models/cabinet.rb:5)
+
+**Example:**
+
+[source,ruby]
+----
+cabinet = decompressor.cabinet
+puts "Version: #{cabinet.version}"
+puts "File count: #{cabinet.file_count}"
+puts "Set ID: #{cabinet.set_id}"
+----
+
+==== `files`
+
+Returns array of all files in the cabinet.
+
+**Returns:** `Array<Cabriolet::Models::File>`
+
+**Example:**
+
+[source,ruby]
+----
+decompressor.files.each do |file|
+  puts "#{file.filename}: #{file.uncompressed_size} bytes"
+end
+----
+
+==== `folders`
+
+Returns array of all compression folders.
+
+**Returns:** `Array<Cabriolet::Models::Folder>`
+
+**Example:**
+
+[source,ruby]
+----
+decompressor.folders.each_with_index do |folder, idx|
+  puts "Folder #{idx}: #{folder.compression_type}"
+end
+----
+
+==== `extract_file(filename, output_path, options = {})`
+
+Extracts a single file from the cabinet.
+
+**Parameters:**
+
+* `filename` (String) - File to extract
+* `output_path` (String) - Destination path
+* `options` (Hash) - Optional configuration
+
+**Options:**
+
+* `:overwrite` (Boolean) - Overwrite existing files (default: `true`)
+* `:preserve_attributes` (Boolean) - Preserve file attributes (default: `true`)
+* `:preserve_times` (Boolean) - Preserve modification times (default: `true`)
+
+**Returns:** `true` on success
+
+**Raises:**
+* [`Cabriolet::IOError`](lib/cabriolet/errors.rb:10) - Write error
+* [`Cabriolet::DecompressionError`](lib/cabriolet/errors.rb:35) - Decompression failed
+* [`Cabriolet::ChecksumError`](lib/cabriolet/errors.rb:40) - Checksum mismatch
+
+**Example:**
+
+[source,ruby]
+----
+# Basic extraction
+decompressor.extract_file('readme.txt', 'output/readme.txt')
+
+# With options
+decompressor.extract_file(
+  'data.bin',
+  'output/data.bin',
+  overwrite: false,
+  preserve_times: true
+)
+----
+
+==== `extract_all(output_dir, options = {})`
+
+Extracts all files from the cabinet.
+
+**Parameters:**
+
+* `output_dir` (String) - Output directory
+* `options` (Hash) - Optional configuration (same as `extract_file`)
+
+**Returns:** `Integer` - Number of files extracted
+
+**Raises:** Same as `extract_file`
+
+**Example:**
+
+[source,ruby]
+----
+# Extract all files
+count = decompressor.extract_all('output')
+puts "Extracted #{count} files"
+
+# With pattern filter
+count = decompressor.extract_all('output', filter: '*.txt')
+----
+
+==== `extract_to_memory(filename)`
+
+Extracts a file to memory without writing to disk.
+
+**Parameters:**
+
+* `filename` (String) - File to extract
+
+**Returns:** `String` (binary) - Extracted file contents
+
+**Raises:** Same as `extract_file`
+
+**Example:**
+
+[source,ruby]
+----
+# Extract to memory
+data = decompressor.extract_to_memory('config.json')
+config = JSON.parse(data)
+
+# Process binary data
+image_data = decompressor.extract_to_memory('logo.png')
+process_image(image_data)
+----
+
+==== `test`
+
+Tests cabinet integrity without extracting.
+
+**Returns:** `Hash` with test results
+
+**Example:**
+
+[source,ruby]
+----
+result = decompressor.test
+
+if result[:valid]
+  puts "Cabinet is valid"
+  puts "Files: #{result[:file_count]}"
+else
+  puts "Cabinet is corrupted"
+  puts "Errors: #{result[:errors].join(', ')}"
+end
+----
+
+==== `find(pattern)`
+
+Finds files matching a pattern.
+
+**Parameters:**
+
+* `pattern` (String, Regexp) - Search pattern
+
+**Returns:** `Array<Cabriolet::Models::File>` - Matching files
+
+**Example:**
+
+[source,ruby]
+----
+# Find by extension
+txt_files = decompressor.find('*.txt')
+
+# Find by regexp
+log_files = decompressor.find(/\.log$/i)
+
+# Find in subdirectory
+docs = decompressor.find('docs/**/*.md')
+----
+
+==== `close`
+
+Closes the decompressor and releases resources.
+
+**Returns:** `nil`
+
+**Example:**
+
+[source,ruby]
+----
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+begin
+  decompressor.extract_all('output')
+ensure
+  decompressor.close
+end
+
+# Or use block form
+Cabriolet::CAB::Decompressor.open('archive.cab') do |decomp|
+  decomp.extract_all('output')
+end  # Automatically closed
+----
+
+=== Class Methods
+
+==== `search(filename, options = {})`
+
+Searches for embedded cabinets within a file.
+
+**Parameters:**
+
+* `filename` (String) - File to search
+* `options` (Hash) - Search options
+
+**Options:**
+
+* `:min_size` (Integer) - Minimum cabinet size (default: `1000`)
+* `:max_results` (Integer) - Maximum results to return (default: unlimited)
+* `:validate` (Boolean) - Validate found cabinets (default: `true`)
+
+**Returns:** `Array<Hash>` - Array of found cabinets with metadata
+
+**Example:**
+
+[source,ruby]
+----
+results = Cabriolet::CAB::Decompressor.search('installer.exe')
+
+results.each do |result|
+  puts "Found cabinet at offset #{result[:offset]}"
+  puts "  Size: #{result[:size]} bytes"
+  puts "  Files: #{result[:file_count]}"
+end
+----
+
+==== `open(source, options = {}, &block)`
+
+Opens a cabinet with automatic resource management.
+
+**Parameters:**
+
+* `source` - Same as constructor
+* `options` - Same as constructor
+* `block` - Block to execute with decompressor
+
+**Yields:** `Decompressor` instance
+
+**Returns:** Block return value
+
+**Example:**
+
+[source,ruby]
+----
+Cabriolet::CAB::Decompressor.open('archive.cab') do |decomp|
+  decomp.files.each do |file|
+    puts file.filename
+  end
+end  # Automatically closed
+----
+
+== CAB::Compressor
+
+=== Class Overview
+
+The `Cabriolet::CAB::Compressor` class creates Microsoft Cabinet archives.
+
+=== Constructor
+
+==== `new(options = {})`
+
+Creates a new CAB compressor instance.
+
+**Parameters:**
+
+* `options` (Hash) - Configuration options
+
+**Options:**
+
+* `:compression` (Symbol) - Default compression (`:mszip`, `:lzx`, `:quantum`, `:none`)
+* `:compression_level` (Integer) - Compression level 1-21 for LZX (default: `15`)
+* `:set_id` (Integer) - Cabinet set ID (default: random)
+* `:cabinet_id` (Integer) - Cabinet ID within set (default: `0`)
+* `:max_cabinet_size` (Integer) - Maximum cabinet size for splitting (default: unlimited)
+
+**Returns:** New `Compressor` instance
+
+**Example:**
+
+[source,ruby]
+----
+# Default compression (MSZIP)
+compressor = Cabriolet::CAB::Compressor.new
+
+# With LZX compression
+compressor = Cabriolet::CAB::Compressor.new(
+  compression: :lzx,
+  compression_level: 21
+)
+
+# For multi-part archives
+compressor = Cabriolet::CAB::Compressor.new(
+  max_cabinet_size: 1_440_000  # 1.44 MB
+)
+----
+
+=== Instance Methods
+
+==== `add_file(path, options = {})`
+
+Adds a file to the cabinet.
+
+**Parameters:**
+
+* `path` (String) - File path
+* `options` (Hash) - File options
+
+**Options:**
+
+* `:compression` (Symbol) - Override default compression
+* `:filename` (String) - Archive filename (default: basename)
+* `:attributes` (Integer) - File attributes
+* `:time` (Time) - File modification time
+
+**Returns:** `self`
+
+**Example:**
+
+[source,ruby]
+----
+compressor.add_file('readme.txt')
+compressor.add_file('data.bin', compression: :lzx)
+compressor.add_file('video.mp4', compression: :none)
+----
+
+==== `add_directory(path, options = {})`
+
+Recursively adds a directory.
+
+**Parameters:**
+
+* `path` (String) - Directory path
+* `options` (Hash) - Options
+
+**Options:**
+
+* `:compression` (Symbol) - Compression for all files
+* `:exclude` (Array, Regexp) - Patterns to exclude
+* `:recursive` (Boolean) - Recurse subdirectories (default: `true`)
+
+**Returns:** `self`
+
+**Example:**
+
+[source,ruby]
+----
+# Add entire directory
+compressor.add_directory('mydata/')
+
+# With exclusions
+compressor.add_directory(
+  'project/',
+  exclude: ['.git', '*.log', /\.tmp$/]
+)
+----
+
+==== `add_from_memory(filename, data, options = {})`
+
+Adds a file from memory.
+
+**Parameters:**
+
+* `filename` (String) - Filename in archive
+* `data` (String) - File contents
+* `options` (Hash) - File options
+
+**Returns:** `self`
+
+**Example:**
+
+[source,ruby]
+----
+# Add generated content
+json_data = JSON.generate({key: 'value'})
+compressor.add_from_memory('config.json', json_data)
+
+# Add with custom time
+compressor.add_from_memory(
+  'report.txt',
+  report_text,
+  time: Time.new(2024, 1, 1)
+)
+----
+
+==== `add_folder(path, options = {})`
+
+Creates a new compression folder and adds files.
+
+**Parameters:**
+
+* `path` (String) - Directory path
+* `options` (Hash) - Folder options
+
+**Options:**
+
+* `:compression` (Symbol) - Compression type for this folder
+
+**Returns:** `self`
+
+**Example:**
+
+[source,ruby]
+----
+# Different compression for different content
+compressor.add_folder('text_files/', compression: :quantum)
+compressor.add_folder('binary_files/', compression: :lzx)
+compressor.add_folder('media_files/', compression: :none)
+----
+
+==== `compress(output_path)`
+
+Compresses files to a cabinet.
+
+**Parameters:**
+
+* `output_path` (String) - Output cabinet path
+
+**Returns:** `true` on success
+
+**Raises:**
+* `Cabriolet::IOError` - Write error
+* `Cabriolet::CompressionError` - Compression failed
+
+**Example:**
+
+[source,ruby]
+----
+compressor.add_directory('mydata/')
+compressor.compress('output.cab')
+----
+
+==== `compress_to_memory`
+
+Compresses to memory without writing to disk.
+
+**Returns:** `String` (binary) - Cabinet data
+
+**Example:**
+
+[source,ruby]
+----
+compressor.add_from_memory('file.txt', 'content')
+cabinet_data = compressor.compress_to_memory
+
+# Send over network
+http.post('/upload', cabinet_data)
+----
+
+==== `set_comment(text)`
+
+Sets cabinet comment.
+
+**Parameters:**
+
+* `text` (String) - Comment text
+
+**Returns:** `self`
+
+**Example:**
+
+[source,ruby]
+----
+compressor.set_comment("Created by MyApp v1.0")
+----
+
+=== Thread Safety
+
+**Decompressor:**
+* Constructor is thread-safe
+* Instance methods are not thread-safe
+* Use one instance per thread or add synchronization
+
+**Compressor:**
+* Not thread-safe
+* Create separate instances for concurrent compression
+
+=== Performance Notes
+
+1. **Buffer sizes** affect performance significantly
+2. **LZX compression** is slowest but best compression
+3. **MSZIP** offers good balance of speed and compression
+4. **Memory operations** are faster than disk I/O
+5. **Parallel extraction** can improve throughput
+
+=== Bibliography
+
+* xref:../../guides/basic-usage/extracting-files.adoc[Extracting Files Guide]
+* xref:../../guides/basic-usage/creating-archives.adoc[Creating Archives Guide]
+* xref:../../guides/advanced-usage/multi-part-cabinets.adoc[Multi-Part Cabinets]
+* Microsoft Cabinet SDK Documentation

@@ -1,0 +1,467 @@
+---
+layout: default
+title: System I/O
+parent: API Reference
+grand_parent: Reference
+nav_order: 9
+---
+
+== System I/O Reference
+:toc:
+
+=== Purpose
+
+API reference for [`Cabriolet::System::IOSystem`](lib/cabriolet/system/io_system.rb), [`FileHandle`](lib/cabriolet/system/file_handle.rb), and [`MemoryHandle`](lib/cabriolet/system/memory_handle.rb) classes.
+
+=== References
+
+* xref:../../guides/advanced-usage/custom-io-handlers.adoc[Custom I/O Handlers Guide]
+* xref:../../guides/advanced-usage/memory-operations.adoc[Memory Operations Guide]
+* xref:../../concepts/io-abstraction.adoc[I/O Abstraction Concepts]
+
+== IOSystem
+
+=== Class Overview
+
+The [`IOSystem`](lib/cabriolet/system/io_system.rb) class provides a factory for creating I/O handles with platform abstraction.
+
+**Location:** [`lib/cabriolet/system/io_system.rb`](lib/cabriolet/system/io_system.rb)
+
+=== Constructor
+
+==== `new`
+
+Creates a new I/O system instance.
+
+**Example:**
+[source,ruby]
+----
+io_system = Cabriolet::System::IOSystem.new
+----
+
+=== Instance Methods
+
+==== `open(filename, mode)`
+
+Opens a file and returns a handle.
+
+**Parameters:**
+* `filename` (String) - File path
+* `mode` (String) - Open mode ('r', 'rb', 'w', 'wb', etc.)
+
+**Returns:** Handle object (FileHandle or MemoryHandle)
+
+**Example:**
+[source,ruby]
+----
+handle = io_system.open('archive.cab', 'rb')
+data = handle.read(100)
+handle.close
+----
+
+==== `close(handle)`
+
+Closes a handle.
+
+**Parameters:**
+* `handle` (Handle) - Handle to close
+
+==== `register_memory_file(name, data)`
+
+Registers in-memory file data.
+
+**Parameters:**
+* `name` (String) - Virtual filename
+* `data` (String) - Binary data
+
+**Example:**
+[source,ruby]
+----
+io_system.register_memory_file('virtual.cab', cabinet_data)
+handle = io_system.open('virtual.cab', 'rb')
+----
+
+== FileHandle
+
+=== Class Overview
+
+Standard file system handle implementation.
+
+**Location:** [`lib/cabriolet/system/file_handle.rb`](lib/cabriolet/system/file_handle.rb)
+
+=== Constructor
+
+==== `new(filename, mode)`
+
+**Parameters:**
+* `filename` (String) - File path
+* `mode` (String) - Open mode
+
+**Example:**
+[source,ruby]
+----
+handle = Cabriolet::System::FileHandle.new('archive.cab', 'rb')
+----
+
+=== Instance Methods
+
+==== `read(size = nil)`
+
+Reads data from file.
+
+**Parameters:**
+* `size` (Integer, nil) - Bytes to read (nil = read all)
+
+**Returns:** String (binary) or nil at EOF
+
+**Example:**
+[source,ruby]
+----
+# Read 1024 bytes
+chunk = handle.read(1024)
+
+# Read all remaining
+all_data = handle.read
+----
+
+==== `write(data)`
+
+Writes data to file.
+
+**Parameters:**
+* `data` (String) - Data to write
+
+**Returns:** Integer - Bytes written
+
+==== `seek(offset, whence = IO::SEEK_SET)`
+
+Seeks to position.
+
+**Parameters:**
+* `offset` (Integer) - Offset in bytes
+* `whence` (Integer) - Seek mode
+
+**Whence values:**
+* `IO::SEEK_SET` (0) - Absolute position
+* `IO::SEEK_CUR` (1) - Relative to current
+* `IO::SEEK_END` (2) - Relative to end
+
+**Returns:** Integer - New position
+
+**Example:**
+[source,ruby]
+----
+# Seek to absolute position
+handle.seek(1000)
+
+# Seek forward 100 bytes
+handle.seek(100, IO::SEEK_CUR)
+
+# Seek to end
+handle.seek(0, IO::SEEK_END)
+----
+
+==== `tell`
+
+Returns current position.
+
+**Returns:** Integer - Current byte offset
+
+==== `eof?`
+
+Checks if at end of file.
+
+**Returns:** Boolean
+
+==== `size`
+
+Returns file size.
+
+**Returns:** Integer - Total file size in bytes
+
+==== `close`
+
+Closes the file handle.
+
+**Example:**
+[source,ruby]
+----
+handle = Cabriolet::System::FileHandle.new('file.cab', 'rb')
+begin
+  data = handle.read
+ensure
+  handle.close
+end
+----
+
+== MemoryHandle
+
+=== Class Overview
+
+In-memory handle implementation for binary data.
+
+**Location:** [`lib/cabriolet/system/memory_handle.rb`](lib/cabriolet/system/memory_handle.rb)
+
+=== Constructor
+
+==== `new(data = nil)`
+
+**Parameters:**
+* `data` (String, nil) - Initial binary data
+
+**Example:**
+[source,ruby]
+----
+# Create empty handle
+handle = Cabriolet::System::MemoryHandle.new
+
+# Create with data
+data = File.binread('archive.cab')
+handle = Cabriolet::System::MemoryHandle.new(data)
+----
+
+=== Instance Methods
+
+All methods same as FileHandle, operating on in-memory buffer:
+
+* `read(size = nil)`
+* `write(data)`
+* `seek(offset, whence = IO::SEEK_SET)`
+* `tell`
+* `eof?`
+* `size`
+* `close`
+
+==== `to_s`
+
+Returns entire buffer as string.
+
+**Returns:** String (binary) - Complete buffer contents
+
+==== `clear`
+
+Clears the buffer and resets position.
+
+**Example:**
+[source,ruby]
+----
+handle = Cabriolet::System::MemoryHandle.new
+handle.write("MSCF")
+handle.write([0, 0, 0, 0].pack('L<'))
+
+# Get all data
+cabinet_data = handle.to_s
+
+# Clear for reuse
+handle.clear
+----
+
+=== Memory Efficiency
+
+MemoryHandle uses a StringIO-like approach:
+
+* Data stored as binary string
+* Position tracked separately
+* No file system overhead
+* Limited only by available RAM
+
+== Custom Handle Implementation
+
+=== Required Methods
+
+To create a custom handle, implement:
+
+[source,ruby]
+----
+class CustomHandle
+  def read(size)
+    # Read up to size bytes
+  end
+
+  def write(data)
+    # Write data, return bytes written
+  end
+
+  def seek(offset, whence = IO::SEEK_SET)
+    # Seek to position, return new position
+  end
+
+  def tell
+    # Return current position
+  end
+
+  def eof?
+    # Return true if at end
+  end
+
+  def size
+    # Return total size
+  end
+
+  def close
+    # Clean up resources
+  end
+end
+----
+
+=== Example: Network Handle
+
+[source,ruby]
+----
+class NetworkHandle
+  def initialize(url)
+    @url = URI(url)
+    @position = 0
+    @size = fetch_size
+    @buffer = String.new(encoding: Encoding::BINARY)
+  end
+
+  def read(size)
+    # Fetch data on demand
+    while @buffer.bytesize - @position < size && !eof?
+      fetch_chunk
+    end
+
+    data = @buffer[@position, size]
+    @position += data.bytesize if data
+    data
+  end
+
+  def seek(offset, whence = IO::SEEK_SET)
+    case whence
+    when IO::SEEK_SET
+      @position = offset
+    when IO::SEEK_CUR
+      @position += offset
+    when IO::SEEK_END
+      @position = @size + offset
+    end
+    @position
+  end
+
+  def tell
+    @position
+  end
+
+  def eof?
+    @position >= @size
+  end
+
+  def size
+    @size
+  end
+
+  def close
+    @buffer.clear
+  end
+
+  private
+
+  def fetch_size
+    # HTTP HEAD request to get Content-Length
+    # ...
+  end
+
+  def fetch_chunk
+    # HTTP GET with Range header
+    # ...
+  end
+end
+----
+
+== Usage Patterns
+
+=== File Operations
+
+[source,ruby]
+----
+# Standard file reading
+handle = Cabriolet::System::FileHandle.new('archive.cab', 'rb')
+
+# Read header
+signature = handle.read(4)
+
+# Seek to specific offset
+handle.seek(100)
+
+# Read data
+data = handle.read(1024)
+
+handle.close
+----
+
+=== Memory Operations
+
+[source,ruby]
+----
+# Load file to memory
+data = File.binread('archive.cab')
+handle = Cabriolet::System::MemoryHandle.new(data)
+
+# Process in memory
+decompressor = Cabriolet::CAB::Decompressor.new(handle)
+files = decompressor.extract_to_memory('file.txt')
+----
+
+=== Mixed Operations
+
+[source,ruby]
+----
+io_system = Cabriolet::System::IOSystem.new
+
+# Some files from disk
+file_handle = io_system.open('disk_archive.cab', 'rb')
+
+# Some from memory
+memory_data = download_from_network
+io_system.register_memory_file('network_archive.cab', memory_data)
+memory_handle = io_system.open('network_archive.cab', 'rb')
+
+# Process both the same way
+[file_handle, memory_handle].each do |handle|
+  decompressor = Cabriolet::CAB::Decompressor.new(handle)
+  decompressor.extract_all("output_#{handle.object_id}")
+  handle.close
+end
+----
+
+== Thread Safety
+
+* **IOSystem**: Thread-safe for concurrent `open` calls
+* **FileHandle**: Not thread-safe, use one per thread
+* **MemoryHandle**: Not thread-safe, use one per thread
+
+Use mutex for shared handles:
+
+[source,ruby]
+----
+mutex = Mutex.new
+handle = Cabriolet::System::FileHandle.new('archive.cab', 'rb')
+
+threads = 10.times.map do
+  Thread.new do
+    mutex.synchronize do
+      data = handle.read(1024)
+      # Process data
+    end
+  end
+end
+
+threads.each(&:join)
+handle.close
+----
+
+== Performance Considerations
+
+1. **Buffer sizes**: Larger buffers = fewer syscalls
+2. **Sequential access**: Much faster than random seeking
+3. **Memory handles**: Faster than file I/O, but use more RAM
+4. **Custom handles**: Profile to ensure performance
+5. **Resource cleanup**: Always close handles
+
+== Bibliography
+
+* xref:../../guides/advanced-usage/custom-io-handlers.adoc[Custom I/O Handlers]
+* xref:../../guides/advanced-usage/memory-operations.adoc[Memory Operations]
+* xref:../../architecture/system-layer.adoc[System Layer Architecture]
+* Ruby I/O Documentation

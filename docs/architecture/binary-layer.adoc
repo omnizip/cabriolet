@@ -1,0 +1,22 @@
+---
+layout: default
+title: Binary Layer
+parent: Architecture
+nav_order: 3
+---
+
+== Binary Layer
+
+=== Components
+
+* **Bitstream**: Bit-level I/O
+* **BitstreamWriter**: Writing compressed data
+* **Structures**: Binary structure parsing
+
+=== Design
+
+Provides low-level binary and bitstream operations for compression algorithms.
+
+=== Bibliography
+
+* xref:../concepts/bitstreams.adoc[Bitstream Processing]

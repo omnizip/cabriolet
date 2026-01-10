@@ -1,0 +1,125 @@
+---
+layout: default
+title: I/O Abstraction
+parent: Concepts
+nav_order: 6
+---
+
+== I/O Abstraction
+:toc:
+
+=== Purpose
+
+Understanding Cabriolet's platform-independent I/O layer.
+
+=== References
+
+* xref:../reference/api/system-io.adoc[System I/O API]
+* xref:../guides/advanced-usage/custom-io-handlers.adoc[Custom I/O Handlers]
+
+== Abstraction Layer
+
+=== Architecture
+
+[source]
+----
+Application Code
+       ↓
+┌──────────────┐
+│  IOSystem    │  Factory for handles
+└──────┬───────┘
+       │ creates
+       ▼
+┌──────────────┐
+│   Handle     │  Abstract interface
+└──────┬───────┘
+       │ implements
+   ┌───┴────┬──────────┐
+   ▼        ▼          ▼
+FileHandle  MemoryHandle  CustomHandle
+   │            │
+Platform   In-Memory
+Specific    Buffer
+----
+
+=== Benefits
+
+* **Platform independence**: Same code on Windows/Linux/macOS
+* **Testability**: Easy to mock with memory handles
+* **Extensibility**: Add custom storage backends
+* **Consistency**: Uniform interface for all I/O
+
+== Handle Interface
+
+All handles implement:
+
+[source,ruby]
+----
+class Handle
+  def read(size)
+    # Read up to size bytes
+  end
+
+  def write(data)
+    # Write data
+  end
+
+  def seek(offset, whence = IO::SEEK_SET)
+    # Seek to position
+  end
+
+  def tell
+    # Return current position
+  end
+
+  def eof?
+    # Check if at end
+  end
+
+  def size
+    # Total size
+  end
+
+  def close
+    # Clean up resources
+  end
+end
+----
+
+== Implementation Types
+
+=== FileHandle
+
+Direct file system access:
+
+[source,ruby]
+----
+handle = Cabriolet::System::FileHandle.new('archive.cab', 'rb')
+data = handle.read(1024)
+handle.close
+----
+
+=== MemoryHandle
+
+In-memory buffer:
+
+[source,ruby]
+----
+data = File.binread('archive.cab')
+handle = Cabriolet::System::MemoryHandle.new(data)
+----
+
+=== Custom Handles
+
+Network, database, cloud storage, etc.
+
+== Performance Considerations
+
+* **Buffering**: Critical for performance
+* **Sequential access**: Much faster than random
+* **Memory vs I/O**: Trade-offs based on use case
+
+== Bibliography
+
+* xref:../reference/api/system-io.adoc[System I/O Reference]
+* xref:../architecture/system-layer.adoc[System Layer Architecture]

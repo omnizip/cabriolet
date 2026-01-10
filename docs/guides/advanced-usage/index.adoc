@@ -1,0 +1,93 @@
+---
+layout: default
+title: Advanced Usage
+parent: Guides
+nav_order: 3
+has_children: true
+---
+
+== Advanced Usage
+
+This section covers advanced topics for power users and developers who need to go beyond basic extraction and compression.
+
+=== Topics Covered
+
+==== xref:multi-part-cabinets.adoc[Multi-Part Cabinets]
+
+Working with cabinet files split across multiple parts:
+
+* Extracting multi-part archives
+* Creating split archives
+* Handling disk spanning scenarios
+* Managing continuation cabinets
+
+==== xref:embedded-cabinets.adoc[Embedded Cabinets]
+
+Finding and extracting cabinets embedded in other files:
+
+* Searching for embedded archives
+* Extracting from executables
+* Handling multiple embedded cabinets
+* Forensic analysis techniques
+
+==== xref:custom-io-handlers.adoc[Custom I/O Handlers]
+
+Implementing custom storage backends:
+
+* Understanding the I/O abstraction layer
+* Creating custom handle types
+* Network and cloud storage
+* Database and encrypted file support
+
+==== xref:error-handling.adoc[Error Handling]
+
+Robust error recovery and handling:
+
+* Error class hierarchy
+* Common errors and solutions
+* Retry and recovery patterns
+* Production-ready error handling
+
+==== xref:salvage-mode.adoc[Salvage Mode]
+
+Recovering data from corrupted archives:
+
+* When and how to use salvage mode
+* Partial file recovery
+* Block-level recovery techniques
+* Quality assessment of recovered data
+
+==== xref:performance-tuning.adoc[Performance Tuning]
+
+Optimizing compression and extraction:
+
+* Buffer size configuration
+* Algorithm selection strategies
+* Parallel processing
+* Benchmarking and profiling
+
+==== xref:memory-operations.adoc[Memory Operations]
+
+In-memory archive processing:
+
+* Creating and extracting without disk I/O
+* Web application integration
+* Memory-efficient patterns
+* Archive transformation techniques
+
+=== Prerequisites
+
+These guides assume you're familiar with:
+
+* Basic Cabriolet usage (see xref:../basic-usage/index.adoc[Basic Usage])
+* Ruby programming fundamentals
+* File format basics (see xref:../formats/index.adoc[Format Guides])
+
+=== Getting Help
+
+If you encounter issues with advanced features:
+
+1. Check the xref:error-handling.adoc[Error Handling guide]
+2. Review relevant xref:../../reference/api/index.adoc[API documentation]
+3. Try xref:salvage-mode.adoc[salvage mode] for corrupted archives
+4. Consult the xref:../../appendix/troubleshooting.adoc[Troubleshooting guide]

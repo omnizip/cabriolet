@@ -1,0 +1,27 @@
+---
+layout: default
+title: Format Layer
+parent: Architecture
+nav_order: 5
+---
+
+== Format Layer
+
+=== Format Support
+
+Each format has:
+
+* **Parser**: Reads file structure
+* **Decompressor**: Extracts content
+* **Compressor**: Creates archives
+* **Models**: Data structures
+
+Formats: CAB, CHM, SZDD, KWAJ, HLP, LIT, OAB
+
+=== Design
+
+Each format is self-contained with minimal dependencies.
+
+=== Bibliography
+
+* xref:../guides/formats/index.adoc[Format Guides]

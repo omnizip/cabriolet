@@ -1,0 +1,52 @@
+---
+layout: default
+title: Data Archival
+parent: Use Cases
+grand_parent: Guides
+---
+
+== Data Archival and Long-term Storage
+
+=== Choosing Archive Format
+
+For long-term storage:
+
+* **CAB with MSZIP**: Best compatibility, widely supported
+* **Avoid Quantum**: Proprietary, less supported
+* **Preserve metadata**: Timestamps, attributes
+
+=== Archival Example
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Archive with maximum compatibility
+cab = Cabriolet::CAB::Compressor.new(
+  output: 'archive-2024.cab',
+  compression: :mszip,  # Maximum compatibility
+  preserve_paths: true,
+  preserve_timestamps: true
+)
+
+cab.add_directory('documents/')
+cab.compress
+----
+
+=== Verification
+
+[source,ruby]
+----
+# Periodic integrity checks
+cab = Cabriolet::CAB::Parser.new.parse('archive-2024.cab')
+
+cab.files.each do |file|
+  checksum = Digest::SHA256.hexdigest(file.data)
+  puts "#{file.name}: #{checksum}"
+end
+----
+
+=== See Also
+
+* xref:format-comparison.adoc[Format Comparison]
+* xref:guides/compression/choosing-algorithm.adoc[Choosing Algorithm]

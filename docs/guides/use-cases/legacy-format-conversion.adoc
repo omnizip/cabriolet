@@ -1,0 +1,49 @@
+---
+layout: default
+title: Legacy Format Conversion
+parent: Use Cases
+grand_parent: Guides
+---
+
+== Legacy Format Conversion
+
+=== Converting Old CAB Archives
+
+[source,ruby]
+----
+require 'cabriolet'
+require 'zip'
+
+# Convert CAB to ZIP
+old_cab = Cabriolet::CAB::Parser.new.parse('legacy.cab')
+
+Zip::File.open('modern.zip', Zip::File::CREATE) do |zipfile|
+  old_cab.files.each do |file|
+    zipfile.get_output_stream(file.name) { |f| f.write(file.data) }
+  end
+end
+----
+
+=== Batch Conversion
+
+[source,ruby]
+----
+# Convert all CAB files in directory
+Dir.glob('old_archives/*.cab').each do |cab_file|
+  cab = Cabriolet::CAB::Parser.new.parse(cab_file)
+  output = cab_file.sub('.cab', '.zip')
+
+  Zip::File.open(output, Zip::File::CREATE) do |zipfile|
+    cab.files.each do |file|
+      zipfile.get_output_stream(file.name) { |f| f.write(file.data) }
+    end
+  end
+
+  puts "Converted: #{cab_file} → #{output}"
+end
+----
+
+=== See Also
+
+* xref:examples/batch-processing.adoc[Batch Processing]
+* xref:format-comparison.adoc[Format Comparison]

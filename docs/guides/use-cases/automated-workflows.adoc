@@ -1,0 +1,57 @@
+---
+layout: default
+title: Automated Workflows
+parent: Use Cases
+grand_parent: Guides
+---
+
+== Automated Workflows and CI/CD Integration
+
+=== GitHub Actions Example
+
+[source,yaml]
+----
+name: Build and Package
+on: [push]
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.2
+      - run: gem install cabriolet
+      - run: ruby build_package.rb
+      - uses: actions/upload-artifact@v2
+        with:
+          name: release-package
+          path: dist/*.cab
+----
+
+=== Build Script
+
+[source,ruby]
+----
+# build_package.rb
+require 'cabriolet'
+
+version = ENV['VERSION'] || '1.0.0'
+output = "dist/myapp-#{version}.cab"
+
+cab = Cabriolet::CAB::Compressor.new(
+  output: output,
+  compression: :lzx
+)
+
+cab.add_directory('build/')
+cab.compress
+
+puts "Package created: #{output}"
+----
+
+=== See Also
+
+* xref:examples/batch-processing.adoc[Batch Processing]
+* xref:guides/advanced-usage/error-handling.adoc[Error Handling]

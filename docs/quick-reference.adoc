@@ -1,0 +1,592 @@
+---
+title: Quick Reference
+nav_order: 2
+---
+
+== Quick Reference
+
+=== Purpose
+
+This page provides a quick reference for common Cabriolet operations, CLI commands, API patterns, and troubleshooting tips. Perfect for when you need a quick reminder without diving into detailed documentation.
+
+=== Common CLI Commands
+
+==== CAB Files
+
+[source,bash]
+----
+# Extract all files
+cabriolet extract archive.cab
+
+# Extract to specific directory
+cabriolet extract archive.cab -o /path/to/output
+
+# List contents
+cabriolet list archive.cab
+
+# Show detailed information
+cabriolet info archive.cab
+
+# Test integrity
+cabriolet test archive.cab
+
+# Create new CAB
+cabriolet create output.cab file1.txt file2.txt
+
+# Create with specific compression
+cabriolet create --compression mszip output.cab *.txt
+----
+
+==== CHM Files
+
+[source,bash]
+----
+# Extract CHM file
+cabriolet chm extract help.chm
+
+# List CHM contents
+cabriolet chm list help.chm
+
+# Extract specific file
+cabriolet chm extract help.chm index.html
+----
+
+==== SZDD Files
+
+[source,bash]
+----
+# Decompress SZDD file
+cabriolet szdd decompress file.ex_
+
+# Compress to SZDD
+cabriolet szdd compress file.exe
+----
+
+==== KWAJ Files
+
+[source,bash]
+----
+# Extract KWAJ archive
+cabriolet kwaj extract archive.kwaj
+
+# List KWAJ contents
+cabriolet kwaj list archive.kwaj
+----
+
+==== Global Options
+
+[source,bash]
+----
+# Verbose output
+cabriolet extract archive.cab --verbose
+
+# Force overwrite
+cabriolet extract archive.cab --force
+
+# Show version
+cabriolet --version
+
+# Show help
+cabriolet --help
+cabriolet extract --help
+----
+
+=== Common API Patterns
+
+==== Basic Extraction
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Extract CAB file
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+decompressor.extract('output/')
+
+# Extract specific file
+decompressor.extract_file('readme.txt', 'output/readme.txt')
+----
+
+==== Listing Contents
+
+[source,ruby]
+----
+# Iterate through files
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+decompressor.each_file do |file|
+  puts "#{file.name}: #{file.size} bytes"
+end
+
+# Get all files as array
+files = decompressor.files
+files.each { |f| puts f.name }
+----
+
+==== Getting Archive Information
+
+[source,ruby]
+----
+# Parse cabinet
+parser = Cabriolet::CAB::Parser.new('archive.cab')
+cabinet = parser.parse
+
+# Access metadata
+puts "Set ID: #{cabinet.header.set_id}"
+puts "Cabinet number: #{cabinet.header.cabinet_number}"
+puts "Total folders: #{cabinet.folders.size}"
+puts "Total files: #{cabinet.files.size}"
+----
+
+==== Creating Archives
+
+[source,ruby]
+----
+# Create new CAB file
+compressor = Cabriolet::CAB::Compressor.new('output.cab')
+compressor.add_file('file1.txt')
+compressor.add_file('file2.txt')
+compressor.compress
+
+# Create with specific algorithm
+compressor = Cabriolet::CAB::Compressor.new(
+  'output.cab',
+  compression: :mszip
+)
+compressor.add_files(['file1.txt', 'file2.txt'])
+compressor.compress
+----
+
+==== Working with CHM Files
+
+[source,ruby]
+----
+# Extract CHM
+chm = Cabriolet::CHM::Decompressor.new('help.chm')
+chm.extract('output/')
+
+# List entries
+chm.each_entry do |entry|
+  puts "#{entry.path}: #{entry.size} bytes"
+end
+----
+
+==== Memory Operations
+
+[source,ruby]
+----
+# Read from memory
+data = File.binread('archive.cab')
+decompressor = Cabriolet::CAB::Decompressor.new(
+  StringIO.new(data)
+)
+decompressor.extract('output/')
+
+# Write to memory
+output = StringIO.new
+compressor = Cabriolet::CAB::Compressor.new(output)
+compressor.add_file('file.txt')
+compressor.compress
+File.binwrite('output.cab', output.string)
+----
+
+==== Error Handling
+
+[source,ruby]
+----
+begin
+  decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+  decompressor.extract('output/')
+rescue Cabriolet::InvalidFormatError => e
+  puts "Invalid CAB format: #{e.message}"
+rescue Cabriolet::CorruptedDataError => e
+  puts "Corrupted data: #{e.message}"
+rescue Cabriolet::UnsupportedCompressionError => e
+  puts "Unsupported compression: #{e.message}"
+rescue StandardError => e
+  puts "Error: #{e.message}"
+end
+----
+
+=== Compression Algorithm Selection
+
+Use this flowchart to choose the right compression algorithm:
+
+[source]
+----
+                    Start
+                      │
+                      ▼
+              Need compression?
+                    /   \
+                  No     Yes
+                  │       │
+                  ▼       ▼
+                None   How important
+                      is compatibility?
+                          /    \
+                    Very      Not critical
+                    │              │
+                    ▼              ▼
+                  MSZIP      What's your
+                           priority?
+                          /     |      \
+                   Speed    Balance   Size
+                     │        │         │
+                     ▼        ▼         ▼
+                  LZSS    Quantum     LZX
+----
+
+==== Algorithm Characteristics
+
+[cols="1,2,2,2,2"]
+|===
+|Algorithm |Speed |Ratio |Memory |Use Case
+
+|None
+|Fastest
+|No compression
+|Minimal
+|Testing, already compressed
+
+|LZSS
+|Very fast
+|Moderate
+|Low
+|Quick compression needed
+
+|MSZIP
+|Fast
+|Good
+|Moderate
+|Maximum compatibility
+
+|LZX
+|Moderate
+|Excellent
+|High
+|Best compression ratio
+
+|Quantum
+|Moderate
+|Very good
+|Low
+|Memory-constrained
+|===
+
+==== Choosing by Scenario
+
+**Software distribution** → Use MSZIP (ZIP-compatible, widely supported)
+
+**Large files/bandwidth limited** → Use LZX (best compression)
+
+**Quick backups** → Use LZSS or None (fastest)
+
+**Limited memory** → Use Quantum (memory-efficient)
+
+**Testing/debugging** → Use None (no compression overhead)
+
+=== Error Troubleshooting
+
+==== Common Errors and Solutions
+
+**"Invalid CAB format"**
+
+[source,ruby]
+----
+# Check if file is actually a CAB
+parser = Cabriolet::CAB::Parser.new('file.cab')
+if parser.valid?
+  # Process
+else
+  puts "Not a valid CAB file"
+end
+
+# Try embedded CAB extraction
+extractor = Cabriolet::CAB::Extractor.new('file.exe')
+if extractor.has_embedded_cab?
+  extractor.extract_embedded('output.cab')
+end
+----
+
+**"Corrupted data"**
+
+[source,ruby]
+----
+# Use salvage mode to recover what's possible
+decompressor = Cabriolet::CAB::Decompressor.new(
+  'corrupted.cab',
+  salvage: true
+)
+decompressor.extract('output/')
+----
+
+**"Unsupported compression"**
+
+[source,ruby]
+----
+# Check compression type
+parser = Cabriolet::CAB::Parser.new('archive.cab')
+cabinet = parser.parse
+cabinet.folders.each do |folder|
+  puts "Compression: #{folder.compression_type}"
+end
+
+# Supported: None, LZSS, MSZIP, LZX, Quantum
+----
+
+**"File not found in archive"**
+
+[source,ruby]
+----
+# List all files first
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+file_list = decompressor.files.map(&:name)
+puts file_list
+
+# Check if file exists
+if file_list.include?('myfile.txt')
+  decompressor.extract_file('myfile.txt', 'output/')
+end
+----
+
+**"Multi-part cabinet error"**
+
+[source,ruby]
+----
+# Ensure all parts are present
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+if decompressor.multi_part?
+  # Provide callback for additional parts
+  decompressor.set_part_callback do |cabinet_number|
+    "archive-part#{cabinet_number}.cab"
+  end
+end
+decompressor.extract('output/')
+----
+
+==== Performance Issues
+
+**Slow extraction**
+
+* Use streaming extraction for large files
+* Extract specific files instead of all files
+* Increase available memory
+* Check disk I/O speed
+
+[source,ruby]
+----
+# Extract specific files only
+decompressor.extract_files(['file1.txt', 'file2.txt'], 'output/')
+
+# Use streaming for large files
+File.open('output/largefile.dat', 'wb') do |f|
+  decompressor.extract_stream('largefile.dat') do |chunk|
+    f.write(chunk)
+  end
+end
+----
+
+**High memory usage**
+
+* Process files one at a time
+* Use streaming operations
+* Consider Quantum compression for creation
+
+[source,ruby]
+----
+# Process files individually
+decompressor.each_file do |file|
+  decompressor.extract_file(file.name, "output/#{file.name}")
+  # File is processed and memory freed
+end
+----
+
+=== Quick Syntax Reference
+
+==== File Paths
+
+[source,ruby]
+----
+# Absolute path
+'/path/to/archive.cab'
+
+# Relative path
+'archive.cab'
+'./subdir/archive.cab'
+
+# With StringIO
+data = File.binread('archive.cab')
+StringIO.new(data)
+----
+
+==== Common Options
+
+[source,ruby]
+----
+# Extraction options
+{
+  output_dir: 'path/',
+  overwrite: true,
+  salvage: false,
+  preserve_paths: true
+}
+
+# Compression options
+{
+  compression: :mszip,  # :none, :lzss, :mszip, :lzx, :quantum
+  level: 6,            # 1-9 for some algorithms
+  block_size: 32768    # Compression block size
+}
+----
+
+==== Pattern Matching
+
+[source,ruby]
+----
+# Extract files matching pattern
+decompressor.files.each do |file|
+  if file.name =~ /\.txt$/
+    decompressor.extract_file(file.name, "output/#{file.name}")
+  end
+end
+
+# Filter by directory
+decompressor.files.select { |f| f.name.start_with?('docs/') }
+----
+
+=== Format-Specific Quick Tips
+
+==== CAB Format
+
+* Multi-part archives: Ensure all parts are available
+* Embedded CABs: Can be extracted from EXE files
+* Compression: Specified per folder, not per file
+* Max file size: 4GB per file (FAT32 limitation)
+
+==== CHM Format
+
+* Based on CAB with additional metadata
+* Contains HTML help content
+* Special system files start with `#` or `$`
+* May include full-text search index
+
+==== SZDD Format
+
+* Single-file compression only
+* Uses LZSS algorithm
+* Common for Windows system files (*.ex_, *.dl_)
+* Uncompressed name stored in header
+
+==== KWAJ Format
+
+* Compressed installer format
+* May contain multiple files
+* Variable compression methods
+* Often used in older installers
+
+=== Environment Setup
+
+==== Ruby Version
+
+[source,bash]
+----
+# Check Ruby version
+ruby --version
+
+# Required: Ruby 2.7 or higher
+# Recommended: Ruby 3.0+
+----
+
+==== Installation
+
+[source,bash]
+----
+# Install gem
+gem install cabriolet
+
+# Or add to Gemfile
+gem 'cabriolet'
+
+# Then bundle
+bundle install
+----
+
+==== Dependencies
+
+[source,ruby]
+----
+# Required gems (auto-installed)
+# - None: Pure Ruby implementation
+
+# Optional for development
+# - rspec (testing)
+# - rubocop (linting)
+----
+
+=== Related Documentation
+
+* Full installation guide: <<getting-started/installation#,Installation>>
+* Detailed API reference: <<reference/api/index#,API Reference>>
+* CLI command reference: <<reference/cli/index#,CLI Reference>>
+* Compression algorithms: <<guides/compression/index#,Compression Guide>>
+* Advanced usage: <<guides/advanced-usage/index#,Advanced Usage>>
+* Error handling: <<guides/advanced-usage/error-handling#,Error Handling>>
+* Performance tuning: <<guides/advanced-usage/performance-tuning#,Performance>>
+
+=== Getting Help
+
+**Documentation**
+
+* Browse the full documentation for detailed guides
+* Check the API reference for method signatures
+* Review examples in the guides section
+
+**Community**
+
+* GitHub Issues: https://github.com/omnizip/cabriolet/issues
+* Source Code: https://github.com/omnizip/cabriolet
+* Discussions: Use GitHub Discussions for questions
+
+**Reporting Bugs**
+
+Include in your bug report:
+* Cabriolet version (`cabriolet --version`)
+* Ruby version (`ruby --version`)
+* Operating system
+* Minimal reproduction code
+* Sample CAB file if possible
+
+=== Cheat Sheet Summary
+
+[source,bash]
+----
+# Extract
+cabriolet extract archive.cab
+
+# List
+cabriolet list archive.cab
+
+# Create
+cabriolet create output.cab file1.txt file2.txt
+
+# Help
+cabriolet --help
+----
+
+[source,ruby]
+----
+# Basic usage
+require 'cabriolet'
+Cabriolet::CAB::Decompressor.new('archive.cab').extract('output/')
+
+# List files
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+decompressor.each_file { |f| puts f.name }
+
+# Error handling
+begin
+  decompressor.extract('output/')
+rescue Cabriolet::Error => e
+  puts "Error: #{e.message}"
+end
+----

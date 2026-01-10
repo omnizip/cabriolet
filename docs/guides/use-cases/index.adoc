@@ -1,0 +1,170 @@
+---
+layout: default
+title: Use Cases
+parent: Guides
+has_children: true
+nav_order: 5
+---
+
+== Use Cases
+
+=== Overview
+
+This section provides practical guides for common Cabriolet use cases, demonstrating how to apply the library to real-world scenarios.
+
+=== Available Use Cases
+
+==== link:software-distribution.html[Software Distribution]
+
+Learn how to use Cabriolet for distributing software packages:
+
+* Creating installation archives
+* Multi-volume distribution for media
+* Compression strategy selection
+* Integrity verification
+
+==== link:data-archival.html[Data Archival and Long-term Storage]
+
+Best practices for archiving data:
+
+* Choosing appropriate formats for longevity
+* Metadata preservation
+* Compression vs. storage trade-offs
+* Migration strategies
+
+==== link:legacy-format-conversion.html[Legacy Format Conversion]
+
+Converting old archives to modern formats:
+
+* Extracting from obsolete formats
+* Batch conversion workflows
+* Preserving metadata during conversion
+* Validation and testing
+
+==== link:automated-workflows.html[Automated Workflows and CI/CD]
+
+Integrating Cabriolet into automated systems:
+
+* Build pipeline integration
+* Automated testing of archives
+* Release packaging automation
+* Deployment workflows
+
+==== link:help-file-extraction.html[Help File Extraction and Processing]
+
+Working with CHM and HLP documentation:
+
+* Extracting help file content
+* Converting to modern formats
+* Preserving structure and links
+* Batch documentation processing
+
+=== Choosing a Use Case
+
+[cols="1,2,2", options="header"]
+|===
+| Use Case | Best For | Key Features
+
+| Software Distribution
+| Installers, updates, patches
+| Multi-volume, compression, integrity
+
+| Data Archival
+| Long-term storage, backups
+| Format stability, metadata preservation
+
+| Legacy Conversion
+| Modernizing old archives
+| Format compatibility, batch processing
+
+| Automated Workflows
+| CI/CD, DevOps
+| Scripting, integration, reliability
+
+| Help File Extraction
+| Documentation migration
+| Structure preservation, conversion
+|===
+
+=== Common Patterns
+
+==== Pattern 1: Extract-Transform-Archive
+
+1. Extract from legacy format
+2. Transform/process content
+3. Re-archive in modern format
+
+**Use Cases**: Legacy conversion, format migration
+
+==== Pattern 2: Distribute-Verify-Install
+
+1. Create distribution archive
+2. Verify integrity
+3. Deploy/install on target
+
+**Use Cases**: Software distribution, deployment
+
+==== Pattern 3: Scan-Extract-Process
+
+1. Scan for archives
+2. Extract relevant files
+3. Process/analyze content
+
+**Use Cases**: Documentation extraction, data mining
+
+=== Integration Examples
+
+==== Ruby on Rails Application
+
+[source,ruby]
+----
+# In your Rails app
+class ArchiveController < ApplicationController
+  def extract
+    archive = params[:file]
+    cab = Cabriolet::CAB::Parser.new.parse(archive.tempfile.path)
+
+    cab.files.each do |file|
+      # Process extracted files
+      process_file(file.name, file.data)
+    end
+  end
+end
+----
+
+==== Rake Task
+
+[source,ruby]
+----
+# lib/tasks/archive.rake
+namespace :archive do
+  desc "Extract and process CAB files"
+  task :process => :environment do
+    Dir.glob('imports/*.cab').each do |cab_file|
+      Cabriolet::CAB::Parser.new.parse(cab_file).files.each do |file|
+        # Process file
+      end
+    end
+  end
+end
+----
+
+==== Command Line Script
+
+[source,ruby]
+----
+#!/usr/bin/env ruby
+require 'cabriolet'
+
+ARGV.each do |file|
+  cab = Cabriolet::CAB::Parser.new.parse(file)
+  puts "#{file}: #{cab.files.count} files"
+end
+----
+
+=== See Also
+
+* xref:guides/basic-usage/index.adoc[Basic Usage]
+* xref:guides/advanced-usage/index.adoc[Advanced Usage]
+* xref:examples/index.adoc[Examples]
+* xref:reference/index.adoc[API Reference]

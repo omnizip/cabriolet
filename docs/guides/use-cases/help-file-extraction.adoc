@@ -1,0 +1,64 @@
+---
+layout: default
+title: Help File Extraction
+parent: Use Cases
+grand_parent: Guides
+---
+
+== Help File Extraction and Processing
+
+=== Extracting CHM Help Files
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Extract CHM help file
+chm = Cabriolet::CHM::Parser.new.parse('manual.chm')
+
+chm.files.each do |file|
+  next unless file.name.end_with?('.html', '.htm')
+
+  output_path = "docs/#{file.name}"
+  FileUtils.mkdir_p(File.dirname(output_path))
+  File.write(output_path, file.data, mode: 'wb')
+end
+
+puts "Extracted #{chm.files.count} files"
+----
+
+=== Converting HLP to HTML
+
+[source,ruby]
+----
+# Extract Windows Help file
+hlp = Cabriolet::HLP::Parser.new.parse('help.hlp')
+
+hlp.topics.each do |topic|
+  html = convert_rtf_to_html(topic.content)
+  File.write("output/#{topic.id}.html", html)
+end
+----
+
+=== Batch Documentation Extraction
+
+[source,ruby]
+----
+# Process all CHM files in directory
+Dir.glob('help/*.chm').each do |chm_file|
+  chm = Cabriolet::CHM::Parser.new.parse(chm_file)
+  output_dir = "extracted/#{File.basename(chm_file, '.chm')}"
+
+  chm.files.each do |file|
+    path = File.join(output_dir, file.name)
+    FileUtils.mkdir_p(File.dirname(path))
+    File.write(path, file.data, mode: 'wb')
+  end
+end
+----
+
+=== See Also
+
+* xref:guides/formats/chm-format.adoc[CHM Format]
+* xref:guides/formats/hlp-format.adoc[HLP Format]
+* xref:examples/batch-processing.adoc[Batch Processing]

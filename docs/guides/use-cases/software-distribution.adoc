@@ -1,0 +1,75 @@
+---
+layout: default
+title: Software Distribution
+parent: Use Cases
+grand_parent: Guides
+---
+
+== Software Distribution with Cabriolet
+
+=== Overview
+
+Using CAB archives for software distribution provides compression, multi-volume support, and Windows compatibility.
+
+=== Creating Distribution Package
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Create software distribution CAB
+cab = Cabriolet::CAB::Compressor.new(
+  output: 'myapp-v1.0.cab',
+  compression: :lzx,
+  compression_level: :maximum
+)
+
+# Add application files
+cab.add_directory('build/', recursive: true)
+cab.add_file('README.txt', 'docs/README.txt')
+cab.add_file('LICENSE.txt', 'LICENSE')
+
+cab.compress
+
+puts "Created distribution package: myapp-v1.0.cab"
+----
+
+=== Multi-Disk Distribution
+
+[source,ruby]
+----
+# For CD/DVD distribution
+cab = Cabriolet::CAB::Compressor.new(
+  output: 'DISK1.CAB',
+  max_volume_size: 650 * 1024 * 1024,  # 650 MB per disk
+  compression: :lzx
+)
+
+cab.add_directory('product/')
+cab.compress
+
+puts "Created #{cab.volume_count} volumes"
+# Outputs: DISK1.CAB, DISK2.CAB, DISK3.CAB...
+----
+
+=== Verification Before Distribution
+
+[source,ruby]
+----
+# Verify archive integrity
+cab = Cabriolet::CAB::Parser.new.parse('myapp-v1.0.cab')
+
+cab.files.each do |file|
+  begin
+    data = file.data  # Trigger decompression
+    puts "✓ #{file.name} (#{data.bytesize} bytes)"
+  rescue => e
+    puts "✗ #{file.name}: #{e.message}"
+  end
+end
+----
+
+=== See Also
+
+* xref:guides/basic-usage/creating-archives.adoc[Creating Archives]
+* xref:guides/advanced-usage/multi-part-cabinets.adoc[Multi-Part Cabinets]

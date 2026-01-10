@@ -1,0 +1,189 @@
+---
+title: Reference
+has_children: true
+nav_order: 3
+---
+
+== Reference Documentation
+
+=== Purpose
+
+This section provides complete technical reference for all Cabriolet commands and APIs. Use this for detailed syntax, parameters, return values, and technical specifications.
+
+=== References
+
+* <<../guides/index#,Guides>> - Usage guides and tutorials
+* <<../getting-started/index#,Getting Started>> - Quick introduction
+
+=== Concepts
+
+Reference documentation is organized for quick lookup of specific commands, methods, or specifications. Unlike guides that explain how to accomplish tasks, reference material documents what each component does and how to use it precisely.
+
+=== Reference Categories
+
+==== CLI Reference
+
+<<cli/index#,Command-Line Interface Reference>>
+
+Complete documentation for all CLI commands:
+
+* <<cli/cab-commands#,CAB Commands>> - list, extract, info, test, search, create
+* <<cli/chm-commands#,CHM Commands>> - chm-list, chm-extract, chm-info, chm-create
+* <<cli/szdd-commands#,SZDD Commands>> - expand, compress, szdd-info
+* <<cli/kwaj-commands#,KWAJ Commands>> - kwaj-extract, kwaj-compress, kwaj-info
+* <<cli/hlp-commands#,HLP Commands>> - hlp-extract, hlp-create, hlp-info
+* <<cli/lit-commands#,LIT Commands>> - lit-extract, lit-create, lit-info
+* <<cli/oab-commands#,OAB Commands>> - oab-extract, oab-create, oab-info
+* <<cli/global-options#,Global Options>> - --verbose, --help, common flags
+
+==== API Reference
+
+<<api/index#,Ruby API Reference>>
+
+Complete Ruby API documentation:
+
+* <<api/cab-api#,CAB API>> - Cabriolet::CAB module
+* <<api/chm-api#,CHM API>> - Cabriolet::CHM module
+* <<api/szdd-api#,SZDD API>> - Cabriolet::SZDD module
+* <<api/kwaj-api#,KWAJ API>> - Cabriolet::KWAJ module
+* <<api/hlp-api#,HLP API>> - Cabriolet::HLP module
+* <<api/lit-api#,LIT API>> - Cabriolet::LIT module
+* <<api/oab-api#,OAB API>> - Cabriolet::OAB module
+* <<api/models#,Models>> - Cabinet, Folder, File classes
+* <<api/system-io#,System I/O>> - IOSystem, FileHandle, MemoryHandle
+* <<api/error-classes#,Error Classes>> - Exception hierarchy
+
+==== Format Specifications
+
+<<formats/index#,Format Specifications>>
+
+Technical format details:
+
+* <<formats/cab-specification#,CAB Specification>> - Cabinet file format
+* <<formats/compression-types#,Compression Types>> - Algorithm codes
+* <<formats/file-attributes#,File Attributes>> - Attribute flags
+
+=== Quick Reference
+
+==== Most Common Commands
+
+[cols="2,3,1"]
+|===
+|Command |Purpose |Section
+
+|`cabriolet list FILE`
+|List CAB contents
+|<<cli/cab-commands#list,CAB>>
+
+|`cabriolet extract FILE`
+|Extract CAB files
+|<<cli/cab-commands#extract,CAB>>
+
+|`cabriolet create OUTPUT FILES`
+|Create CAB archive
+|<<cli/cab-commands#create,CAB>>
+
+|`cabriolet expand FILE`
+|Expand SZDD file
+|<<cli/szdd-commands#expand,SZDD>>
+
+|`cabriolet chm-extract FILE`
+|Extract CHM file
+|<<cli/chm-commands#chm-extract,CHM>>
+|===
+
+==== Most Common API Methods
+
+[cols="2,3,1"]
+|===
+|Method |Purpose |Section
+
+|`CAB::Decompressor.new(file)`
+|Open CAB for reading
+|<<api/cab-api#decompressor,CAB>>
+
+|`decompressor.extract(dir)`
+|Extract all files
+|<<api/cab-api#extract,CAB>>
+
+|`decompressor.each_file`
+|Iterate files
+|<<api/cab-api#each-file,CAB>>
+
+|`CAB::Compressor.new(options)`
+|Create new CAB
+|<<api/cab-api#compressor,CAB>>
+
+|`compressor.add_file(path)`
+|Add file to CAB
+|<<api/cab-api#add-file,CAB>>
+|===
+
+=== Navigation Tips
+
+**By task:**
+
+1. Know the command/method name → Use search or table of contents
+2. Know the format → Go to format's CLI or API section
+3. Know the operation → Check CLI index or API index
+
+**By format:**
+
+* CAB → <<cli/cab-commands#,CLI>> | <<api/cab-api#,API>>
+* CHM → <<cli/chm-commands#,CLI>> | <<api/chm-api#,API>>
+* SZDD → <<cli/szdd-commands#,CLI>> | <<api/szdd-api#,API>>
+* Others → See respective sections
+
+=== Reference Conventions
+
+==== Command Syntax
+
+Commands are documented using this syntax:
+
+[source,text]
+----
+command [OPTIONS] REQUIRED [OPTIONAL]
+
+Where:
+  REQUIRED    Required parameter
+  [OPTIONAL]  Optional parameter
+  [OPTIONS]   Command options (flags)
+----
+
+==== API Signatures
+
+Methods are documented with Ruby signatures:
+
+[source,ruby]
+----
+def method_name(required_param, optional_param = default)
+  # Returns: Description of return value
+  # Raises: Exception types that may be raised
+end
+----
+
+==== Examples
+
+All reference entries include:
+
+* **Syntax**: Complete command or method signature
+* **Parameters**: Detailed parameter descriptions
+* **Returns**: Return values and types
+* **Examples**: Working code examples
+* **Errors**: Possible error conditions
+
+=== Version Information
+
+This reference documents Cabriolet version 0.1.0. Features may vary in different versions.
+
+=== Next Steps
+
+* Browse <<cli/index#,CLI Reference>> for command-line tools
+* Explore <<api/index#,API Reference>> for Ruby integration
+* Review <<formats/index#,Format Specifications>> for technical details
+
+=== Bibliography
+
+* <<../guides/index#,Usage Guides>>
+* https://github.com/omnizip/cabriolet[Cabriolet Source Code]
+* https://docs.microsoft.com/en-us/previous-versions/bb417343(v=msdn.10)[Microsoft Cabinet SDK]

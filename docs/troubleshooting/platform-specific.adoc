@@ -1,0 +1,68 @@
+---
+layout: default
+title: Platform-Specific Issues
+parent: Troubleshooting
+---
+
+== Platform-Specific Issues
+
+=== Windows
+
+==== Path Separators
+
+**Issue**: Backslash vs forward slash in filenames
+
+**Solution**:
+
+[source,ruby]
+----
+# Normalize paths
+filename = file.name.gsub('\\', '/')
+----
+
+==== Long Paths
+
+**Issue**: Paths exceeding 260 characters
+
+**Solution**: Enable long path support in Windows 10+ or use UNC paths
+
+=== macOS
+
+==== Case Sensitivity
+
+**Issue**: APFS case-sensitive vs case-insensitive
+
+**Solution**: Be aware of case when extracting files
+
+==== Resource Forks
+
+**Issue**: Extended attributes not preserved
+
+**Solution**: Use zip for full macOS compatibility
+
+=== Linux
+
+==== Permissions
+
+**Issue**: File permissions not matching Windows attributes
+
+**Solution**:
+
+[source,ruby]
+----
+# Map Windows attributes to Unix permissions
+mode = 0644  # Default
+mode = 0444 if file.attributes & 0x01  # Read-only
+FileUtils.chmod(mode, output_path)
+----
+
+==== Character Encoding
+
+**Issue**: Filename encoding differences
+
+**Solution**: Ensure UTF-8 encoding throughout
+
+=== See Also
+
+* link:encoding-issues.html[Encoding Issues]
+* link:common-errors.html[Common Errors]

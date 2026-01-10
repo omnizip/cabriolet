@@ -1,0 +1,37 @@
+---
+layout: default
+title: Code Style
+parent: Developer
+nav_order: 2
+---
+
+== Code Style
+
+=== Ruby Style
+
+* 2 spaces indentation
+* 80 character line length
+* Use `require_relative` for local files
+* Follow Rubocop guidelines
+
+=== Architecture
+
+* Model-driven design
+* MECE principles
+* Clear separation of concerns
+
+=== Testing
+
+* RSpec for all tests
+* One test file per class
+* MECE test coverage
+
+=== Documentation
+
+* AsciiDoc for all docs
+* Clear examples
+* Cross-references
+
+=== Bibliography
+
+* xref:../architecture/design-principles.adoc[Design Principles]
