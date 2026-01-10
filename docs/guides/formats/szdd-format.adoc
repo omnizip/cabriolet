@@ -1,0 +1,545 @@
+---
+title: SZDD Format
+parent: Format Guides
+grand_parent: Guides
+nav_order: 3
+---
+
+== SZDD Format Guide
+
+=== Purpose
+
+This guide provides comprehensive documentation for working with Microsoft SZDD (Single-file LZSS) compressed files using Cabriolet. SZDD is Microsoft's simple compression format used primarily in MS-DOS and early Windows for compressing individual files.
+
+=== References
+
+* <<../../getting-started/quick-start#,Quick Start Guide>>
+* <<../../reference/cli/szdd-commands#,SZDD Commands Reference>>
+* <<../../reference/api/szdd-api#,SZDD API Reference>>
+* <<../compression/lzss-compression#,LZSS Compression>>
+
+=== Concepts
+
+==== What is an SZDD File?
+
+SZDD files are Microsoft's single-file compression format used extensively in:
+
+* MS-DOS file compression (COMPRESS.EXE)
+* MS-DOS file expansion (EXPAND.EXE)
+* Windows 9x installation files
+* System file distribution
+* Compressed executables and DLLs
+
+The format is characterized by its simple structure and use of LZSS compression.
+
+==== SZDD File Structure
+
+An SZDD file has a simple structure:
+
+[source,text]
+----
+┌─────────────────────────┐
+│   SZDD Header           │  Signature and metadata (14 bytes)
+│   - Signature: "SZDD"   │
+│   - Format version      │
+│   - Missing character   │
+│   - Uncompressed size   │
+├─────────────────────────┤
+│   Compressed Data       │  LZSS compressed content
+│                         │
+└─────────────────────────┘
+----
+
+**SZDD Header**: Contains format signature, version, and optional metadata.
+
+**Missing Character**: A special feature for filename reconstruction (e.g., `file.ex_` → `file.exe`).
+
+**Compressed Data**: LZSS-compressed file content.
+
+==== Compression Support
+
+SZDD files use LZSS compression exclusively:
+
+* **LZSS MODE_EXPAND** - Standard LZSS variant used by EXPAND.EXE
+* Fixed 4096-byte sliding window
+* Simple and fast decompression
+
+For detailed algorithm information, see <<../compression/lzss-compression#,LZSS Compression>>.
+
+==== Format Variants
+
+SZDD has two format variants:
+
+* **Normal format** - Standard SZDD with signature "SZDD"
+* **QBasic format** - Variant used by QBasic with signature "SZ20"
+
+Both use the same compression but differ in header structure.
+
+==== Filename Convention
+
+SZDD files traditionally use underscore replacement for the last character:
+
+* `file.txt` → `file.tx_`
+* `program.exe` → `program.ex_`
+* `library.dll` → `library.dl_`
+
+The missing character is stored in the header for reconstruction.
+
+=== Basic Operations
+
+==== Expanding SZDD Files
+
+Decompress SZDD files (like MS-DOS EXPAND.EXE):
+
+.Command-line
+[source,bash]
+----
+# Auto-detect output filename
+cabriolet expand file.tx_
+
+# Specify output filename
+cabriolet expand file.tx_ file.txt
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::SZDD::Decompressor.new
+header = decompressor.open('file.tx_')
+
+# Auto-detect output name from missing character
+output = decompressor.auto_output_filename('file.tx_', header)
+
+# Expand the file
+bytes = decompressor.extract(header, output)
+decompressor.close(header)
+
+puts "Expanded to #{output} (#{bytes} bytes)"
+----
+
+.Example Output
+[source,text]
+----
+Expanded file.tx_ to file.txt (5,234 bytes)
+----
+
+==== Getting SZDD Information
+
+Display SZDD file metadata:
+
+.Command-line
+[source,bash]
+----
+cabriolet szdd-info file.tx_
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::SZDD::Decompressor.new
+header = decompressor.open('file.tx_')
+
+puts "Format: #{header.format}"  # :normal or :qbasic
+puts "Uncompressed size: #{header.length} bytes"
+puts "Missing character: '#{header.missing_char}'"
+puts "Suggested filename: #{header.suggested_filename('file.tx_')}"
+
+decompressor.close(header)
+----
+
+.Example Output
+[source,text]
+----
+SZDD File Information
+==================================================
+Filename: file.tx_
+Format: NORMAL
+Uncompressed size: 5,234 bytes
+Missing character: 't'
+Suggested filename: file.txt
+----
+
+==== Compressing Files
+
+Create SZDD compressed files (like MS-DOS COMPRESS.EXE):
+
+.Command-line
+[source,bash]
+----
+# Auto-generate output name: file.txt → file.tx_
+cabriolet compress file.txt
+
+# Specify output filename
+cabriolet compress file.txt file.tx_
+
+# Specify missing character explicitly
+cabriolet compress --missing-char=t file.txt file.tx_
+
+# Use QBasic format
+cabriolet compress --format=qbasic file.bas file.ba_
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::SZDD::Compressor.new
+
+# Compress with auto-generated missing character
+bytes = compressor.compress('file.txt', 'file.tx_')
+
+puts "Compressed to file.tx_ (#{bytes} bytes)"
+----
+
+=== Advanced Features
+
+==== Missing Character Reconstruction
+
+The missing character feature enables filename reconstruction:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::SZDD::Decompressor.new
+header = decompressor.open('program.ex_')
+
+# Get missing character
+missing = header.missing_char  # => 'e'
+
+# Reconstruct original filename
+original = header.suggested_filename('program.ex_')
+puts "Original filename: #{original}"  # => "program.exe"
+
+decompressor.close(header)
+----
+
+==== Format Detection
+
+Detect SZDD format variant:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::SZDD::Decompressor.new
+header = decompressor.open('file.tx_')
+
+case header.format
+when :normal
+  puts "Standard SZDD format"
+when :qbasic
+  puts "QBasic SZDD variant"
+end
+
+decompressor.close(header)
+----
+
+==== Custom Missing Character
+
+Specify custom missing character when compressing:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::SZDD::Compressor.new
+
+# Compress with custom missing character
+bytes = compressor.compress(
+  'myfile.txt',
+  'myfile.tx_',
+  missing_char: 't'
+)
+
+puts "Compressed with missing char 't'"
+----
+
+==== QBasic Format Support
+
+Work with QBasic-compressed files:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Compress in QBasic format
+compressor = Cabriolet::SZDD::Compressor.new
+bytes = compressor.compress(
+  'program.bas',
+  'program.ba_',
+  format: :qbasic
+)
+
+# Decompress QBasic format
+decompressor = Cabriolet::SZDD::Decompressor.new
+header = decompressor.open('program.ba_')
+
+if header.format == :qbasic
+  puts "QBasic format detected"
+end
+
+decompressor.extract(header, 'program.bas')
+decompressor.close(header)
+----
+
+=== Performance Optimization
+
+==== Compression Trade-offs
+
+SZDD uses LZSS which offers:
+
+[cols="1,2"]
+|===
+|Characteristic |Details
+
+|Compression speed
+|Fast (simple algorithm)
+
+|Decompression speed
+|Very fast
+
+|Compression ratio
+|Moderate (30-50% typical)
+
+|Memory usage
+|Low (4KB window)
+|===
+
+==== Best File Types
+
+SZDD works best for:
+
+* **Text files** - Good compression (40-60%)
+* **Executables** - Moderate compression (30-40%)
+* **HTML/XML** - Good compression (50-70%)
+
+Not recommended for:
+
+* **Already compressed** - JPG, PNG, ZIP (no benefit)
+* **Very small files** - <1KB (overhead too high)
+
+=== Common Use Cases
+
+==== MS-DOS File Distribution
+
+Working with MS-DOS compressed files:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Expand MS-DOS system file
+decompressor = Cabriolet::SZDD::Decompressor.new
+header = decompressor.open('command.co_')
+
+output = decompressor.auto_output_filename('command.co_', header)
+decompressor.extract(header, output)
+decompressor.close(header)
+
+puts "Expanded MS-DOS file: #{output}"
+----
+
+==== Windows 9x Installation Files
+
+Extract Windows installation files:
+
+[source,ruby]
+----
+require 'cabriolet'
+require 'fileutils'
+
+decompressor = Cabriolet::SZDD::Decompressor.new
+
+# Process all ._ files in directory
+Dir.glob('install/*.ex_').each do |compressed|
+  header = decompressor.open(compressed)
+  output = decompressor.auto_output_filename(compressed, header)
+
+  decompressor.extract(header, output)
+  decompressor.close(header)
+
+  puts "Extracted: #{File.basename(output)}"
+end
+----
+
+==== Batch Compression
+
+Compress multiple files:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::SZDD::Compressor.new
+
+Dir.glob('source/*.txt').each do |file|
+  # Generate compressed filename: file.txt → file.tx_
+  output = file.sub(/\.([^.])$/, '._')
+
+  bytes = compressor.compress(file, output)
+  puts "Compressed #{file} → #{output} (#{bytes} bytes)"
+end
+----
+
+==== Filename Reconstruction
+
+Reconstruct original filenames:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::SZDD::Decompressor.new
+
+Dir.glob('compressed/*._').each do |compressed|
+  header = decompressor.open(compressed)
+
+  # Use missing character to reconstruct name
+  suggested = header.suggested_filename(compressed)
+
+  puts "#{File.basename(compressed)} → #{File.basename(suggested)}"
+  puts "  Missing char: '#{header.missing_char}'"
+
+  decompressor.close(header)
+end
+----
+
+=== Troubleshooting
+
+==== Common Errors
+
+**"Invalid SZDD signature"**
+
+The file is not a valid SZDD file:
+
+[source,bash]
+----
+# Check file signature
+hexdump -C file.tx_ | head -1
+# Should show: "SZDD" (53 5A 44 44) or "SZ20" for QBasic
+----
+
+**"Missing character not found"**
+
+The header doesn't contain a missing character. Specify output filename explicitly:
+
+[source,bash]
+----
+cabriolet expand file.tx_ file.txt
+----
+
+**"Decompression failed"**
+
+The compressed data is corrupted. Try salvage extraction:
+
+[source,bash]
+----
+# Extract partial data (planned feature)
+cabriolet expand --salvage file.tx_ file.txt
+----
+
+**"Unknown format variant"**
+
+Unsupported SZDD variant. Check format with:
+
+[source,bash]
+----
+cabriolet szdd-info file.tx_
+----
+
+==== Validation
+
+Verify SZDD file integrity:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+begin
+  decompressor = Cabriolet::SZDD::Decompressor.new
+  header = decompressor.open('file.tx_')
+
+  puts "SZDD file is valid"
+  puts "Format: #{header.format}"
+  puts "Size: #{header.length} bytes"
+
+  decompressor.close(header)
+rescue Cabriolet::FormatError => e
+  puts "Invalid SZDD file: #{e.message}"
+rescue Cabriolet::CorruptionError => e
+  puts "Corrupted SZDD: #{e.message}"
+end
+----
+
+=== Best Practices
+
+1. **Use missing character**: Store the missing character for proper filename reconstruction
+
+2. **Match format to use case**:
+   * Normal format for general files
+   * QBasic format for QBasic programs
+
+3. **Validate before extraction**: Check file integrity before expanding
+
+4. **Preserve metadata**: Keep track of original filenames and sizes
+
+5. **Batch processing**: Process multiple files efficiently with scripts
+
+6. **Handle errors gracefully**: Account for corrupted or invalid files
+
+=== Format Specifications
+
+==== File Signature
+
+SZDD files start with one of two signatures:
+
+.Normal Format
+[source,text]
+----
+Offset  Bytes  Description
+0x0000  4      Signature: "SZDD" (0x53 0x5A 0x44 0x44)
+0x0004  4      Reserved (0x88 0xF0 0x27 0x33)
+0x0008  1      Compression mode: 'A' (0x41)
+0x0009  1      Missing character (ASCII)
+0x000A  4      Uncompressed length (little-endian)
+----
+
+.QBasic Format
+[source,text]
+----
+Offset  Bytes  Description
+0x0000  4      Signature: "SZ20" (0x53 0x5A 0x32 0x30)
+0x0004  4      Reserved
+0x0008  1      Compression mode: 'A' (0x41)
+0x0009  1      Missing character
+0x000A  4      Uncompressed length
+----
+
+==== Compression Algorithm
+
+* **Algorithm**: LZSS MODE_EXPAND
+* **Window size**: 4096 bytes
+* **Match length**: 3-18 bytes
+* **Format**: See <<../compression/lzss-compression#,LZSS Compression>>
+
+For complete format specifications, see <<../../reference/formats/szdd-specification#,SZDD Specification>>.
+
+=== Next Steps
+
+* Learn about <<../compression/lzss-compression#,LZSS compression algorithm>>
+* Review <<../../reference/cli/szdd-commands#,complete SZDD command reference>>
+* Study <<../../reference/api/szdd-api#,SZDD API documentation>>
+
+=== Bibliography
+
+* <<../../reference/cli/szdd-commands#,SZDD Commands Reference>>
+* <<../../reference/api/szdd-api#,SZDD API Reference>>
+* <<../../reference/formats/szdd-specification#,SZDD Format Specification>>
+* https://en.wikipedia.org/wiki/SZDD[Wikipedia: SZDD]
+* https://www.cabextract.org.uk/[cabextract Documentation]

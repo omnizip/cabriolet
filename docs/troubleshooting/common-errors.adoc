@@ -1,0 +1,74 @@
+---
+layout: default
+title: Common Errors
+parent: Troubleshooting
+---
+
+== Common Errors and Solutions
+
+=== Invalid CAB Signature
+
+**Error**: `Cabriolet::InvalidFormatError: Invalid CAB signature`
+
+**Cause**: File is not a valid CAB archive or is corrupted
+
+**Solutions**:
+
+[source,ruby]
+----
+# Verify file is actually a CAB
+File.open('file.cab', 'rb') do |f|
+  signature = f.read(4)
+  if signature != "MSCF"
+    puts "Not a CAB file (signature: #{signature.inspect})"
+  end
+end
+----
+
+=== Checksum Mismatch
+
+**Error**: `Cabriolet::ChecksumError: Data block checksum mismatch`
+
+**Cause**: Corrupted data or transmission error
+
+**Solutions**:
+
+[source,ruby]
+----
+# Skip checksum validation
+cab = Cabriolet::CAB::Parser.new(skip_checksum: true).parse('file.cab')
+----
+
+=== Unsupported Compression
+
+**Error**: `Cabriolet::UnsupportedCompressionError`
+
+**Cause**: Archive uses Quantum compression (rarely supported)
+
+**Solution**: Extract using official Microsoft tools first
+
+=== Out of Memory
+
+**Error**: `NoMemoryError`
+
+**Cause**: LZX with large window or insufficient RAM
+
+**Solutions**:
+
+* Use smaller window size
+* Increase available memory
+* Process files individually
+
+=== File Not Found
+
+**Error**: `Errno::ENOENT`
+
+**Cause**: Path doesn't exist or incorrect working directory
+
+**Solution**: Use absolute paths or verify working directory
+
+=== See Also
+
+* link:performance-issues.html[Performance Issues]
+* link:corrupted-files.html[Corrupted Files]
+* xref:reference/api/error-classes.adoc[Error Classes]

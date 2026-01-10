@@ -1,0 +1,377 @@
+---
+title: LZX Compression
+parent: Compression
+grand_parent: Guides
+nav_order: 5
+---
+
+== LZX Compression
+
+=== Purpose
+
+This guide explains LZX compression, the highest-ratio algorithm used in CAB, CHM, LIT, and OAB formats.
+
+=== References
+
+* <<choosing-algorithm#,Choosing a Compression Algorithm>>
+* <<../formats/cab-format#compression-support,CAB Format>>
+* <<../formats/chm-format#compression-support,CHM Format>>
+* <<../formats/lit-format#compression-support,LIT Format>>
+* <<../formats/oab-format#compression-support,OAB Format>>
+
+=== Concepts
+
+==== What is LXX?
+
+LZX (Lempel-Ziv Extended) is a high-ratio dictionary compression algorithm with configurable window sizes from 32 KB to 2 MB. It achieves the best compression ratios at the cost of speed.
+
+==== Key Features
+
+* **Configurable window** - 15 to 21 bits (32 KB to 2 MB)
+* **Maximum compression** - Best ratio among Microsoft algorithms
+* **Multiple tables** - Huffman tables for different data types
+* **Block-based** - Processes data in blocks for efficiency
+
+=== Performance Characteristics
+
+[cols="1,2"]
+|===
+|Metric |Value
+
+|Compression ratio
+|50-70% for text, 40-60% for executables
+
+|Compression speed
+|Slow (1-10 MB/s)
+
+|Decompression speed
+|Medium (10-50 MB/s)
+
+|Memory usage
+|High (32 KB - 2 MB window + overhead)
+
+|Window size
+|Configurable: 2^15 to 2^21 bytes
+|===
+
+=== Window Sizes
+
+[cols="1,1,2"]
+|===
+|Bits |Window Size |Best For
+
+|15
+|32 KB
+|Small files (<100 KB)
+
+|16
+|64 KB
+|Medium files (default for CHM)
+
+|17
+|128 KB
+|Medium-large files
+
+|18
+|256 KB
+|Large files (1-5 MB)
+
+|19
+|512 KB
+|Large files (5-10 MB)
+
+|20
+|1 MB
+|Very large files (10-20 MB)
+
+|21
+|2 MB
+|Maximum compression, huge files
+|===
+
+=== Usage
+
+==== CAB Files
+
+[source,ruby]
+----
+compressor = Cabriolet::CAB::Compressor.new(compression: :lzx)
+compressor.add_file('large-file.dat')
+compressor.write('archive.cab')
+----
+
+Command line:
+[source,bash]
+----
+cabriolet create --compression=lzx installer.cab files/
+----
+
+==== CHM Files with Window Size
+
+[source,ruby]
+----
+compressor = Cabriolet::CHM::Compressor.new
+
+compressor.add_file('index.html', '/index.html', section: :compressed)
+compressor.add_file('content.html', '/content.html', section: :compressed)
+
+# Small help file: 15-bit window
+compressor.generate('small-help.chm', window_bits: 15)
+
+# Large help file: 21-bit window
+compressor.generate('large-help.chm', window_bits: 21)
+----
+
+==== LIT eBooks
+
+[source,ruby]
+----
+compressor = Cabriolet::LIT::Compressor.new
+
+# HTML compressed with LZX
+compressor.add_file('chapter1.html', 'chapter1.html', compress: true)
+compressor.add_file('chapter2.html', 'chapter2.html', compress: true)
+
+# Images uncompressed
+compressor.add_file('cover.jpg', 'cover.jpg', compress: false)
+
+compressor.generate('book.lit')
+----
+
+==== OAB with Block Size
+
+[source,ruby]
+----
+compressor = Cabriolet::OAB::Compressor.new
+
+# Default 32 KB blocks
+compressor.compress('addressbook.dat', 'full.oab', block_size: 32_768)
+
+# Larger blocks for better compression
+compressor.compress('addressbook.dat', 'full.oab', block_size: 65_536)
+----
+
+=== Compression Effectiveness
+
+==== Excellent For
+
+* **HTML/XML** - 65-75% compression
+* **Text files** - 60-70% compression
+* **Source code** - 60-70% compression
+* **Documentation** - 65-75% compression
+
+==== Good For
+
+* **Executables** - 50-60% compression
+* **DLLs** - 50-60% compression
+* **Office documents** - 40-50% compression
+
+==== Poor For
+
+* **Already compressed** - 0-5% (JPG, PNG, MP3, ZIP)
+* **Random data** - 0-10%
+* **Encrypted files** - 0-5%
+* **Very small files** - Overhead too high
+
+=== Window Size Selection
+
+Choose window size based on file size:
+
+[source,ruby]
+----
+def choose_window_bits(file_size)
+  case file_size
+  when 0..50_000
+    15  # 32 KB window
+  when 50_001..200_000
+    16  # 64 KB window
+  when 200_001..1_000_000
+    17  # 128 KB window
+  when 1_000_001..5_000_000
+    18  # 256 KB window
+  when 5_000_001..20_000_000
+    19  # 512 KB window
+  else
+    21  # 2 MB window
+  end
+end
+
+file_size = File.size('content.html')
+window_bits = choose_window_bits(file_size)
+
+compressor = Cabriolet::CHM::Compressor.new
+compressor.generate('help.chm', window_bits: window_bits)
+----
+
+=== Algorithm Details
+
+==== Three-Stage Process
+
+1. **LZ77 Matching**
+   * Find repeated sequences in window
+   * Encode as (distance, length) pairs
+
+2. **Huffman Coding**
+   * Multiple Huffman tables
+   * Separate tables for literals, lengths, distances
+
+3. **Aligned Offset Encoding**
+   * Special encoding for aligned offsets
+   * Better compression for structured data
+
+==== Block Types
+
+* **Verbatim** - Uncompressed data
+* **Aligned** - LZ77 + Huffman + aligned offsets
+* **Uncompressed** - Raw data (no compression)
+
+=== Comparison
+
+[cols="1,1,1,1,1"]
+|===
+|Algorithm |Ratio |Comp Speed |Decomp Speed |Memory
+
+|LZSS
+|30-50%
+|Fast
+|Very Fast
+|4 KB
+
+|MSZIP
+|40-60%
+|Medium
+|Fast
+|32 KB
+
+|LZX
+|50-70%
+|Slow
+|Medium
+|32KB-2MB
+
+|Quantum
+|45-65%
+|Medium
+|Medium
+|Variable
+|===
+
+=== Best Practices
+
+1. **Software distribution** - Use for installers and downloads
+2. **Large files** - Use larger windows for files >1 MB
+3. **Small files** - Use 15-16 bit windows for <100 KB files
+4. **eBooks** - Excellent for HTML content
+5. **Skip media** - Don't compress JPG, PNG, MP4
+6. **Test performance** - Verify decompression speed is acceptable
+
+=== Examples
+
+==== Create Distribution CAB
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::CAB::Compressor.new(compression: :lzx)
+
+# Add installer files
+compressor.add_file('setup.exe')
+compressor.add_file('application.dll')
+compressor.add_file('readme.txt')
+
+bytes = compressor.write('installer.cab')
+
+original = Dir['*.{exe,dll,txt}'].sum { |f| File.size(f) }
+ratio = (1 - bytes.to_f / original) * 100
+
+puts "LZX compression: #{original} → #{bytes} bytes (#{ratio.round(1)}%)"
+----
+
+==== Create Help File
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::CHM::Compressor.new
+
+# Add HTML files (compressed)
+Dir.glob('docs/**/*.html').each do |file|
+  path = "/#{file.sub('docs/', '')}"
+  compressor.add_file(file, path, section: :compressed)
+end
+
+# Add images (uncompressed)
+Dir.glob('docs/**/*.{png,jpg}').each do |file|
+  path = "/#{file.sub('docs/', '')}"
+  compressor.add_file(file, path, section: :uncompressed)
+end
+
+# Use 18-bit window for large help file
+compressor.generate('application-help.chm', window_bits: 18)
+----
+
+==== Optimize for Size
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Test different window sizes
+results = {}
+
+[15, 16, 18, 21].each do |bits|
+  compressor = Cabriolet::CHM::Compressor.new
+  compressor.add_file('large-doc.html', '/doc.html', section: :compressed)
+
+  output = "test-#{bits}.chm"
+  compressor.generate(output, window_bits: bits)
+
+  results[bits] = File.size(output)
+  File.delete(output)
+end
+
+# Find best
+best = results.min_by { |bits, size| size }
+puts "Best window size: #{best[0]} bits (#{best[1]} bytes)"
+----
+
+=== Troubleshooting
+
+==== Slow Compression
+
+LZX is inherently slow. To improve:
+
+* Accept slower compression for better ratio
+* Use MSZIP if speed critical
+* Compress once, decompress many times
+
+==== High Memory Usage
+
+Large windows use more memory:
+
+* Reduce window size for constrained environments
+* Use 15-16 bit windows on low-memory systems
+* Consider MSZIP (fixed 32 KB) as alternative
+
+==== Poor Ratio on Small Files
+
+Window larger than file wastes memory:
+
+* Match window to file size
+* Use 15-bit (32 KB) for files <100 KB
+* Consider MSZIP for very small files
+
+=== See Also
+
+* <<choosing-algorithm#,Choosing a Compression Algorithm>>
+* <<mszip-compression#,MSZIP Compression>> - Faster alternative
+* <<../formats/cab-format#,CAB Format Guide>>
+* <<../formats/chm-format#,CHM Format Guide>>
+
+=== Bibliography
+
+* https://en.wikipedia.org/wiki/LZX[Wikipedia: LZX]
+* https://www.nongnu.org/chmspec/latest/[CHM Specification]
+* https://www.cabextract.org.uk/[cabextract Documentation]

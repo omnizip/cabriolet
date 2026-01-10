@@ -1,0 +1,59 @@
+---
+layout: default
+title: Folders and Files
+parent: Concepts
+nav_order: 3
+---
+
+== Folders and Files
+:toc:
+
+=== Purpose
+
+Understanding how CAB files organize content using folders and files.
+
+=== References
+
+* xref:cabinet-structure.adoc[Cabinet Structure]
+* xref:compression-algorithms.adoc[Compression Algorithms]
+
+== Folder Concept
+
+=== What is a Folder?
+
+A folder in CAB is NOT a directory. It's a compression unit that groups files sharing the same compression method and state.
+
+[source]
+----
+Cabinet:
+┌────────────────────────────────────────┐
+│ Folder 1 (MSZIP compression)          │
+│   ├── file1.txt                        │
+│   ├── file2.txt                        │
+│   └── file3.txt                        │
+├────────────────────────────────────────┤
+│ Folder 2 (LZX compression)            │
+│   ├── data1.bin                        │
+│   └── data2.bin                        │
+└────────────────────────────────────────┘
+----
+
+=== Why Use Folders?
+
+* **Compression efficiency**: Dictionary shared across files
+* **Different algorithms**: Optimal compression per file type
+* **Streaming**: Decompress folder-by-folder
+
+## File Organization
+
+=== File Ordering
+
+Files are stored sequentially within folders. The order matters for compression efficiency.
+
+=== Spanning Cabinets
+
+Files can span multiple cabinets in multi-part archives.
+
+== Bibliography
+
+* xref:../guides/formats/cab-format.adoc[CAB Format Guide]

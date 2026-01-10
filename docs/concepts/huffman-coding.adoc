@@ -1,0 +1,178 @@
+---
+layout: default
+title: Huffman Coding
+parent: Concepts
+nav_order: 5
+---
+
+== Huffman Coding
+:toc:
+
+=== Purpose
+
+Understanding Huffman coding, a fundamental statistical compression technique.
+
+=== References
+
+* xref:compression-algorithms.adoc[Compression Algorithms]
+* xref:bitstreams.adoc[Bitstream Processing]
+
+== Principle
+
+Huffman coding assigns shorter codes to frequently occurring symbols.
+
+=== Example
+
+[source]
+----
+Text: "AAABBC"
+
+Symbol Frequencies:
+  A: 3 (50%)
+  B: 2 (33%)
+  C: 1 (17%)
+
+Fixed-length encoding (2 bits per symbol):
+  A=00, B=01, C=10
+  Encoded: 00 00 00 01 01 10 = 12 bits
+
+Huffman encoding:
+  A=0  (1 bit)
+  B=10 (2 bits)
+  C=11 (3 bits)
+  Encoded: 0 0 0 10 10 11 = 9 bits (25% savings)
+----
+
+== Tree Construction
+
+=== Algorithm
+
+[source]
+----
+1. Create leaf node for each symbol with its frequency
+2. Build priority queue with all nodes
+3. While queue has more than one node:
+   a. Remove two nodes with lowest frequency
+   b. Create parent node with combined frequency
+   c. Add parent back to queue
+4. Remaining node is root of Huffman tree
+----
+
+=== Example Tree
+
+[source]
+----
+Frequencies: A=3, B=2, C=1
+
+Step 1: Create nodes
+  [A:3] [B:2] [C:1]
+
+Step 2: Combine C and B (lowest frequencies)
+      [3]
+      / \
+    [C:1][B:2]
+
+Step 3: Combine with A
+        [6]
+        / \
+      [A:3][3]
+            / \
+          [C:1][B:2]
+
+Codes (0=left, 1=right):
+  A: 0
+  B: 11
+  C: 10
+----
+
+== Implementation
+
+[source,ruby]
+----
+class HuffmanTree
+  def self.build(frequencies)
+    # Create priority queue
+    queue = frequencies.map { |symbol, freq|
+      Node.new(symbol, freq)
+    }.sort_by(&:frequency)
+
+    # Build tree
+    while queue.size > 1
+      left = queue.shift
+      right = queue.shift
+
+      parent = Node.new(nil, left.frequency + right.frequency)
+      parent.left = left
+      parent.right = right
+
+      queue << parent
+      queue.sort_by!(&:frequency)
+    end
+
+    queue.first
+  end
+
+  def generate_codes(node = @root, code = "", codes = {})
+    return codes if node.nil?
+
+    if node.leaf?
+      codes[node.symbol] = code
+    else
+      generate_codes(node.left, code + "0", codes)
+      generate_codes(node.right, code + "1", codes)
+    end
+
+    codes
+  end
+end
+----
+
+== Decoding
+
+[source,ruby]
+----
+def decode(bitstream, tree)
+  result = []
+  node = tree.root
+
+  until bitstream.eof?
+    bit = bitstream.read_bits(1)
+
+    node = bit == 0 ? node.left : node.right
+
+    if node.leaf?
+      result << node.symbol
+      node = tree.root  # Reset to root
+    end
+  end
+
+  result
+end
+----
+
+## Canonical Huffman Codes
+
+MSZIP and LZX use canonical Huffman codes for efficient storage.
+
+=== Properties
+
+* Codes of same length are sequential
+* Longer codes start where shorter codes end
+* Can be reconstructed from lengths alone
+
+=== Example
+
+[source]
+----
+Symbol  Length  Code
+A       2       00
+B       2       01
+C       3       100
+D       3       101
+E       3       110
+----
+
+== Bibliography
+
+* "A Method for the Construction of Minimum-Redundancy Codes" - D.A. Huffman
+* xref:compression-algorithms.adoc[Compression Algorithms]

@@ -1,0 +1,552 @@
+---
+layout: default
+title: CAB File Format Specification
+parent: Format Specifications
+grand_parent: Formats
+---
+
+== CAB File Format Specification
+
+=== Overview
+
+The Microsoft Cabinet (CAB) file format is a container format for lossless data compression and embedded archive files. This specification describes the binary structure, compression methods, and implementation details of the CAB format.
+
+**Format Version**: 1.3 (current standard)
+
+**Magic Signature**: `MSCF` (0x4D 0x53 0x43 0x46)
+
+**Byte Order**: Little-endian (Intel x86 convention)
+
+=== File Structure
+
+A CAB file consists of three main sections in this order:
+
+[source]
+----
++------------------+
+| CFHEADER         | Cabinet header
++------------------+
+| CFRESERVE        | Optional reserve area (header)
++------------------+
+| CFFOLDER[n]      | Folder descriptors (n folders)
++------------------+
+| CFFILE[m]        | File descriptors (m files)
++------------------+
+| CFDATA[k]        | Compressed data blocks (k blocks)
++------------------+
+| CFRESERVE        | Optional reserve areas (per folder/data)
++------------------+
+----
+
+=== CFHEADER Structure
+
+The cabinet header appears at offset 0 and defines the entire cabinet structure.
+
+[source,c]
+----
+struct CFHEADER {
+    char      signature[4];       // 0x00: "MSCF" (0x4D534346)
+    u32       reserved1;          // 0x04: Reserved, must be 0
+    u32       cbCabinet;          // 0x08: Total cabinet file size in bytes
+    u32       reserved2;          // 0x0C: Reserved, must be 0
+    u32       coffFiles;          // 0x10: Offset to first CFFILE entry
+    u32       reserved3;          // 0x14: Reserved, must be 0
+    u8        versionMinor;       // 0x18: Cabinet format minor version
+    u8        versionMajor;       // 0x19: Cabinet format major version
+    u16       cFolders;           // 0x1A: Number of CFFOLDER entries
+    u16       cFiles;             // 0x1C: Number of CFFILE entries
+    u16       flags;              // 0x1E: Cabinet flags (see below)
+    u16       setID;              // 0x20: Cabinet set identifier
+    u16       iCabinet;           // 0x22: Zero-based cabinet number in set
+    // If FLAGS_RESERVE_PRESENT (0x0004):
+    u16       cbCFHeader;         // 0x24: Size of per-cabinet reserved area
+    u8        cbCFFolder;         // 0x26: Size of per-folder reserved area
+    u8        cbCFData;           // 0x27: Size of per-data-block reserved area
+    // If FLAGS_PREV_CABINET (0x0001):
+    char[]    szCabinetPrev;      // 0x28+: Null-terminated previous cabinet name
+    char[]    szDiskPrev;         // Following: Null-terminated previous disk name
+    // If FLAGS_NEXT_CABINET (0x0002):
+    char[]    szCabinetNext;      // Following: Null-terminated next cabinet name
+    char[]    szDiskNext;         // Following: Null-terminated next disk name
+};
+----
+
+**Size**: Minimum 36 bytes (without optional fields)
+
+==== CFHEADER Field Descriptions
+
+`signature`::
+Magic bytes identifying the file as a cabinet. Must be exactly `MSCF` (ASCII).
+If this field does not match, the file is not a valid cabinet.
+
+`reserved1`, `reserved2`, `reserved3`::
+Reserved fields that must be zero. Implementations should verify these are zero
+and may reject files with non-zero values for forward compatibility.
+
+`cbCabinet`::
+Total size of the cabinet file in bytes. This includes all structures and data.
+Maximum value: 2^32-1 (4GB). **Validation**: File size must match this value.
+
+`coffFiles`::
+Absolute byte offset from the start of the file to the first [`CFFILE`](#cffile-structure) entry.
+This offset accounts for the header, all folder entries, and any reserve areas.
+
+`versionMinor`, `versionMajor`::
+Cabinet format version. Current standard is 1.3 (major=1, minor=3).
+**Compatibility**: Implementations should support versions 1.1 through 1.3.
+
+`cFolders`::
+Number of [`CFFOLDER`](#cffolder-structure) entries in this cabinet.
+Range: 1-65535. Must be ≥1. All folders immediately follow the header.
+
+`cFiles`::
+Number of [`CFFILE`](#cffile-structure) entries in this cabinet.
+Range: 1-65535. Must be ≥1. Files are associated with folders via `iFolder`.
+
+`flags`::
+Cabinet option flags (bitfield). See link:#cabinet-flags[Cabinet Flags].
+
+`setID`::
+Arbitrary identifier for a cabinet set (multi-volume archives).
+All cabinets in a set must have the same `setID`.
+
+`iCabinet`::
+Zero-based sequential number of this cabinet within a cabinet set.
+First cabinet = 0, second = 1, etc. For single cabinets, this is 0.
+
+==== Cabinet Flags
+
+[cols="1,1,3", options="header"]
+|===
+| Flag Name | Value (hex) | Description
+
+| `FLAGS_PREV_CABINET`
+| 0x0001
+| Cabinet is part of a set and not the first. Previous cabinet name follows header.
+
+| `FLAGS_NEXT_CABINET`
+| 0x0002
+| Cabinet is part of a set and not the last. Next cabinet name follows header.
+
+| `FLAGS_RESERVE_PRESENT`
+| 0x0004
+| Reserved areas are present. Reserve size fields appear after `iCabinet`.
+
+| Reserved bits
+| 0xFFF8
+| Must be zero. Implementations may warn or reject if set.
+|===
+
+**Flag Combinations:**
+
+* Single cabinet: No flags set (0x0000)
+* First of set: `FLAGS_NEXT_CABINET` (0x0002)
+* Middle of set: `FLAGS_PREV_CABINET | FLAGS_NEXT_CABINET` (0x0003)
+* Last of set: `FLAGS_PREV_CABINET` (0x0001)
+
+=== CFFOLDER Structure
+
+Folder entries define compression units. Each folder contains one or more compressed data blocks and can contain files or portions of files.
+
+[source,c]
+----
+struct CFFOLDER {
+    u32       coffCabStart;       // 0x00: Offset to first CFDATA block
+    u16       cCFData;            // 0x04: Number of CFDATA blocks
+    u16       typeCompress;       // 0x06: Compression type (see below)
+    // If cbCFFolder > 0 (from CFHEADER):
+    u8[]      abReserve;          // 0x08+: Per-folder reserved area
+};
+----
+
+**Size**: 8 bytes + `cbCFFolder` bytes
+
+==== CFFOLDER Field Descriptions
+
+`coffCabStart`::
+Absolute byte offset from file start to the first [`CFDATA`](#cfdata-structure) block in this folder.
+**Note**: This is NOT relative to the folder structure itself.
+
+`cCFData`::
+Number of [`CFDATA`](#cfdata-structure) blocks in this folder.
+Range: 1-65535. Each block is independently compressed.
+
+`typeCompress`::
+Compression algorithm and options. See link:#compression-types[Compression Types].
+
+`abReserve`::
+Application-specific reserved data. Size specified by `cbCFFolder` in header.
+May be used for digital signatures, timestamps, or custom metadata.
+
+=== CFFILE Structure
+
+File entries describe individual files stored in the cabinet, including metadata and folder association.
+
+[source,c]
+----
+struct CFFILE {
+    u32       cbFile;             // 0x00: Uncompressed file size
+    u32       uoffFolderStart;    // 0x04: Uncompressed offset in folder
+    u16       iFolder;            // 0x08: Folder index (special values below)
+    u16       date;               // 0x0A: File date (MS-DOS format)
+    u16       time;               // 0x0C: File time (MS-DOS format)
+    u16       attribs;            // 0x0E: File attributes (see below)
+    char[]    szName;             // 0x10+: Null-terminated filename (UTF-8)
+};
+----
+
+**Size**: 16 bytes + filename length + 1 (null terminator)
+
+==== CFFILE Field Descriptions
+
+`cbFile`::
+Uncompressed size of the file in bytes.
+Maximum: 2^32-1 (4GB). Zero-length files are valid.
+
+`uoffFolderStart`::
+Byte offset of the file's first byte within the uncompressed data of the folder.
+Used to locate the file within the decompressed folder stream.
+
+`iFolder`::
+Zero-based folder index containing this file's data.
+**Special values:**
+** `0xFFFD` (continued from previous cabinet)
+** `0xFFFE` (continued to next cabinet)
+** `0xFFFF` (continued in both directions)
+Range for normal files: 0 to `cFolders-1`.
+
+`date`, `time`::
+MS-DOS date/time format (see link:#ms-dos-datetime[MS-DOS Date/Time]).
+
+`attribs`::
+File attribute flags. See link:file-attributes.html[File Attributes Reference].
+Common attributes: Read-only (0x01), Hidden (0x02), System (0x04), Archive (0x20).
+
+`szName`::
+Null-terminated filename in UTF-8 encoding.
+**Path separators**: Backslash `\` (Windows convention).
+**Maximum length**: 255 characters typical, no hard limit in format.
+
+=== CFDATA Structure
+
+Data blocks contain the actual compressed file data. Each block is independently compressed.
+
+[source,c]
+----
+struct CFDATA {
+    u32       csum;               // 0x00: Checksum of this CFDATA entry
+    u16       cbData;             // 0x04: Compressed data size
+    u16       cbUncomp;           // 0x06: Uncompressed data size
+    // If cbCFData > 0 (from CFHEADER):
+    u8[]      abReserve;          // 0x08+: Per-data-block reserved area
+    u8[]      ab;                 // Following: Compressed data bytes
+};
+----
+
+**Size**: 8 bytes + `cbCFData` + `cbData` bytes
+
+==== CFDATA Field Descriptions
+
+`csum`::
+Checksum of this CFDATA structure. See link:#checksum-algorithm[Checksum Algorithm].
+Used to verify data integrity. A value of 0 indicates no checksum.
+
+`cbData`::
+Number of bytes of compressed data in the `ab` field.
+Maximum: 32768 (32 KB typical), absolute maximum 65535.
+
+`cbUncomp`::
+Number of bytes of data after decompression.
+Maximum: 32768 (32 KB typical). LZX may support larger blocks.
+
+`abReserve`::
+Per-data-block reserved area. Size specified by `cbCFData` in header.
+May contain block-specific metadata or signatures.
+
+`ab`::
+Compressed data bytes. Format depends on `typeCompress` from folder.
+Decompress to `cbUncomp` bytes using the appropriate algorithm.
+
+=== Compression Types
+
+[[compression-types]]
+Compression type field in [`CFFOLDER`](#cffolder-structure) specifies the algorithm:
+
+[cols="1,1,3", options="header"]
+|===
+| Type Code | Name | Description
+
+| 0x0000
+| None
+| No compression (store). Data copied verbatim.
+
+| 0x0001
+| MSZIP
+| Deflate-based compression. Block-level, independent frames.
+
+| 0x0002
+| Quantum
+| Proprietary Microsoft quantum compression.
+
+| 0x0003
+| LZX
+| High-ratio LZ77 variant with Huffman coding.
+
+| 0x0004+
+| Reserved
+| Reserved for future use. Reject with unsupported error.
+|===
+
+**Type Field Format:**
+
+[source]
+----
+Bits 0-3:   Compression algorithm (0-15)
+Bits 4-7:   Algorithm-specific parameters
+Bits 8-15:  Reserved (must be 0)
+----
+
+For detailed algorithm specifications, see:
+
+* link:compression-type-codes.html[Compression Type Codes Reference]
+* xref:guides/compression/mszip-compression.adoc[MSZIP Algorithm]
+* xref:guides/compression/quantum-compression.adoc[Quantum Algorithm]
+* xref:guides/compression/lzx-compression.adoc[LZX Algorithm]
+
+=== MS-DOS Date/Time Format
+
+[[ms-dos-datetime]]
+Date and time are stored in MS-DOS format (16-bit packed fields):
+
+**Date Format** (16 bits):
+
+[source]
+----
+Bits 0-4:   Day of month (1-31)
+Bits 5-8:   Month (1-12)
+Bits 9-15:  Year from 1980 (0 = 1980, 127 = 2107)
+----
+
+**Time Format** (16 bits):
+
+[source]
+----
+Bits 0-4:   Seconds / 2 (0-29, representing 0-58 seconds)
+Bits 5-10:  Minutes (0-59)
+Bits 11-15: Hours (0-23)
+----
+
+**Example Extraction:**
+
+[source,ruby]
+----
+date = 0x4E71  # Binary: 0100 1110 0111 0001
+day   = (date & 0x001F)        #  1 (bits 0-4)
+month = (date & 0x01E0) >> 5   #  7 (bits 5-8, July)
+year  = ((date & 0xFE00) >> 9) + 1980  # 2019 (bits 9-15, 39 + 1980)
+
+time = 0x9C4A  # Binary: 1001 1100 0100 1010
+seconds = ((time & 0x001F) << 1)  # 20 (bits 0-4, times 2)
+minutes = (time & 0x07E0) >> 5    #  9 (bits 5-10)
+hours   = (time & 0xF800) >> 11   # 19 (bits 11-15)
+
+# Result: 2019-07-01 19:09:20
+----
+
+**Limitations:**
+
+* Seconds have 2-second resolution (0, 2, 4, ..., 58)
+* Date range: 1980-01-01 to 2107-12-31
+* No timezone information
+
+=== Checksum Algorithm
+
+[[checksum-algorithm]]
+The CFDATA checksum is a simple additive checksum over the CFDATA structure.
+
+[source,ruby]
+----
+def compute_checksum(cfdata_block)
+  csum = 0
+
+  # Include cbData and cbUncomp fields
+  csum = (csum + cfdata_block.cbData) & 0xFFFFFFFF
+  csum = (csum + cfdata_block.cbUncomp) & 0xFFFFFFFF
+
+  # Process compressed data bytes
+  cfdata_block.ab.each_byte do |byte|
+    csum = (csum + byte) & 0xFFFFFFFF
+  end
+
+  csum
+end
+----
+
+**Notes:**
+
+* Checksum is unsigned 32-bit integer
+* Overflow wraps (modulo 2^32)
+* `csum` field itself is NOT included in calculation
+* If `csum` field is 0, checksum verification is skipped
+
+=== Multi-Volume Cabinets
+
+Cabinet sets (spanning archives) allow files larger than a single volume.
+
+==== Cabinet Set Rules
+
+1. All cabinets in a set must have the same `setID`
+2. Cabinets are numbered sequentially starting from 0 (`iCabinet`)
+3. Files may span multiple cabinets (special `iFolder` values)
+4. Folders cannot span cabinets (completed in each cabinet)
+
+==== Spanning Files
+
+A file spanning multiple cabinets uses special `iFolder` values:
+
+[source]
+----
+Cabinet 0:
+  File: name="large.bin", iFolder=0xFFFE (continues to next)
+  Folder 0: Contains first portion of large.bin
+
+Cabinet 1:
+  File: name="large.bin", iFolder=0xFFFF (from previous, to next)
+  Folder 0: Contains middle portion of large.bin
+
+Cabinet 2:
+  File: name="large.bin", iFolder=0xFFFD (from previous)
+  Folder 0: Contains final portion of large.bin
+----
+
+==== Cabinet Linking
+
+Headers link cabinets via name fields:
+
+* `FLAGS_PREV_CABINET` set: `szCabinetPrev` and `szDiskPrev` present
+* `FLAGS_NEXT_CABINET` set: `szCabinetNext` and `szDiskNext` present
+
+**Name Format:**
+
+* Cabinet name: Filename only (e.g., "DISK02.CAB")
+* Disk name: Descriptive label (e.g., "Disk 2")
+
+=== Reserve Areas
+
+Reserve areas allow embedding application-specific data without breaking compatibility.
+
+==== Reserve Area Types
+
+1. **Per-Cabinet Reserve** (`cbCFHeader` bytes)
+   - Location: Immediately after CFHEADER
+   - Use: Cabinet-level metadata (signatures, timestamps)
+
+2. **Per-Folder Reserve** (`cbCFFolder` bytes)
+   - Location: Within each CFFOLDER entry
+   - Use: Folder-specific metadata
+
+3. **Per-Data-Block Reserve** (`cbCFData` bytes)
+   - Location: Within each CFDATA entry
+   - Use: Block-level metadata
+
+==== Reserve Area Guidelines
+
+* Reserve sizes are global (same for all folders/blocks)
+* Maximum recommended: 60,000 bytes per cabinet
+* Should not contain compression-required data
+* Tools must preserve reserves when copying/modifying
+
+**Example Use Cases:**
+
+* Digital signatures (Authenticode)
+* Build timestamps and version info
+* Custom compression parameters
+* Integrity checksums (additional to CFDATA csum)
+
+=== Implementation Notes
+
+==== Reading Cabinet Files
+
+1. **Validate header**
+   - Check `signature` = "MSCF"
+   - Verify `cbCabinet` matches file size
+   - Check version compatibility
+
+2. **Parse folder descriptors**
+   - Read `cFolders` CFFOLDER entries
+   - Validate `coffCabStart` offsets
+   - Note compression types
+
+3. **Parse file descriptors**
+   - Read `cFiles` CFFILE entries
+   - Build file index with offsets
+   - Resolve folder associations
+
+4. **Extract files**
+   - Locate file's folder
+   - Decompress folder data blocks
+   - Extract file bytes using `uoffFolderStart` and `cbFile`
+
+==== Writing Cabinet Files
+
+1. **Organize files into folders**
+   - Group by compression type
+   - Respect 2GB folder limit
+   - Plan for multi-volume if needed
+
+2. **Compress data**
+   - Compress each folder in 32KB blocks
+   - Store as CFDATA blocks
+   - Compute checksums
+
+3. **Build structures**
+   - Create CFHEADER with totals
+   - Create CFFOLDER entries with offsets
+   - Create CFFILE entries with metadata
+
+4. **Write cabinet**
+   - Write structures sequentially
+   - Update offsets and counts
+   - Verify final `cbCabinet`
+
+==== Common Pitfalls
+
+* **Offset errors**: All offsets are absolute from file start, not relative
+* **Folder boundaries**: Files must not straddle folder boundaries (except spanning)
+* **Checksum**: Must compute over compressed data, not structure itself
+* **Endianness**: Always little-endian, even on big-endian systems
+* **String encoding**: Filenames are UTF-8, not ASCII or system encoding
+
+=== Version History
+
+[cols="1,1,3", options="header"]
+|===
+| Version | Date | Changes
+
+| 1.1
+| 1996
+| Original Windows 95 format. Basic structure, MSZIP/Quantum compression.
+
+| 1.2
+| 1997
+| Added reserve areas for digital signatures. FLAG_RESERVE_PRESENT introduced.
+
+| 1.3
+| 1997
+| Enhanced cabinet sets with better chaining. LZX compression added.
+|===
+
+=== References
+
+* Microsoft Cabinet SDK Documentation (1997)
+* Microsoft Compression API Reference
+* ISO/IEC 9899:1999 (C99 Standard for data types)
+* RFC 1951 (Deflate specification, basis for MSZIP)
+
+=== See Also
+
+* link:compression-type-codes.html[Compression Type Codes]
+* link:file-attributes.html[File Attributes Reference]
+* xref:concepts/cabinet-structure.adoc[Cabinet Structure Concepts]
+* xref:guides/formats/cab-format.adoc[CAB Format Usage Guide]
+* xref:guides/advanced-usage/multi-part-cabinets.adoc[Multi-Part Cabinets Guide]

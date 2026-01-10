@@ -1,0 +1,381 @@
+---
+title: Your First CAB File
+parent: Getting Started
+nav_order: 3
+---
+
+== Creating Your First CAB File
+
+=== Purpose
+
+This guide walks you through creating a CAB archive from scratch. You'll learn how to bundle multiple files into a compressed CAB file using different compression algorithms.
+
+=== References
+
+* <<installation#,Installation Guide>>
+* <<quick-start#,Quick Start Guide>>
+* <<../reference/cli/cab-commands#create,Create Command Reference>>
+* <<../guides/compression/index#,Compression Algorithms>>
+
+=== Concepts
+
+Creating a CAB archive involves:
+
+1. **Source Files**: The files you want to archive
+2. **Compression Algorithm**: How to compress the data (MSZIP, LZX, etc.)
+3. **Cabinet Structure**: How files are organized into folders
+4. **Output File**: The resulting `.cab` file
+
+=== Prerequisites
+
+* Cabriolet installed (see <<installation#,Installation>>)
+* Some files to archive (text, images, executables, etc.)
+
+=== Step 1: Prepare Your Files
+
+Create a directory with files to archive:
+
+[source,bash]
+----
+mkdir my-project
+cd my-project
+echo "Hello, CAB!" > readme.txt
+echo "Version 1.0" > version.txt
+mkdir data
+echo "Configuration" > data/config.ini
+----
+
+You should now have:
+
+[source,text]
+----
+my-project/
+  readme.txt
+  version.txt
+  data/
+    config.ini
+----
+
+=== Step 2: Create a Basic CAB
+
+Create a CAB file with default settings (MSZIP compression):
+
+[source,bash]
+----
+cabriolet create my-archive.cab readme.txt version.txt data/config.ini
+----
+
+.Example Output
+[source,text]
+----
+Creating my-archive.cab...
+  Adding readme.txt (13 bytes)
+  Adding version.txt (12 bytes)
+  Adding data/config.ini (13 bytes)
+
+Successfully created my-archive.cab (3 files, 38 bytes → 124 bytes total)
+Compression ratio: 30.6%
+----
+
+NOTE: The `create` command is planned but not yet fully implemented. The examples below show the intended functionality.
+
+=== Step 3: Verify Your CAB
+
+List the contents to verify:
+
+[source,bash]
+----
+cabriolet list my-archive.cab
+----
+
+.Example Output
+[source,text]
+----
+Files in my-archive.cab:
+  readme.txt (13 bytes)
+  version.txt (12 bytes)
+  data/config.ini (13 bytes)
+
+Total: 3 files, 38 bytes
+Compression: MSZIP
+----
+
+=== Step 4: Choose Compression Algorithm
+
+Create CABs with different compression algorithms:
+
+==== MSZIP (Default - ZIP/Deflate Compatible)
+
+[source,bash]
+----
+cabriolet create --compression=mszip my-archive-mszip.cab *.txt
+----
+
+Best for:
+
+* General-purpose compression
+* Compatibility with ZIP tools
+* Moderate compression ratio
+
+==== LZX (High Compression)
+
+[source,bash]
+----
+cabriolet create --compression=lzx my-archive-lzx.cab *.txt
+----
+
+Best for:
+
+* Maximum compression ratio
+* Large files
+* Software distribution
+
+==== None (Uncompressed)
+
+[source,bash]
+----
+cabriolet create --compression=none my-archive-uncompressed.cab *.txt
+----
+
+Best for:
+
+* Already compressed files (images, videos)
+* Fast extraction needed
+* Testing purposes
+
+=== Step 5: Add Directory Recursively
+
+Include all files from a directory:
+
+[source,bash]
+----
+# Recursively add all files
+cabriolet create my-project.cab my-project/
+----
+
+Or specify patterns:
+
+[source,bash]
+----
+# Add all .txt files
+cabriolet create docs.cab **/*.txt
+
+# Add multiple patterns
+cabriolet create sources.cab **/*.rb **/*.md
+----
+
+=== Common Scenarios
+
+==== Creating a Software Installer
+
+Bundle program files:
+
+[source,bash]
+----
+cabriolet create --compression=lzx installer.cab \
+  bin/program.exe \
+  lib/*.dll \
+  docs/readme.txt \
+  data/config.xml
+----
+
+==== Creating a Documentation Archive
+
+Archive documentation with moderate compression:
+
+[source,bash]
+----
+cabriolet create --compression=mszip docs.cab \
+  README.md \
+  LICENSE \
+  docs/**/*.md
+----
+
+==== Creating a Backup
+
+Uncompressed for speed:
+
+[source,bash]
+----
+cabriolet create --compression=none backup.cab important-files/
+----
+
+=== Using the Ruby API
+
+Create CAB files programmatically:
+
+.Basic CAB creation
+[source,ruby]
+----
+require 'cabriolet'
+
+# Create a new CAB with files
+compressor = Cabriolet::CAB::Compressor.new
+compressor.add_file('readme.txt')
+compressor.add_file('version.txt')
+compressor.write('my-archive.cab')
+----
+
+.With specific compression
+[source,ruby]
+----
+require 'cabriolet'
+
+# Create with LZX compression
+compressor = Cabriolet::CAB::Compressor.new(compression: :lzx)
+compressor.add_file('large-file.dat')
+compressor.write('compressed.cab')
+----
+
+.Add directory recursively
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::CAB::Compressor.new
+Dir.glob('project/**/*').each do |file|
+  compressor.add_file(file) if File.file?(file)
+end
+compressor.write('project.cab')
+----
+
+For complete API documentation, see <<../reference/api/cab-api#,CAB API Reference>>.
+
+=== Advanced Options
+
+==== Multi-part CABs
+
+Create split archives for large files (planned feature):
+
+[source,bash]
+----
+# Split into 1MB parts
+cabriolet create --split=1M large-archive.cab big-files/
+----
+
+This creates:
+
+* `large-archive.cab` (part 1)
+* `large-archive.ca2` (part 2)
+* `large-archive.ca3` (part 3)
+* etc.
+
+==== Reserve Space
+
+Reserve header space for digital signatures (planned):
+
+[source,bash]
+----
+cabriolet create --reserve=6144 signed.cab files/
+----
+
+==== Set Cabinet ID
+
+Set a specific cabinet set ID:
+
+[source,bash]
+----
+cabriolet create --set-id=12345 numbered.cab files/
+----
+
+=== Compression Comparison
+
+Test different algorithms on your data:
+
+[source,bash]
+----
+# Create with each algorithm
+cabriolet create --compression=none uncompressed.cab data/
+cabriolet create --compression=mszip mszip.cab data/
+cabriolet create --compression=lzx lzx.cab data/
+
+# Compare sizes
+ls -lh *.cab
+----
+
+.Example Results
+[cols="1,1,1"]
+|===
+|Algorithm |Size |Compression Ratio
+
+|None
+|1.2 MB
+|0% (original)
+
+|MSZIP
+|450 KB
+|62.5%
+
+|LZX
+|380 KB
+|68.3%
+|===
+
+For detailed comparison, see <<../guides/compression/choosing-algorithm#,Choosing a Compression Algorithm>>.
+
+=== Troubleshooting
+
+==== "File not found" Error
+
+Ensure all file paths are correct:
+
+[source,bash]
+----
+ls -la file.txt
+----
+
+==== "Cannot create output file" Error
+
+Check:
+
+* Write permissions in output directory
+* Sufficient disk space
+* Output path is valid
+
+==== Large Files Take Long Time
+
+This is expected for LZX compression. Consider:
+
+* Using MSZIP for faster compression
+* Using `--verbose` to see progress
+* Splitting into multiple CABs
+
+=== Best Practices
+
+1. **Choose appropriate compression**:
+   * MSZIP for general use
+   * LZX for distribution
+   * None for pre-compressed files
+
+2. **Test your archives**:
++
+[source,bash]
+----
+cabriolet test my-archive.cab
+----
+
+3. **Keep source files**: Don't delete originals until verified
+
+4. **Document contents**: Include a readme in the CAB
+
+5. **Version your CABs**: Use descriptive names with versions
++
+[source,bash]
+----
+cabriolet create myapp-v1.0.cab src/
+----
+
+=== Next Steps
+
+Now that you can create CAB files:
+
+* Learn about <<../guides/compression/index#,compression algorithms in detail>>
+* Explore <<../guides/formats/index#,other formats>> (CHM, SZDD, etc.)
+* Read about <<../guides/advanced-usage/multi-part-cabinets#,multi-part cabinets>>
+* Review <<../reference/cli/cab-commands#,complete CAB command reference>>
+
+=== Bibliography
+
+* <<../reference/cli/cab-commands#create,Create Command Reference>>
+* <<../guides/compression/choosing-algorithm#,Choosing a Compression Algorithm>>
+* https://docs.microsoft.com/en-us/previous-versions/bb417343(v=msdn.10)[Microsoft Cabinet SDK]

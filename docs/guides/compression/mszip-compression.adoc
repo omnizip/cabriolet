@@ -1,0 +1,258 @@
+---
+title: MSZIP Compression
+parent: Compression
+grand_parent: Guides
+nav_order: 4
+---
+
+== MSZIP Compression
+
+=== Purpose
+
+This guide explains MSZIP (Microsoft ZIP) compression, the default compression algorithm for CAB files based on DEFLATE.
+
+=== References
+
+* <<choosing-algorithm#,Choosing a Compression Algorithm>>
+* <<../formats/cab-format#compression-support,CAB Format>>
+* <<../formats/kwaj-format#compression-support,KWAJ Format>>
+
+=== Concepts
+
+==== What is MSZIP?
+
+MSZIP is Microsoft's implementation of the DEFLATE algorithm, the same compression used in ZIP files. It provides a good balance between compression ratio and speed.
+
+==== Key Features
+
+* **DEFLATE-based** - Compatible with ZIP compression
+* **32 KB window** - Larger than LZSS (4 KB)
+* **Huffman coding** - Statistical encoding for better compression
+* **Block-based** - Compresses data in 32 KB blocks (CAB)
+
+=== Performance Characteristics
+
+[cols="1,2"]
+|===
+|Metric |Value
+
+|Compression ratio
+|40-60% for text, 30-50% for executables
+
+|Compression speed
+|Medium (5-20 MB/s)
+
+|Decompression speed
+|Fast (20-100 MB/s)
+
+|Memory usage
+|Medium (32 KB)
+
+|Window size
+|32,768 bytes (32 KB)
+|===
+
+=== Usage
+
+==== CAB Files (Default)
+
+[source,ruby]
+----
+compressor = Cabriolet::CAB::Compressor.new(compression: :mszip)
+compressor.add_file('data.txt')
+compressor.write('archive.cab')
+----
+
+Command line:
+[source,bash]
+----
+# MSZIP is default
+cabriolet create archive.cab file1.txt file2.txt
+
+# Explicit MSZIP
+cabriolet create --compression=mszip archive.cab data.txt
+----
+
+==== KWAJ Files
+
+[source,ruby]
+----
+compressor = Cabriolet::KWAJ::Compressor.new
+
+bytes = compressor.compress(
+  'data.bin',
+  'data.kwj',
+  compression: :mszip
+)
+----
+
+=== Algorithm Details
+
+==== Two-Stage Compression
+
+1. **LZ77 Dictionary Compression**
+   * Find repeated sequences
+   * Encode as (distance, length) pairs
+   * 32 KB sliding window
+
+2. **Huffman Encoding**
+   * Build frequency tables
+   * Create optimal prefix codes
+   * Encode literals and matches
+
+==== Block Structure
+
+CAB uses 32 KB blocks, each prefixed with a "CK" signature:
+
+[source,text]
+----
+CFDATA Block 1:
+  [CK signature] [DEFLATE blocks...] → 32 KB decompressed
+
+CFDATA Block 2:
+  [CK signature] [DEFLATE blocks...] → 32 KB decompressed
+
+CFDATA Block 3:
+  [CK signature] [DEFLATE blocks...] → Remaining bytes
+----
+
+==== Multi-File Extraction
+
+When multiple files share a CFDATA block, Cabriolet maintains window state:
+
+[source,text]
+----
+CFDATA Block (32 KB decompressed):
+  ├── file1.txt (10 KB) → Written to disk
+  ├── file2.txt (15 KB) → Written to disk
+  └── file3.txt (7 KB)  → Written to disk
+
+Window buffer preserves unconsumed data between extract calls.
+----
+
+This is handled automatically by the decompressor's `@window_offset` tracking.
+
+=== Compression Effectiveness
+
+==== Excellent For
+
+* **Text files** - 50-60% compression
+* **Source code** - 55-65% compression
+* **HTML/XML** - 55-65% compression
+* **Log files** - 60-70% compression
+
+==== Good For
+
+* **Executables** - 40-50% compression
+* **DLLs** - 40-50% compression
+* **Office documents** - 30-40% compression
+
+==== Poor For
+
+* **Already compressed** - 0-5% (JPG, PNG, MP3, ZIP)
+* **Random data** - 0-10%
+* **Encrypted files** - 0-5%
+
+=== Comparison
+
+[cols="1,1,1,1"]
+|===
+|Algorithm |Text Ratio |Speed |Memory
+
+|LZSS
+|40-50%
+|Fast
+|4 KB
+
+|MSZIP
+|50-60%
+|Medium
+|32 KB
+
+|LZX
+|60-70%
+|Slow
+|32KB-2MB
+
+|Quantum
+|50-65%
+|Medium
+|Variable
+|===
+
+=== Best Practices
+
+1. **Default choice** - Use for general-purpose CAB files
+2. **Mixed content** - Good for varied file types
+3. **Distribution** - Balance of size and speed
+4. **Compatibility** - Widely supported
+5. **Skip media** - Don't compress JPG, PNG, MP4
+
+=== Examples
+
+==== Create Installation Package
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::CAB::Compressor.new(compression: :mszip)
+
+# Add application files
+compressor.add_file('setup.exe')
+compressor.add_file('readme.txt')
+compressor.add_file('license.txt')
+
+compressor.write('installer.cab')
+puts "Created installer with MSZIP compression"
+----
+
+==== Mixed Compression
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Folder 1: MSZIP for most files
+mszip_compressor = Cabriolet::CAB::Compressor.new(compression: :mszip)
+mszip_compressor.add_file('program.exe')
+mszip_compressor.add_file('config.xml')
+
+# Folder 2: None for pre-compressed
+none_compressor = Cabriolet::CAB::Compressor.new(compression: :none)
+none_compressor.add_file('logo.jpg')
+none_compressor.add_file('music.mp3')
+----
+
+==== Compression Statistics
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::CAB::Compressor.new(compression: :mszip)
+
+original_size = 0
+Dir.glob('*.txt').each do |file|
+  compressor.add_file(file)
+  original_size += File.size(file)
+end
+
+compressed_size = compressor.write('archive.cab')
+
+ratio = (1 - compressed_size.to_f / original_size) * 100
+puts "Compression ratio: #{ratio.round(1)}%"
+puts "#{original_size} → #{compressed_size} bytes"
+----
+
+=== See Also
+
+* <<choosing-algorithm#,Choosing a Compression Algorithm>>
+* <<lzss-compression#,LZSS Compression>> - Faster, lower ratio
+* <<lzx-compression#,LZX Compression>> - Slower, higher ratio
+* <<../formats/cab-format#,CAB Format Guide>>
+
+=== Bibliography
+
+* https://en.wikipedia.org/wiki/DEFLATE[Wikipedia: DEFLATE]
+* https://www.cabextract.org.uk/[cabextract Documentation]

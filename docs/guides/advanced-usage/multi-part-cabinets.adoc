@@ -1,0 +1,462 @@
+---
+layout: default
+title: Multi-Part Cabinets
+parent: Advanced Usage
+grand_parent: Guides
+nav_order: 1
+---
+
+== Multi-Part Cabinets
+:toc:
+
+=== Purpose
+
+This guide covers working with cabinet files split across multiple parts, including disk-spanning scenarios and spanned archive sets.
+
+=== References
+
+* xref:../formats/cab-format.adoc[CAB Format Guide]
+* xref:../../reference/cli/cab-commands.adoc[CAB CLI Commands]
+* xref:../../reference/api/cab-api.adoc[CAB API Reference]
+
+=== Multi-Part Archive Concepts
+
+==== What Are Multi-Part Cabinets?
+
+Multi-part cabinet files are archives that have been split across multiple files, typically to fit on multiple floppy disks or to manage large archives. The CAB format natively supports this through:
+
+* **Disk spanning**: Files spanning multiple physical media
+* **Split archives**: Large archives divided into manageable parts
+* **Continuation cabinets**: Linked cabinet sets
+
+Each part contains:
+
+* A complete CAB header
+* References to previous/next parts
+* Partial or complete compressed folders
+* File entries that may span parts
+
+==== File Naming Conventions
+
+Multi-part cabinets typically follow naming patterns:
+
+[source]
+----
+archive.cab     # First part
+archive.ca1     # Second part
+archive.ca2     # Third part
+# or
+disk1.cab
+disk2.cab
+disk3.cab
+----
+
+=== Extracting Multi-Part Cabinets
+
+==== Basic Extraction
+
+To extract a multi-part cabinet set, provide the first cabinet file:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Extract from first part - Cabriolet automatically finds subsequent parts
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+decompressor.extract_all('output_dir')
+----
+
+The library automatically:
+
+1. Reads the first cabinet's header
+2. Identifies continuation cabinets
+3. Locates subsequent parts by filename pattern
+4. Seamlessly extracts across all parts
+
+==== Specifying Part Locations
+
+If parts are in different directories:
+
+[source,ruby]
+----
+decompressor = Cabriolet::CAB::Decompressor.new('disk1/archive.cab')
+
+# Provide search paths for subsequent parts
+decompressor.add_search_path('disk2')
+decompressor.add_search_path('disk3')
+
+decompressor.extract_all('output')
+----
+
+==== Verifying Multi-Part Archives
+
+List all files across all parts:
+
+[source,shell]
+----
+$ cabriolet cab list archive.cab
+
+Cabinet: archive.cab (part 1 of 3)
+  Next: archive.ca1
+  Files:
+    file1.txt (2 KB) - continues in archive.ca1
+    file2.txt (5 KB) - starts in archive.cab, ends in archive.ca1
+
+Cabinet: archive.ca1 (part 2 of 3)
+  Previous: archive.cab
+  Next: archive.ca2
+  Files:
+    file2.txt (continued)
+    file3.txt (10 KB)
+
+Cabinet: archive.ca2 (part 3 of 3)
+  Previous: archive.ca1
+  Files:
+    file4.txt (3 KB)
+
+Total: 4 files, 20 KB uncompressed
+----
+
+=== Creating Multi-Part Cabinets
+
+==== Splitting by Size
+
+Create a multi-part archive with maximum size per part:
+
+[source,ruby]
+----
+compressor = Cabriolet::CAB::Compressor.new
+
+# Set maximum cabinet size (in bytes)
+compressor.max_cabinet_size = 1_440_000  # 1.44 MB (floppy disk)
+
+# Add files
+compressor.add_file('large_file1.dat')
+compressor.add_file('large_file2.dat')
+compressor.add_file('large_file3.dat')
+
+# Compress to multi-part archive
+compressor.compress('output.cab')
+
+# Creates:
+#   output.cab  (1.44 MB)
+#   output.ca1  (1.44 MB)
+#   output.ca2  (remaining data)
+----
+
+==== Custom Part Naming
+
+Specify custom naming for parts:
+
+[source,ruby]
+----
+compressor = Cabriolet::CAB::Compressor.new
+compressor.max_cabinet_size = 10_000_000  # 10 MB
+
+# Set naming pattern
+compressor.part_name_pattern = ->(index) {
+  if index == 0
+    "data.cab"
+  else
+    "data_part#{index + 1}.cab"
+  end
+}
+
+compressor.add_directory('large_dataset/')
+compressor.compress('data.cab')
+
+# Creates:
+#   data.cab
+#   data_part2.cab
+#   data_part3.cab
+----
+
+==== Splitting by Folder
+
+Create parts at folder boundaries:
+
+[source,ruby]
+----
+compressor = Cabriolet::CAB::Compressor.new
+
+# Split when folders change
+compressor.split_at_folder_boundary = true
+compressor.max_cabinet_size = 50_000_000
+
+# Each compression folder can go to a separate part if needed
+compressor.add_folder('documents/', compression: :mszip)
+compressor.add_folder('images/', compression: :lzx)
+compressor.add_folder('videos/', compression: :none)
+
+compressor.compress('media.cab')
+----
+
+=== Merging Multi-Part Cabinets
+
+==== Combining Parts
+
+Merge multiple parts into a single cabinet:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Read all parts
+parts = ['archive.cab', 'archive.ca1', 'archive.ca2']
+
+# Create temporary extraction
+temp_dir = Dir.mktmpdir
+decompressor = Cabriolet::CAB::Decompressor.new(parts.first)
+decompressor.extract_all(temp_dir)
+
+# Recompress as single archive
+compressor = Cabriolet::CAB::Compressor.new
+compressor.add_directory(temp_dir)
+compressor.compress('merged.cab')
+
+# Cleanup
+FileUtils.rm_rf(temp_dir)
+----
+
+==== CLI Merge
+
+[source,shell]
+----
+# Extract all parts
+$ cabriolet cab extract archive.cab --output temp/
+
+# Recompress as single file
+$ cabriolet cab compress temp/ merged.cab
+
+# Remove temporary files
+$ rm -rf temp/
+----
+
+=== Handling Disk Spanning
+
+==== Reading from Removable Media
+
+When working with spanned cabinets on removable media:
+
+[source,ruby]
+----
+class DiskSpanHandler
+  def initialize(first_cab)
+    @decompressor = Cabriolet::CAB::Decompressor.new(first_cab)
+    @current_disk = 1
+  end
+
+  def extract_all(output_dir)
+    @decompressor.on_next_cabinet = lambda do |cabinet_name|
+      @current_disk += 1
+      prompt_for_disk(@current_disk, cabinet_name)
+
+      # Return path to next cabinet
+      File.join('/media/disk', cabinet_name)
+    end
+
+    @decompressor.extract_all(output_dir)
+  end
+
+  private
+
+  def prompt_for_disk(disk_num, filename)
+    puts "Please insert disk #{disk_num} containing #{filename}"
+    puts "Press Enter when ready..."
+    gets
+  end
+end
+
+# Usage
+handler = DiskSpanHandler.new('/media/disk/install.cab')
+handler.extract_all('installation')
+----
+
+==== Creating Disk Spans
+
+[source,ruby]
+----
+compressor = Cabriolet::CAB::Compressor.new
+
+# Set to floppy disk size
+compressor.max_cabinet_size = 1_440_000
+
+# Set disk label callback
+compressor.on_new_cabinet = lambda do |index, filename|
+  puts "Please insert disk #{index + 1}"
+  puts "Label it: #{filename}"
+  puts "Press Enter when ready..."
+  gets
+
+  # Return path for new cabinet
+  "/media/floppy/#{filename}"
+end
+
+compressor.add_directory('software/')
+compressor.compress('/media/floppy/install.cab')
+----
+
+=== Error Recovery
+
+==== Missing Parts
+
+Handle missing cabinet parts gracefully:
+
+[source,ruby]
+----
+begin
+  decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+  decompressor.extract_all('output')
+rescue Cabriolet::Error => e
+  if e.message.include?('continuation cabinet not found')
+    puts "Error: Missing continuation cabinet"
+    puts "Available parts:"
+
+    # List available parts
+    Dir['archive.ca*'].each do |part|
+      puts "  #{part}"
+    end
+
+    puts "\nPlease ensure all parts are present."
+  else
+    raise
+  end
+end
+----
+
+==== Corrupted Parts
+
+Extract what's possible from corrupted multi-part archives:
+
+[source,ruby]
+----
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+
+# Enable salvage mode
+decompressor.salvage_mode = true
+
+begin
+  decompressor.extract_all('partial_output')
+rescue Cabriolet::Error => e
+  puts "Extraction completed with errors:"
+  puts e.message
+  puts "\nPartially extracted files are in: partial_output/"
+end
+----
+
+=== Advanced Scenarios
+
+==== Network-Based Parts
+
+Retrieve parts from network locations:
+
+[source,ruby]
+----
+require 'net/http'
+require 'tempfile'
+
+class NetworkCabinetHandler
+  def initialize(base_url, first_cabinet)
+    @base_url = base_url
+    @cache_dir = Dir.mktmpdir
+
+    # Download first cabinet
+    local_path = download_cabinet(first_cabinet)
+    @decompressor = Cabriolet::CAB::Decompressor.new(local_path)
+
+    # Set up continuation handler
+    @decompressor.on_next_cabinet = lambda do |cabinet_name|
+      download_cabinet(cabinet_name)
+    end
+  end
+
+  def extract_all(output_dir)
+    @decompressor.extract_all(output_dir)
+  ensure
+    FileUtils.rm_rf(@cache_dir)
+  end
+
+  private
+
+  def download_cabinet(filename)
+    local_path = File.join(@cache_dir, filename)
+    return local_path if File.exist?(local_path)
+
+    url = URI.join(@base_url, filename)
+    puts "Downloading #{url}..."
+
+    Net::HTTP.start(url.host, url.port) do |http|
+      response = http.get(url.path)
+      File.binwrite(local_path, response.body)
+    end
+
+    local_path
+  end
+end
+
+# Usage
+handler = NetworkCabinetHandler.new(
+  'https://example.com/archives/',
+  'data.cab'
+)
+handler.extract_all('output')
+----
+
+==== In-Memory Multi-Part Processing
+
+Process multi-part cabinets entirely in memory:
+
+[source,ruby]
+----
+# Load all parts into memory
+parts_data = {
+  'archive.cab' => File.binread('archive.cab'),
+  'archive.ca1' => File.binread('archive.ca1'),
+  'archive.ca2' => File.binread('archive.ca2')
+}
+
+# Create memory handles
+memory_system = Cabriolet::System::IOSystem.new
+parts_data.each do |name, data|
+  memory_system.register_memory_file(name, data)
+end
+
+# Decompress using memory handles
+handle = memory_system.open('archive.cab', 'rb')
+decompressor = Cabriolet::CAB::Decompressor.new(handle)
+
+# Extract to memory or disk
+decompressor.extract_all('output')
+----
+
+=== Best Practices
+
+==== Creating Multi-Part Archives
+
+1. **Choose appropriate sizes**: Match part size to target media or network constraints
+2. **Test all parts**: Verify each part can be read independently
+3. **Use consistent naming**: Follow standard .cab/.ca1/.ca2 conventions
+4. **Include metadata**: Add cabinet comments explaining the archive structure
+5. **Folder boundaries**: Consider splitting at folder boundaries for better organization
+
+==== Extracting Multi-Part Archives
+
+1. **Verify all parts present**: Check for all parts before extraction
+2. **Check disk space**: Ensure sufficient space for complete extraction
+3. **Use salvage mode**: Enable for important data recovery
+4. **Validate checksums**: Verify file integrity after extraction
+5. **Keep parts together**: Store all parts in the same directory
+
+==== Error Handling
+
+1. **Implement retry logic**: For network-based parts
+2. **Log missing parts**: Track which parts failed to load
+3. **Provide clear errors**: Help users identify missing components
+4. **Support resume**: Allow partial extraction and continuation
+
+==== Bibliography
+
+* Microsoft Cabinet SDK Documentation
+* CAB File Format Specification
+* xref:../formats/cab-format.adoc[CAB Format Guide]
+* xref:../../concepts/cabinet-structure.adoc[Cabinet Structure Concepts]

@@ -1,0 +1,59 @@
+# Lychee link checker configuration for Cabriolet documentation
+
+# Check all links recursively
+include_verbatim = false
+
+# Follow redirects
+max_redirects = 5
+
+# Timeout for requests (seconds)
+timeout = 30
+
+# Number of concurrent requests
+max_concurrency = 10
+
+# Accept HTTP status codes
+accept = [200, 201, 204, 206, 301, 302, 303, 304, 307, 308]
+
+# Retry failed requests
+max_retries = 3
+
+# User agent string
+user_agent = "lychee/cabriolet-docs"
+
+# Exclude patterns
+exclude = [
+  # Exclude localhost and example URLs
+  "http://localhost",
+  "http://127.0.0.1",
+  "http://example.com",
+  "https://example.com",
+
+  # Exclude email addresses
+  "mailto:*",
+
+  # Exclude same-page anchors (handled by Jekyll/AsciiDoc)
+  "^#.*",
+
+  # Exclude common placeholder URLs
+  "http://www.example.com",
+  "https://www.example.com",
+
+  # Exclude GitHub edit links (these are templates)
+  "**/edit/**"
+]
+
+# Cache responses to avoid repeated checks
+cache = true
+
+# Verbose output for debugging
+verbose = false
+
+# Only check unique links
+no_progress = true
+
+# Check HTTPS certificates
+insecure = false
+
+# Scheme (http, https, file)
+scheme = ["https", "http", "file"]

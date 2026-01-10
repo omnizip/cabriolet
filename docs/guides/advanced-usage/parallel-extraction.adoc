@@ -1,0 +1,114 @@
+---
+layout: default
+title: Parallel Extraction
+parent: Advanced Usage
+grand_parent: Guides
+nav_order: 2
+---
+
+== Parallel Extraction
+
+=== Purpose
+
+This document explains how to use multi-core parallel extraction to significantly speed up archive processing on modern CPUs.
+
+Use parallel extraction when:
+* Processing large archives with many files
+* Running on multi-core systems
+* Time is more critical than memory
+* Batch processing multiple archives
+
+=== References
+
+* xref:concepts/parallel-processing-model.adoc[Parallel Processing Model]
+* xref:reference/api/parallel-api.adoc[Parallel API Reference]
+
+=== Concepts
+
+==== Thread Pool
+
+Worker threads process files concurrently, distributing the workload across CPU cores.
+
+==== Work Queue
+
+Files are queued and distributed to available workers for balanced processing.
+
+=== Basic Parallel Extraction
+
+[example]
+====
+[source,ruby]
+----
+require 'cabriolet'
+
+# Parse archive
+cab = Cabriolet::CAB::Parser.new.parse('large.cab')
+
+# Extract with 8 workers
+extractor = Cabriolet::Parallel::Extractor.new(
+  cab,
+  'output/',
+  workers: 8
+)
+
+stats = extractor.extract_all
+
+puts "Extracted: #{stats[:extracted]} files"
+puts "Time saved: ~5-8x faster on 8-core CPU"
+----
+====
+
+=== Progress Tracking
+
+[example]
+====
+[source,ruby]
+----
+extractor.extract_with_progress do |current, total, file|
+  progress = (current.to_f / total * 100).round(1)
+  puts "\r[#{current}/#{total}] #{progress}% - #{file.name}"
+end
+----
+====
+
+=== Batch Processing
+
+[example]
+====
+[source,ruby]
+----
+# Process multiple archives in parallel
+stats = Cabriolet::Parallel.process_batch(
+  Dir.glob('*.cab'),
+  'output/',
+  workers: 4
+)
+
+puts "Total: #{stats[:total]}, Success: #{stats[:successful]}"
+----
+====
+
+=== Performance Guidelines
+
+[cols="1,1,1", options="header"]
+|===
+| CPU Cores | Recommended Workers | Expected Speedup
+
+| 2-4
+| 2-4
+| 1.5-2.5x
+
+| 4-8
+| 4-8
+| 3-6x
+
+| 8-16
+| 8-12
+| 5-10x
+|===
+
+=== See Also
+
+* xref:guides/advanced-usage/streaming-large-files.adoc[Streaming Large Files]
+* xref:guides/advanced-usage/performance-tuning.adoc[Performance Tuning]
+* xref:appendix/benchmarks/index.adoc[Benchmarks]

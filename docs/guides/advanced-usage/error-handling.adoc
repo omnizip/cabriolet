@@ -1,0 +1,590 @@
+---
+layout: default
+title: Error Handling
+parent: Advanced Usage
+grand_parent: Guides
+nav_order: 4
+---
+
+== Error Handling
+:toc:
+
+=== Purpose
+
+This guide covers error recovery and handling strategies when working with Cabriolet, including dealing with corrupted archives, malformed data, and I/O failures.
+
+=== References
+
+* xref:../../reference/api/error-classes.adoc[Error Classes Reference]
+* xref:salvage-mode.adoc[Salvage Mode Guide]
+* xref:../../concepts/compression-algorithms.adoc[Compression Algorithms]
+
+=== Error Class Hierarchy
+
+==== Understanding Error Types
+
+Cabriolet uses a hierarchical error system:
+
+[source]
+----
+Cabriolet::Error
+├── Cabriolet::IOError
+│   ├── FileNotFoundError
+│   ├── ReadError
+│   └── WriteError
+├── Cabriolet::ParseError
+│   ├── InvalidHeaderError
+│   ├── InvalidFormatError
+│   └── CorruptedDataError
+├── Cabriolet::DecompressionError
+│   ├── ChecksumError
+│   ├── InvalidCodeError
+│   └── BufferOverflowError
+└── Cabriolet::UnsupportedFormatError
+    ├── UnknownCompressionError
+    └── VersionMismatchError
+----
+
+All errors inherit from `Cabriolet::Error`, allowing you to catch all library errors or specific types.
+
+==== Base Error Class
+
+[source,ruby]
+----
+begin
+  decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+  decompressor.extract_all('output')
+rescue Cabriolet::Error => e
+  puts "Cabriolet error: #{e.message}"
+  puts "Backtrace: #{e.backtrace.first(5).join("\n")}"
+end
+----
+
+=== Common Errors and Solutions
+
+==== Invalid or Corrupted Headers
+
+**Problem**: Archive header is malformed or corrupted
+
+[source,ruby]
+----
+begin
+  decompressor = Cabriolet::CAB::Decompressor.new('corrupted.cab')
+rescue Cabriolet::InvalidHeaderError => e
+  puts "Invalid cabinet header: #{e.message}"
+
+  # Try salvage mode
+  puts "Attempting salvage mode..."
+  decompressor = Cabriolet::CAB::Decompressor.new(
+    'corrupted.cab',
+    salvage: true
+  )
+
+  begin
+    decompressor.extract_all('partial_output')
+    puts "Partial extraction successful"
+  rescue => salvage_error
+    puts "Salvage failed: #{salvage_error.message}"
+  end
+end
+----
+
+**Solutions**:
+1. Enable salvage mode to recover partial data
+2. Use hex editor to inspect header manually
+3. Try alternative tools to verify corruption
+4. Check source media for physical damage
+
+==== Checksum Errors
+
+**Problem**: Data integrity check failed
+
+[source,ruby]
+----
+begin
+  decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+  decompressor.extract_file('important.dat', 'output/important.dat')
+rescue Cabriolet::ChecksumError => e
+  puts "Checksum mismatch: #{e.message}"
+
+  # Option 1: Ignore checksum (dangerous!)
+  decompressor.verify_checksums = false
+  decompressor.extract_file('important.dat', 'output/important.dat')
+  puts "Extracted without verification (may be corrupted)"
+
+  # Option 2: Extract with salvage mode
+  decompressor = Cabriolet::CAB::Decompressor.new(
+    'archive.cab',
+    salvage: true
+  )
+  decompressor.extract_file('important.dat', 'output/important_partial.dat')
+end
+----
+
+**Solutions**:
+1. Re-download or obtain fresh copy
+2. Use salvage mode for partial recovery
+3. Disable checksum verification (understand risks)
+4. Check for transmission errors
+
+==== Decompression Errors
+
+**Problem**: Unable to decompress data
+
+[source,ruby]
+----
+begin
+  decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+  decompressor.extract_file('data.bin', 'output/data.bin')
+rescue Cabriolet::DecompressionError => e
+  puts "Decompression failed: #{e.message}"
+  puts "File: #{e.filename}" if e.respond_to?(:filename)
+  puts "Offset: #{e.offset}" if e.respond_to?(:offset)
+
+  # Try extracting other files
+  decompressor.files.each do |file|
+    next if file.filename == 'data.bin'
+
+    begin
+      decompressor.extract_file(file.filename, "output/#{file.filename}")
+      puts "✓ Extracted: #{file.filename}"
+    rescue Cabriolet::DecompressionError => file_error
+      puts "✗ Failed: #{file.filename} - #{file_error.message}"
+    end
+  end
+end
+----
+
+**Solutions**:
+1. Extract files individually to identify problematic files
+2. Use salvage mode for affected files
+3. Check compression algorithm support
+4. Verify archive wasn't truncated
+
+==== I/O Errors
+
+**Problem**: File system or network I/O failures
+
+[source,ruby]
+----
+begin
+  decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+  decompressor.extract_all('output')
+rescue Cabriolet::IOError => e
+  case e
+  when Cabriolet::FileNotFoundError
+    puts "File not found: #{e.filename}"
+    puts "Check path and permissions"
+
+  when Cabriolet::ReadError
+    puts "Read error: #{e.message}"
+    puts "Position: #{e.position}" if e.respond_to?(:position)
+
+    # Retry with smaller buffer
+    decompressor = Cabriolet::CAB::Decompressor.new(
+      'archive.cab',
+      buffer_size: 4096
+    )
+    decompressor.extract_all('output')
+
+  when Cabriolet::WriteError
+    puts "Write error: #{e.message}"
+
+    # Check disk space
+    stat = File.stat('.')
+    available = stat.blocks * stat.blksize
+    required = decompressor.total_uncompressed_size
+
+    if available < required
+      puts "Insufficient disk space:"
+      puts "  Required: #{required / 1024 / 1024} MB"
+      puts "  Available: #{available / 1024 / 1024} MB"
+    end
+  end
+end
+----
+
+**Solutions**:
+1. Check file paths and permissions
+2. Verify disk space availability
+3. Test media for read errors
+4. Use smaller buffer sizes for flaky I/O
+
+==== Unsupported Format Errors
+
+**Problem**: Format or version not supported
+
+[source,ruby]
+----
+begin
+  decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+rescue Cabriolet::UnsupportedFormatError => e
+  puts "Unsupported: #{e.message}"
+
+  if e.is_a?(Cabriolet::UnknownCompressionError)
+    puts "Compression method: #{e.compression_type}"
+    puts "Supported methods: NONE, MSZIP, QUANTUM, LZX"
+
+  elsif e.is_a?(Cabriolet::VersionMismatchError)
+    puts "Format version: #{e.version}"
+    puts "Supported versions: #{e.supported_versions.join(', ')}"
+  end
+
+  # Suggest alternatives
+  puts "\nTry:"
+  puts "  - Update Cabriolet to latest version"
+  puts "  - Use Microsoft's cabextract tool"
+  puts "  - Contact support with file sample"
+end
+----
+
+**Solutions**:
+1. Update Cabriolet to latest version
+2. Check format documentation
+3. Use alternative tools
+4. Request feature support
+
+=== Robust Error Handling Patterns
+
+==== Retry with Exponential Backoff
+
+For transient errors (network, I/O):
+
+[source,ruby]
+----
+def extract_with_retry(filename, output, max_attempts: 3)
+  attempt = 0
+  base_delay = 1
+
+  begin
+    attempt += 1
+    decompressor = Cabriolet::CAB::Decompressor.new(filename)
+    decompressor.extract_all(output)
+    puts "✓ Extraction successful on attempt #{attempt}"
+
+  rescue Cabriolet::IOError => e
+    if attempt < max_attempts
+      delay = base_delay * (2 ** (attempt - 1))
+      puts "⚠ Attempt #{attempt} failed: #{e.message}"
+      puts "  Retrying in #{delay} seconds..."
+      sleep(delay)
+      retry
+    else
+      puts "✗ Failed after #{max_attempts} attempts"
+      raise
+    end
+  end
+end
+
+# Usage
+extract_with_retry('network_archive.cab', 'output')
+----
+
+==== Partial Extraction with Error Tracking
+
+Extract as much as possible, tracking errors:
+
+[source,ruby]
+----
+class SafeExtractor
+  attr_reader :successful, :failed, :errors
+
+  def initialize(filename)
+    @decompressor = Cabriolet::CAB::Decompressor.new(filename)
+    @successful = []
+    @failed = []
+    @errors = {}
+  end
+
+  def extract_all(output_dir)
+    FileUtils.mkdir_p(output_dir)
+
+    @decompressor.files.each do |file|
+      extract_single_file(file, output_dir)
+    end
+
+    print_summary
+  end
+
+  private
+
+  def extract_single_file(file, output_dir)
+    output_path = File.join(output_dir, file.filename)
+    FileUtils.mkdir_p(File.dirname(output_path))
+
+    begin
+      @decompressor.extract_file(file.filename, output_path)
+      @successful << file.filename
+      puts "✓ #{file.filename}"
+
+    rescue Cabriolet::Error => e
+      @failed << file.filename
+      @errors[file.filename] = e
+      puts "✗ #{file.filename}: #{e.class.name}"
+    end
+  end
+
+  def print_summary
+    total = @successful.size + @failed.size
+    puts "\n" + ("=" * 50)
+    puts "Extraction Summary"
+    puts ("=" * 50)
+    puts "Total files: #{total}"
+    puts "Successful: #{@successful.size} (#{(@successful.size * 100.0 / total).round(1)}%)"
+    puts "Failed: #{@failed.size} (#{(@failed.size * 100.0 / total).round(1)}%)"
+
+    if @failed.any?
+      puts "\nFailed Files:"
+      @errors.each do |filename, error|
+        puts "  #{filename}"
+        puts "    Error: #{error.class.name}"
+        puts "    Message: #{error.message}"
+      end
+    end
+  end
+end
+
+# Usage
+extractor = SafeExtractor.new('partially_corrupted.cab')
+extractor.extract_all('output')
+
+# Access results
+puts "\nSuccessfully extracted: #{extractor.successful.join(', ')}"
+----
+
+==== Validation Before Extraction
+
+Validate archives before attempting extraction:
+
+[source,ruby]
+----
+class ArchiveValidator
+  def self.validate(filename)
+    errors = []
+    warnings = []
+
+    begin
+      decompressor = Cabriolet::CAB::Decompressor.new(filename)
+
+      # Check header
+      if decompressor.cabinet.version < 0x0103
+        warnings << "Old cabinet version: #{decompressor.cabinet.version}"
+      end
+
+      # Check file count
+      if decompressor.files.empty?
+        errors << "No files in cabinet"
+      end
+
+      # Check for suspicious files
+      decompressor.files.each do |file|
+        if file.filename.include?('..')
+          errors << "Path traversal detected: #{file.filename}"
+        end
+
+        if file.uncompressed_size > 1024 * 1024 * 1024
+          warnings << "Very large file: #{file.filename} (#{file.uncompressed_size} bytes)"
+        end
+      end
+
+      # Try reading first file
+      if decompressor.files.any?
+        begin
+          first_file = decompressor.files.first
+          data = decompressor.extract_to_memory(first_file.filename)
+          warnings << "First file extracted successfully (#{data.bytesize} bytes)"
+        rescue => e
+          errors << "Cannot extract first file: #{e.message}"
+        end
+      end
+
+    rescue Cabriolet::Error => e
+      errors << "Validation failed: #{e.message}"
+    end
+
+    {
+      valid: errors.empty?,
+      errors: errors,
+      warnings: warnings
+    }
+  end
+end
+
+# Usage
+result = ArchiveValidator.validate('archive.cab')
+
+if result[:valid]
+  puts "✓ Archive is valid"
+  result[:warnings].each { |w| puts "⚠ #{w}" }
+
+  # Proceed with extraction
+  decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+  decompressor.extract_all('output')
+else
+  puts "✗ Archive validation failed:"
+  result[:errors].each { |e| puts "  - #{e}" }
+end
+----
+
+==== Logging and Monitoring
+
+Comprehensive error logging:
+
+[source,ruby]
+----
+require 'logger'
+
+class MonitoredExtractor
+  def initialize(filename, logger: nil)
+    @logger = logger || Logger.new('extraction.log')
+    @filename = filename
+    @start_time = Time.now
+  end
+
+  def extract_all(output_dir)
+    @logger.info("Starting extraction of #{@filename}")
+    @logger.info("Output directory: #{output_dir}")
+
+    begin
+      decompressor = Cabriolet::CAB::Decompressor.new(@filename)
+
+      @logger.info("Cabinet info:")
+      @logger.info("  Files: #{decompressor.files.size}")
+      @logger.info("  Compressed size: #{decompressor.cabinet.cabinet_size}")
+      @logger.info("  Uncompressed size: #{decompressor.total_uncompressed_size}")
+
+      decompressor.files.each_with_index do |file, index|
+        @logger.debug("Extracting file #{index + 1}/#{decompressor.files.size}: #{file.filename}")
+
+        begin
+          output_path = File.join(output_dir, file.filename)
+          FileUtils.mkdir_p(File.dirname(output_path))
+
+          decompressor.extract_file(file.filename, output_path)
+          @logger.info("  ✓ #{file.filename}")
+
+        rescue Cabriolet::Error => e
+          @logger.error("  ✗ #{file.filename}: #{e.class.name} - #{e.message}")
+          @logger.debug("  Backtrace: #{e.backtrace.join("\n  ")}")
+        end
+      end
+
+      duration = Time.now - @start_time
+      @logger.info("Extraction completed in #{duration.round(2)} seconds")
+
+    rescue Cabriolet::Error => e
+      @logger.fatal("Extraction failed: #{e.class.name}")
+      @logger.fatal("Message: #{e.message}")
+      @logger.fatal("Backtrace:\n#{e.backtrace.join("\n")}")
+      raise
+    end
+  end
+end
+
+# Usage
+logger = Logger.new('extraction.log', level: Logger::DEBUG)
+extractor = MonitoredExtractor.new('archive.cab', logger: logger)
+extractor.extract_all('output')
+----
+
+=== MSZIP Error Recovery
+
+==== Handling MSZIP-Specific Errors
+
+MSZIP decompression can fail in specific ways:
+
+[source,ruby]
+----
+begin
+  decompressor = Cabriolet::CAB::Decompressor.new('mszip_archive.cab')
+  decompressor.extract_all('output')
+
+rescue Cabriolet::InvalidCodeError => e
+  puts "Invalid Huffman code detected"
+  puts "This usually indicates data corruption in the compressed stream"
+
+  # Try with error correction
+  decompressor = Cabriolet::CAB::Decompressor.new(
+    'mszip_archive.cab',
+    salvage: true,
+    mszip_error_correction: true
+  )
+
+  begin
+    decompressor.extract_all('recovered_output')
+    puts "Recovery successful (data may be incomplete)"
+  rescue => recovery_error
+    puts "Recovery failed: #{recovery_error.message}"
+  end
+
+rescue Cabriolet::BufferOverflowError => e
+  puts "Buffer overflow during decompression"
+  puts "File may be maliciously crafted or severely corrupted"
+
+  # Do not attempt recovery for security reasons
+  raise
+end
+----
+
+==== Block-Level Recovery
+
+Recover individual MSZIP blocks:
+
+[source,ruby]
+----
+def recover_mszip_blocks(filename)
+  decompressor = Cabriolet::CAB::Decompressor.new(filename)
+  recovered_data = []
+
+  decompressor.folders.each do |folder|
+    next unless folder.compression_type == :mszip
+
+    folder.data_blocks.each_with_index do |block, index|
+      begin
+        data = folder.decompress_block(index)
+        recovered_data << data
+        puts "✓ Block #{index}: #{data.bytesize} bytes"
+
+      rescue Cabriolet::DecompressionError => e
+        puts "✗ Block #{index}: #{e.message}"
+        # Skip corrupted block
+      end
+    end
+  end
+
+  recovered_data.join
+end
+----
+
+=== Best Practices
+
+==== Error Handling Strategy
+
+1. **Catch specific errors first**: Handle specific error types before general ones
+2. **Log comprehensively**: Record error context and state
+3. **Provide context**: Include filename, offset, position in errors
+4. **Enable retry**: Implement retry logic for transient failures
+5. **Graceful degradation**: Extract what's possible even with errors
+
+==== Production Considerations
+
+1. **Monitor error rates**: Track extraction success/failure ratios
+2. **Set timeouts**: Prevent hanging on corrupt data
+3. **Limit resources**: Set memory and time limits
+4. **Validate inputs**: Check files before processing
+5. **Clean up**: Always close handles and remove partial files
+
+==== Security
+
+1. **Sanitize paths**: Prevent path traversal attacks
+2. **Limit extraction size**: Prevent zip bombs
+3. **Validate checksums**: Detect tampering
+4. **Handle untrusted input**: Treat all archives as potentially malicious
+5. **Use salvage mode carefully**: Only for trusted sources
+
+==== Bibliography
+
+* xref:../../reference/api/error-classes.adoc[Error Classes Reference]
+* xref:salvage-mode.adoc[Salvage Mode Guide]
+* xref:../formats/cab-format.adoc[CAB Format Guide]
+* Ruby Exception Handling Best Practices

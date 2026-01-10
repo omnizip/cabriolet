@@ -1,0 +1,495 @@
+---
+title: Choosing a Compression Algorithm
+parent: Compression
+grand_parent: Guides
+nav_order: 1
+---
+
+== Choosing a Compression Algorithm Guide
+
+=== Purpose
+
+This guide helps you select the appropriate compression algorithm for your use case. Cabriolet supports multiple compression algorithms, each with different characteristics and trade-offs.
+
+=== References
+
+* <<none-compression#,None (Uncompressed)>>
+* <<lzss-compression#,LZSS Compression>>
+* <<mszip-compression#,MSZIP Compression>>
+* <<lzx-compression#,LZX Compression>>
+* <<quantum-compression#,Quantum Compression>>
+
+=== Concepts
+
+==== What is Compression?
+
+Compression reduces file size by encoding data more efficiently. Different algorithms offer different trade-offs between:
+
+* **Compression ratio** - How much smaller the output is
+* **Compression speed** - How fast data is compressed
+* **Decompression speed** - How fast data is decompressed
+* **Memory usage** - How much RAM is required
+* **Compatibility** - What formats support the algorithm
+
+==== Algorithm Categories
+
+Cabriolet's compression algorithms fall into three categories:
+
+* **None** - No compression (storage only)
+* **Dictionary-based** - LZSS, MSZIP, LZX (use sliding window)
+* **Statistical** - Quantum (uses probability encoding)
+
+=== Available Algorithms
+
+[cols="1,2,1,1,1"]
+|===
+|Algorithm |Description |Ratio |Speed |Used In
+
+|None
+|Uncompressed storage
+|0%
+|Fastest
+|All formats
+
+|LZSS
+|Simple dictionary compression
+|30-50%
+|Fast
+|SZDD, HLP, KWAJ
+
+|MSZIP
+|DEFLATE-based compression
+|40-60%
+|Medium
+|CAB, KWAJ
+
+|LZX
+|High-ratio dictionary compression
+|50-70%
+|Slow
+|CAB, CHM, LIT, OAB
+
+|Quantum
+|Statistical compression
+|45-65%
+|Medium
+|CAB (legacy)
+|===
+
+=== Decision Tree
+
+Use this decision tree to select the best algorithm:
+
+[source,text]
+----
+Start
+  │
+  ├─ Already compressed? (JPG, PNG, ZIP, etc.)
+  │   └─ Use: None
+  │
+  ├─ Need maximum speed?
+  │   └─ Use: None or LZSS
+  │
+  ├─ Need maximum compression?
+  │   └─ Use: LZX
+  │
+  ├─ General purpose / balanced?
+  │   └─ Use: MSZIP
+  │
+  ├─ Legacy compatibility?
+  │   └─ Use: Quantum (if required)
+  │
+  └─ Format-specific?
+      ├─ SZDD → LZSS
+      ├─ HLP → LZSS MODE_MSHELP
+      ├─ CHM → LZX
+      ├─ LIT → LZX
+      └─ OAB → LZX
+----
+
+=== Algorithm Comparison
+
+==== Compression Ratio
+
+How much each algorithm typically compresses different file types:
+
+[cols="1,1,1,1,1,1"]
+|===
+|File Type |None |LZSS |MSZIP |LZX |Quantum
+
+|Text files
+|0%
+|40-50%
+|50-60%
+|60-70%
+|50-65%
+
+|HTML/XML
+|0%
+|45-55%
+|55-65%
+|65-75%
+|55-70%
+
+|Executables
+|0%
+|30-40%
+|40-50%
+|50-60%
+|40-55%
+
+|Already compressed
+|0%
+|0-5%
+|0-5%
+|0-5%
+|0-5%
+|===
+
+==== Performance Characteristics
+
+[cols="1,2,2,2"]
+|===
+|Algorithm |Compression Speed |Decompression Speed |Memory Usage
+
+|None
+|Instant
+|Instant
+|Minimal
+
+|LZSS
+|Fast (10-50 MB/s)
+|Very fast (50-200 MB/s)
+|Low (4-8 KB)
+
+|MSZIP
+|Medium (5-20 MB/s)
+|Fast (20-100 MB/s)
+|Medium (32 KB)
+
+|LZX
+|Slow (1-10 MB/s)
+|Medium (10-50 MB/s)
+|High (32 KB - 2 MB)
+
+|Quantum
+|Medium (5-15 MB/s)
+|Medium (10-50 MB/s)
+|Medium (64 KB - 2 MB)
+|===
+
+=== Use Case Recommendations
+
+==== Software Distribution
+
+**Recommended: LZX**
+
+[source,ruby]
+----
+compressor = Cabriolet::CAB::Compressor.new(compression: :lzx)
+compressor.add_file('setup.exe')
+compressor.write('installer.cab')
+----
+
+Why:
+* Maximum compression saves bandwidth
+* One-time compression cost acceptable
+* Users benefit from smaller downloads
+
+==== Real-time Operations
+
+**Recommended: LZSS or None**
+
+[source,ruby]
+----
+compressor = Cabriolet::SZDD::Compressor.new
+compressor.compress('file.txt', 'file.tx_')  # LZSS
+----
+
+Why:
+* Fast compression/decompression
+* Low latency critical
+* Acceptable compression ratio
+
+==== General Archives
+
+**Recommended: MSZIP**
+
+[source,ruby]
+----
+compressor = Cabriolet::CAB::Compressor.new(compression: :mszip)
+compressor.add_file('data.txt')
+compressor.write('archive.cab')
+----
+
+Why:
+* Balanced speed and ratio
+* Wide compatibility
+* Good for mixed content
+
+==== Pre-compressed Files
+
+**Recommended: None**
+
+[source,ruby]
+----
+compressor = Cabriolet::CAB::Compressor.new(compression: :none)
+compressor.add_file('image.jpg')  # Already JPEG compressed
+compressor.write('images.cab')
+----
+
+Why:
+* No benefit from re-compression
+* Saves processing time
+* Prevents size increase
+
+==== Help Documentation
+
+**Recommended: LZX (CHM) or LZSS (HLP)**
+
+[source,ruby]
+----
+# CHM uses LZX
+compressor = Cabriolet::CHM::Compressor.new
+compressor.add_file('index.html', '/index.html', section: :compressed)
+compressor.generate('help.chm', window_bits: 16)
+
+# HLP uses LZSS MODE_MSHELP
+compressor = Cabriolet::HLP::Compressor.new
+compressor.add_file('topic.dat', '|TOPIC', compress: true)
+compressor.generate('help.hlp')
+----
+
+Why:
+* Text compresses very well
+* One-time access acceptable
+* Small file size important
+
+==== Address Books
+
+**Recommended: LZX with appropriate block size**
+
+[source,ruby]
+----
+compressor = Cabriolet::OAB::Compressor.new
+compressor.compress('addressbook.dat', 'full.oab', block_size: 32_768)
+----
+
+Why:
+* Excellent text compression
+* Block-based allows updates
+* Bandwidth optimization
+
+=== Format-Specific Constraints
+
+Some formats limit which algorithms can be used:
+
+[cols="1,2,3"]
+|===
+|Format |Supported Algorithms |Notes
+
+|CAB
+|None, MSZIP, Quantum, LZX
+|All algorithms supported
+
+|CHM
+|None, LZX
+|Two sections: uncompressed and LZX
+
+|SZDD
+|LZSS MODE_EXPAND
+|Fixed algorithm, no choice
+
+|KWAJ
+|None, XOR, SZDD, MSZIP
+|Multiple options available
+
+|HLP
+|None, LZSS MODE_MSHELP
+|Per-file compression choice
+
+|LIT
+|None, LZX
+|Per-file compression choice
+
+|OAB
+|LZX
+|Block-based LZX only
+|===
+
+=== Advanced Considerations
+
+==== Window Size (LZX, Quantum)
+
+Larger windows = better compression, more memory:
+
+[source,ruby]
+----
+# Small files: 15-bit window (32 KB)
+compressor = Cabriolet::CHM::Compressor.new
+compressor.generate('small-help.chm', window_bits: 15)
+
+# Large files: 21-bit window (2 MB)
+compressor = Cabriolet::CHM::Compressor.new
+compressor.generate('large-help.chm', window_bits: 21)
+----
+
+==== Block Size (OAB)
+
+Balance compression vs random access:
+
+[source,ruby]
+----
+# Smaller blocks: faster random access
+compressor = Cabriolet::OAB::Compressor.new
+compressor.compress('data.dat', 'fast.oab', block_size: 16_384)
+
+# Larger blocks: better compression
+compressor = Cabriolet::OAB::Compressor.new
+compressor.compress('data.dat', 'small.oab', block_size: 65_536)
+----
+
+==== Mixed Compression
+
+Use different compression for different files:
+
+[source,ruby]
+----
+compressor = Cabriolet::CHM::Compressor.new
+
+# Compress text
+compressor.add_file('index.html', '/index.html', section: :compressed)
+
+# Don't compress images
+compressor.add_file('logo.jpg', '/logo.jpg', section: :uncompressed)
+
+compressor.generate('mixed.chm')
+----
+
+=== Benchmarks
+
+Typical performance on 1 MB text file:
+
+[cols="1,2,2,2,2"]
+|===
+|Algorithm |Compressed Size |Compression Time |Decompression Time |Memory
+
+|None
+|1,000 KB
+|0.01s
+|0.01s
+|< 1 KB
+
+|LZSS
+|500 KB
+|0.05s
+|0.02s
+|4 KB
+
+|MSZIP
+|400 KB
+|0.10s
+|0.04s
+|32 KB
+
+|LZX
+|300 KB
+|0.50s
+|0.08s
+|256 KB
+
+|Quantum
+|350 KB
+|0.20s
+|0.10s
+|128 KB
+|===
+
+NOTE: Actual performance varies by CPU, file content, and implementation.
+
+=== Common Mistakes
+
+==== Compressing Already-Compressed Files
+
+[source,ruby]
+----
+# BAD: Compress JPEGs with LZX
+compressor = Cabriolet::CAB::Compressor.new(compression: :lzx)
+compressor.add_file('photo.jpg')  # Gets larger!
+
+# GOOD: Store JPEGs uncompressed
+compressor = Cabriolet::CAB::Compressor.new(compression: :none)
+compressor.add_file('photo.jpg')  # Stays same size
+----
+
+==== Using Wrong Algorithm for Format
+
+[source,ruby]
+----
+# WRONG: SZDD only supports LZSS
+# (This is enforced by the format)
+
+# CORRECT: Use appropriate format
+compressor = Cabriolet::SZDD::Compressor.new
+compressor.compress('file.txt', 'file.tx_')  # Uses LZSS automatically
+----
+
+==== Ignoring Window Size
+
+[source,ruby]
+----
+# BAD: Large window for small file
+compressor = Cabriolet::CHM::Compressor.new
+compressor.generate('tiny.chm', window_bits: 21)  # Wastes memory
+
+# GOOD: Match window to file size
+compressor = Cabriolet::CHM::Compressor.new
+compressor.generate('tiny.chm', window_bits: 15)  # Appropriate
+----
+
+=== Best Practices
+
+1. **Profile your data**: Test different algorithms on representative data
+
+2. **Consider use case**: Optimize for your specific scenario (distribution, archival, real-time)
+
+3. **Measure actual results**: Don't rely solely on theoretical comparisons
+
+4. **Balance factors**: Consider ratio, speed, memory, and compatibility
+
+5. **Use format defaults**: Start with format-recommended algorithm
+
+6. **Test before deploying**: Verify compression works as expected
+
+=== Quick Reference
+
+Choose algorithm based on priority:
+
+* **Smallest size** → LZX
+* **Fastest speed** → None or LZSS
+* **Best balance** → MSZIP
+* **Text files** → LZX or MSZIP
+* **Images/media** → None
+* **Executables** → MSZIP or LZX
+* **Legacy support** → Quantum (if required)
+
+=== Next Steps
+
+* Learn about specific algorithms:
+  * <<none-compression#,None (Uncompressed)>>
+  * <<lzss-compression#,LZSS Compression>>
+  * <<mszip-compression#,MSZIP Compression>>
+  * <<lzx-compression#,LZX Compression>>
+  * <<quantum-compression#,Quantum Compression>>
+
+* Review format-specific guides:
+  * <<../formats/cab-format#compression-support,CAB Format>>
+  * <<../formats/chm-format#compression-support,CHM Format>>
+  * <<../formats/szdd-format#compression-support,SZDD Format>>
+
+=== Bibliography
+
+* https://en.wikipedia.org/wiki/Data_compression[Wikipedia: Data Compression]
+* https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Storer%E2%80%93Szymanski[Wikipedia: LZSS]
+* https://en.wikipedia.org/wiki/DEFLATE[Wikipedia: DEFLATE]
+* https://en.wikipedia.org/wiki/LZX[Wikipedia: LZX]

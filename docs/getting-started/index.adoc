@@ -1,0 +1,48 @@
+---
+title: Getting Started
+has_children: true
+nav_order: 1
+---
+
+== Getting Started
+
+=== Purpose
+
+This section helps you get Cabriolet installed and working within minutes. Follow the guides in order to go from installation to creating your first CAB archive.
+
+=== References
+
+* <<installation#,Installation>>
+* <<quick-start#,Quick Start Guide>>
+* <<your-first-cab#,Your First CAB File>>
+
+=== Concepts
+
+Cabriolet provides both a command-line interface (CLI) and a Ruby API for working with Microsoft compression formats. The getting started guides focus on the CLI for simplicity, but each operation has an equivalent API method documented in the <<../reference/api/index#,API Reference>>.
+
+=== Quick Navigation
+
+==== 1. Installation
+
+<<installation#,Install Cabriolet>> using RubyGems. Takes less than a minute.
+
+==== 2. Quick Start
+
+<<quick-start#,Extract your first CAB file>> in 5 minutes with step-by-step instructions.
+
+==== 3. Your First CAB
+
+<<your-first-cab#,Create a CAB archive>> from your own files.
+
+=== Next Steps
+
+After completing the getting started guides:
+
+* Explore <<../guides/formats/index#,Format-Specific Guides>> for the format you need
+* Learn about <<../guides/compression/index#,Compression Algorithms>> to choose the right one
+* Review the <<../reference/cli/index#,CLI Reference>> for all available commands
+
+=== Bibliography
+
+* https://rubygems.org/gems/cabriolet[Cabriolet on RubyGems]
+* https://github.com/omnizip/cabriolet[Cabriolet on GitHub]

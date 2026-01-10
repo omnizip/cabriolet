@@ -1,0 +1,657 @@
+---
+title: LIT Format
+parent: Format Guides
+grand_parent: Guides
+nav_order: 6
+---
+
+== LIT Format Guide
+
+=== Purpose
+
+This guide provides comprehensive documentation for working with Microsoft Reader LIT (eBook) files using Cabriolet. LIT is Microsoft's proprietary format for electronic books used in Microsoft Reader.
+
+=== References
+
+* <<../../getting-started/quick-start#,Quick Start Guide>>
+* <<../../reference/cli/lit-commands#,LIT Commands Reference>>
+* <<../../reference/api/lit-api#,LIT API Reference>>
+* <<../compression/lzx-compression#,LZX Compression>>
+
+=== Concepts
+
+==== What is a LIT File?
+
+LIT (Literature) files are Microsoft's eBook format used in Microsoft Reader, commonly found in:
+
+* Electronic books and novels
+* Technical documentation
+* Digital textbooks
+* Magazine and newspaper archives
+* Self-published eBooks
+
+The format uses LZX compression and optionally DRM encryption.
+
+==== LIT File Structure
+
+A LIT file is structured as a compound document:
+
+[source,text]
+----
+┌─────────────────────────┐
+│   LIT Header            │  File signature and metadata
+├─────────────────────────┤
+│   Manifest              │  Book metadata and structure
+├─────────────────────────┤
+│   Content Streams       │
+│   ┌─────────────────┐   │
+│   │ HTML Content    │   │  Book text (LZX compressed)
+│   ├─────────────────┤   │
+│   │ Images          │   │  Embedded images
+│   ├─────────────────┤   │
+│   │ Metadata        │   │  Title, author, etc.
+│   ├─────────────────┤   │
+│   │ DRM Info        │   │  Optional encryption data
+│   └─────────────────┘   │
+└─────────────────────────┘
+----
+
+**LIT Header**: Contains format version and file metadata.
+
+**Manifest**: Book structure, table of contents, and metadata.
+
+**Content Streams**: HTML text, images, and other book content.
+
+**DRM Info**: Optional DES encryption information (if DRM-protected).
+
+==== Compression Support
+
+LIT files use LZX compression for content:
+
+* **LZX compression** - High compression ratio for text
+* Configurable window size
+* Optimized for HTML and text content
+
+For detailed algorithm information, see <<../compression/lzx-compression#,LZX Compression>>.
+
+==== DRM Encryption
+
+LIT files can be encrypted with DRM:
+
+* **DES encryption** - Data Encryption Standard
+* **Owner-specific keys** - Tied to Microsoft Reader activation
+* **Decryption limitation** - Cabriolet does not support DRM decryption
+
+WARNING: Cabriolet cannot decrypt DRM-protected LIT files. Only unencrypted LIT files can be extracted.
+
+==== eBook Metadata
+
+LIT files contain rich metadata:
+
+* **Title** - Book title
+* **Author** - Author name(s)
+* **Publisher** - Publisher information
+* **ISBN** - International Standard Book Number
+* **Cover art** - Embedded cover image
+* **Table of contents** - Chapter structure
+
+=== Basic Operations
+
+==== Checking LIT Files
+
+Check if a LIT file is encrypted:
+
+.Command-line
+[source,bash]
+----
+cabriolet lit-info book.lit
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::LIT::Decompressor.new
+header = decompressor.open('book.lit')
+
+puts "Version: #{header.version}"
+puts "Encrypted: #{header.encrypted? ? 'Yes (DES)' : 'No'}"
+puts "Files: #{header.files.size}"
+
+if header.encrypted?
+  puts "\nWARNING: This file is DRM-encrypted."
+  puts "Decryption is not supported."
+end
+
+decompressor.close(header)
+----
+
+.Example Output
+[source,text]
+----
+LIT File Information
+==================================================
+Filename: book.lit
+Version: 1
+Encrypted: No
+Files: 15
+
+Files:
+  content.html
+    Size: 524,288 bytes
+    Compression: LZX
+  cover.jpg
+    Size: 32,768 bytes
+    Compression: none
+  metadata.xml
+    Size: 2,048 bytes
+    Compression: LZX
+----
+
+==== Extracting LIT Files
+
+Extract content from unencrypted LIT files:
+
+.Command-line
+[source,bash]
+----
+# Extract to current directory
+cabriolet lit-extract book.lit
+
+# Extract to specific directory
+cabriolet lit-extract book.lit output/
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+require 'fileutils'
+
+decompressor = Cabriolet::LIT::Decompressor.new
+header = decompressor.open('book.lit')
+
+# Check for encryption
+if header.encrypted?
+  puts "Error: File is DRM-encrypted"
+  decompressor.close(header)
+  exit 1
+end
+
+# Extract all files
+FileUtils.mkdir_p('output')
+count = decompressor.extract_all(header, 'output')
+
+decompressor.close(header)
+puts "Extracted #{count} files to output/"
+----
+
+==== Getting LIT Information
+
+Display detailed LIT file information:
+
+.Command-line
+[source,bash]
+----
+cabriolet lit-info book.lit
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::LIT::Decompressor.new
+header = decompressor.open('book.lit')
+
+puts "Version: #{header.version}"
+puts "Encrypted: #{header.encrypted? ? 'Yes (DES)' : 'No'}"
+puts "Files: #{header.files.size}"
+
+header.files.each do |file|
+  compression = file.compressed? ? "LZX" : "none"
+  encryption = file.encrypted? ? " [encrypted]" : ""
+
+  puts "\n#{file.filename}"
+  puts "  Size: #{file.length} bytes"
+  puts "  Compression: #{compression}#{encryption}"
+end
+
+decompressor.close(header)
+----
+
+==== Creating LIT Files
+
+Build new LIT files from HTML and images:
+
+.Command-line
+[source,bash]
+----
+# Create with LZX compression (default)
+cabriolet lit-create book.lit content.html cover.jpg
+
+# Create without compression
+cabriolet lit-create --no-compress book.lit content.html
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::LIT::Compressor.new
+
+# Add HTML content with compression
+compressor.add_file('content.html', 'content.html', compress: true)
+compressor.add_file('metadata.xml', 'metadata.xml', compress: true)
+
+# Add images without compression
+compressor.add_file('cover.jpg', 'cover.jpg', compress: false)
+compressor.add_file('image1.png', 'images/image1.png', compress: false)
+
+bytes = compressor.generate('book.lit')
+puts "Created book.lit (#{bytes} bytes)"
+----
+
+=== Advanced Features
+
+==== Encryption Detection
+
+Detect and handle encrypted files:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::LIT::Decompressor.new
+header = decompressor.open('book.lit')
+
+if header.encrypted?
+  puts "This LIT file is DRM-encrypted with DES."
+  puts "Decryption requires:"
+  puts "  - Original Microsoft Reader installation"
+  puts "  - Valid activation key"
+  puts "  - Owner-specific decryption key"
+  puts "\nCabriolet cannot decrypt DRM-protected files."
+else
+  puts "This LIT file is not encrypted."
+  puts "Content can be extracted freely."
+end
+
+decompressor.close(header)
+----
+
+==== File-level Encryption
+
+Check individual file encryption status:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::LIT::Decompressor.new
+header = decompressor.open('book.lit')
+
+header.files.each do |file|
+  status = if file.encrypted?
+    "encrypted"
+  elsif file.compressed?
+    "compressed (LZX)"
+  else
+    "uncompressed"
+  end
+
+  puts "#{file.filename}: #{status}"
+end
+
+decompressor.close(header)
+----
+
+==== Selective Compression
+
+Control which files are compressed:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::LIT::Compressor.new
+
+# Compress text content for better ratio
+compressor.add_file('chapter1.html', 'chapter1.html', compress: true)
+compressor.add_file('chapter2.html', 'chapter2.html', compress: true)
+compressor.add_file('toc.xml', 'toc.xml', compress: true)
+
+# Don't compress already-compressed media
+compressor.add_file('cover.jpg', 'cover.jpg', compress: false)
+compressor.add_file('audio.mp3', 'audio.mp3', compress: false)
+
+compressor.generate('book.lit')
+----
+
+==== Content Organization
+
+Organize eBook content hierarchically:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::LIT::Compressor.new
+
+# Add book structure
+compressor.add_file('metadata.xml', 'metadata.xml', compress: true)
+compressor.add_file('toc.xml', 'toc.xml', compress: true)
+
+# Add chapters
+Dir.glob('chapters/*.html').sort.each do |chapter|
+  internal_path = "chapters/#{File.basename(chapter)}"
+  compressor.add_file(chapter, internal_path, compress: true)
+end
+
+# Add images
+Dir.glob('images/*').each do |image|
+  internal_path = "images/#{File.basename(image)}"
+  compressor.add_file(image, internal_path, compress: false)
+end
+
+compressor.generate('organized-book.lit')
+----
+
+=== Performance Optimization
+
+==== Compression Selection
+
+Choose compression wisely:
+
+[cols="1,2,2"]
+|===
+|Content Type |Compress? |Reason
+
+|HTML/XML
+|Yes
+|Excellent compression ratio (60-80%)
+
+|Plain text
+|Yes
+|Very good compression (50-70%)
+
+|JPEG images
+|No
+|Already compressed
+
+|PNG images
+|Maybe
+|Small PNGs might benefit
+
+|Audio/Video
+|No
+|Already compressed
+|===
+
+==== Extraction Performance
+
+Extract efficiently:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::LIT::Decompressor.new
+header = decompressor.open('large-book.lit')
+
+# Efficient: Extract all at once
+count = decompressor.extract_all(header, 'output/')
+
+# Avoid: Extracting files one by one
+# (Has decompression overhead for each file)
+
+decompressor.close(header)
+----
+
+=== Common Use Cases
+
+==== eBook Conversion
+
+Convert LIT books to other formats:
+
+[source,ruby]
+----
+require 'cabriolet'
+require 'fileutils'
+
+decompressor = Cabriolet::LIT::Decompressor.new
+header = decompressor.open('book.lit')
+
+# Check for DRM
+if header.encrypted?
+  puts "Cannot convert: File is DRM-encrypted"
+  decompressor.close(header)
+  exit 1
+end
+
+# Extract content
+FileUtils.mkdir_p('conversion')
+decompressor.extract_all(header, 'conversion/')
+
+# Find HTML content
+html_files = Dir.glob('conversion/**/*.html')
+puts "Found #{html_files.size} HTML files for conversion"
+
+# Convert to other formats...
+# (Use external tools like pandoc)
+
+decompressor.close(header)
+----
+
+==== Metadata Extraction
+
+Extract book metadata:
+
+[source,ruby]
+----
+require 'cabriolet'
+require 'nokogiri'
+
+decompressor = Cabriolet::LIT::Decompressor.new
+header = decompressor.open('book.lit')
+
+# Find metadata file
+metadata_file = header.files.find { |f| f.filename =~ /metadata\.xml/i }
+
+if metadata_file
+  # Extract and parse metadata
+  temp_file = 'temp_metadata.xml'
+  decompressor.extract_file(metadata_file, temp_file)
+
+  doc = Nokogiri::XML(File.read(temp_file))
+
+  puts "Title: #{doc.at_xpath('//title')&.text}"
+  puts "Author: #{doc.at_xpath('//author')&.text}"
+  puts "Publisher: #{doc.at_xpath('//publisher')&.text}"
+
+  File.delete(temp_file)
+end
+
+decompressor.close(header)
+----
+
+==== Creating Custom eBooks
+
+Build custom LIT eBooks:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::LIT::Compressor.new
+
+# Create metadata
+metadata = <<~XML
+  <?xml version="1.0"?>
+  <metadata>
+    <title>My Custom Book</title>
+    <author>John Doe</author>
+    <publisher>Self Published</publisher>
+  </metadata>
+XML
+
+File.write('metadata.xml', metadata)
+compressor.add_file('metadata.xml', 'metadata.xml', compress: true)
+
+# Add content
+compressor.add_file('introduction.html', 'intro.html', compress: true)
+compressor.add_file('chapter1.html', 'chapter1.html', compress: true)
+compressor.add_file('epilogue.html', 'epilogue.html', compress: true)
+
+# Add cover
+compressor.add_file('cover.jpg', 'cover.jpg', compress: false)
+
+bytes = compressor.generate('my-book.lit')
+puts "Created custom eBook: #{bytes} bytes"
+----
+
+=== Troubleshooting
+
+==== Common Errors
+
+**"LIT file is DRM-encrypted"**
+
+The file has DRM protection. Cabriolet cannot decrypt:
+
+[source,bash]
+----
+cabriolet lit-info book.lit
+# Shows encryption status
+----
+
+NOTE: DRM decryption is not supported. You need the original Microsoft Reader with valid activation.
+
+**"Invalid LIT signature"**
+
+The file is not a valid LIT file:
+
+[source,bash]
+----
+# Check file type
+file book.lit
+----
+
+**"Decompression failed"**
+
+LZX decompression error. File may be corrupted:
+
+[source,bash]
+----
+# Try extracting specific files
+cabriolet lit-info book.lit  # List files
+# Extract uncompressed files only
+----
+
+**"NotImplementedError"**
+
+Feature not yet implemented (e.g., DRM decryption):
+
+[source,bash]
+----
+# Check what's supported
+cabriolet lit-info book.lit
+----
+
+==== Validation
+
+Verify LIT file before processing:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+begin
+  decompressor = Cabriolet::LIT::Decompressor.new
+  header = decompressor.open('book.lit')
+
+  puts "LIT file is valid"
+  puts "Version: #{header.version}"
+
+  if header.encrypted?
+    puts "WARNING: File is DRM-encrypted"
+    puts "Extraction not possible"
+  else
+    puts "Files: #{header.files.size}"
+    puts "Extraction possible"
+  end
+
+  decompressor.close(header)
+rescue Cabriolet::FormatError => e
+  puts "Invalid LIT file: #{e.message}"
+rescue NotImplementedError => e
+  puts "Feature not supported: #{e.message}"
+end
+----
+
+=== Best Practices
+
+1. **Check for DRM first**: Always verify encryption status before attempting extraction
+
+2. **Compress text, not media**:
+   * Compress HTML, XML, CSS
+   * Don't compress JPEG, MP3, or other compressed formats
+
+3. **Preserve structure**: Maintain original file organization when extracting
+
+4. **Handle errors gracefully**: Account for DRM and unsupported features
+
+5. **Respect copyright**: DRM exists to protect content rights
+
+6. **Test thoroughly**: Verify extracted content is complete and valid
+
+=== Format Specifications
+
+==== File Signature
+
+LIT files use a compound document structure:
+
+[source,text]
+----
+Offset  Bytes  Description
+0x0000  8      Compound document signature
+0x0008  ...    Storage structure
+----
+
+==== Encryption
+
+* **Algorithm**: DES (Data Encryption Standard)
+* **Key derivation**: Based on Microsoft Reader activation
+* **Scope**: Can be applied to individual files or entire book
+
+==== Compression
+
+* **Algorithm**: LZX
+* **Window size**: Configurable
+* **Applied to**: HTML content, XML metadata, CSS
+
+For complete format specifications, see <<../../reference/formats/lit-specification#,LIT Specification>>.
+
+=== Limitations
+
+Cabriolet has the following limitations with LIT files:
+
+1. **No DRM decryption**: Cannot extract DRM-protected files
+2. **Read-only metadata**: Cannot modify existing metadata
+3. **Basic creation**: Creates simple LIT files without advanced features
+4. **No digital signatures**: Cannot add or verify signatures
+
+=== Next Steps
+
+* Learn about <<../compression/lzx-compression#,LZX compression algorithm>>
+* Review <<../../reference/cli/lit-commands#,complete LIT command reference>>
+* Study <<../../reference/api/lit-api#,LIT API documentation>>
+
+=== Bibliography
+
+* <<../../reference/cli/lit-commands#,LIT Commands Reference>>
+* <<../../reference/api/lit-api#,LIT API Reference>>
+* <<../../reference/formats/lit-specification#,LIT Format Specification>>
+* https://en.wikipedia.org/wiki/Microsoft_Reader[Wikipedia: Microsoft Reader]
+* http://www.convertlit.com/[ConvertLIT - LIT Conversion Tool]

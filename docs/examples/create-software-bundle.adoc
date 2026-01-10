@@ -1,0 +1,58 @@
+---
+layout: default
+title: Creating Software Distribution Bundle
+parent: Examples
+---
+
+== Creating Software Distribution Bundle
+
+=== Basic Software Bundle
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Create a software distribution CAB
+cab = Cabriolet::CAB::Compressor.new(
+  output: 'software-v1.0.cab',
+  compression: :lzx,
+  compression_level: :maximum
+)
+
+# Add application files
+cab.add_file('bin/app.exe', 'dist/app.exe')
+cab.add_file('bin/config.xml', 'dist/config.xml')
+cab.add_directory('lib/', 'dist/lib/')
+
+# Add documentation
+cab.add_file('README.txt', 'docs/README.txt')
+cab.add_file('LICENSE.txt', 'docs/LICENSE.txt')
+
+# Compress
+cab.compress
+puts "Created software-v1.0.cab"
+----
+
+=== Multi-Volume Distribution
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Create multi-volume CAB (for CD distribution)
+cab = Cabriolet::CAB::Compressor.new(
+  output: 'DISK1.CAB',
+  max_volume_size: 650 * 1024 * 1024,  # 650 MB per disk
+  compression: :lzx
+)
+
+cab.add_directory('product/')
+cab.compress
+
+puts "Created #{cab.volume_count} volumes"
+----
+
+=== See Also
+
+* xref:guides/basic-usage/creating-archives.adoc[Creating Archives]
+* xref:guides/compression/choosing-algorithm.adoc[Choosing Algorithms]

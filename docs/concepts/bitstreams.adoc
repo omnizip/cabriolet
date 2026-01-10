@@ -1,0 +1,176 @@
+---
+layout: default
+title: Bitstream Processing
+parent: Concepts
+nav_order: 4
+---
+
+== Bitstream Processing
+:toc:
+
+=== Purpose
+
+Understanding bit-level I/O operations used in compression algorithms.
+
+=== References
+
+* xref:compression-algorithms.adoc[Compression Algorithms]
+* xref:huffman-coding.adoc[Huffman Coding]
+
+== Bit-Level Reading
+
+=== Why Bits Matter
+
+Compression algorithms work at the bit level, not byte level, to achieve optimal encoding.
+
+[source]
+----
+Byte stream:  [0x4D] [0x53] [0x43] [0x46]
+Binary:       01001101 01010011 01000011 01000110
+Bit stream:   0 1 0 0 1 1 0 1 0 1 0 1 0 0 1 1 ...
+              ↑
+            Read bit-by-bit
+----
+
+=== Implementation
+
+Cabriolet's `Binary::Bitstream` class provides bit-level I/O with configurable bit ordering:
+
+[source,ruby]
+----
+# Create bitstream with LSB-first ordering (default, used by MSZIP)
+bitstream = Cabriolet::Binary::Bitstream.new(
+  io_system, handle, buffer_size,
+  bit_order: :lsb
+)
+
+# Create bitstream with MSB-first ordering (used by LZX, Quantum)
+bitstream = Cabriolet::Binary::Bitstream.new(
+  io_system, handle, buffer_size,
+  bit_order: :msb
+)
+
+# Read bits from the stream
+value = bitstream.read_bits(5)  # Read 5 bits
+
+# Align to byte boundary (discard remaining bits in current byte)
+bitstream.byte_align
+----
+
+== Bit Ordering
+
+=== LSB-First vs MSB-First
+
+Different compression algorithms use different bit ordering conventions:
+
+[source]
+----
+Byte: 0xB4 = 10110100
+
+MSB First (Most Significant Bit):
+  Reads bits from left to right
+  First bit read: 1 (leftmost)
+  Read order: 1 0 1 1 0 1 0 0
+
+LSB First (Least Significant Bit):
+  Reads bits from right to left
+  First bit read: 0 (rightmost)
+  Read order: 0 0 1 0 1 1 0 1
+----
+
+=== Algorithm Bit Orders
+
+[cols="1,1,2"]
+|===
+|Algorithm |Bit Order |Notes
+
+|MSZIP
+|LSB-first
+|DEFLATE standard, reads from right
+
+|LZX
+|MSB-first
+|Microsoft proprietary, reads from left
+
+|Quantum
+|MSB-first
+|Arithmetic coding, reads from left
+
+|LZSS
+|LSB-first
+|Simple dictionary, reads from right
+|===
+
+=== Why It Matters
+
+Using the wrong bit order causes complete decompression failure:
+
+[source,ruby]
+----
+# WRONG: Using LSB for LZX data
+bitstream = Bitstream.new(io, handle, 4096, bit_order: :lsb)
+# Result: Garbled data, invalid Huffman codes
+
+# CORRECT: Using MSB for LZX data
+bitstream = Bitstream.new(io, handle, 4096, bit_order: :msb)
+# Result: Proper decompression
+----
+
+== EOF Handling and Salvage Mode
+
+=== Graceful EOF Handling
+
+The bitstream implements libmspack-compatible EOF handling:
+
+[source,ruby]
+----
+# Normal mode: First EOF pads with zeros, second EOF raises error
+bitstream = Bitstream.new(io, handle, 4096)
+
+# Salvage mode: Pads with zeros indefinitely (for corrupted files)
+bitstream = Bitstream.new(io, handle, 4096, salvage: true)
+----
+
+=== EOF Behavior
+
+1. **First EOF**: Pad with zero bytes to allow bitstream to drain
+2. **Second EOF**: Raise `DecompressionError` (unless salvage mode)
+3. **Salvage mode**: Continue padding indefinitely
+
+This matches libmspack's `readbits.h` implementation for maximum compatibility.
+
+== Buffer Management
+
+Efficient buffering is critical for performance:
+
+[source,ruby]
+----
+class BufferedBitstream
+  BUFFER_SIZE = 4096
+
+  def initialize(io)
+    @io = io
+    @buffer = @io.read(BUFFER_SIZE)
+    @position = 0
+  end
+
+  def read_byte
+    refill if @position >= @buffer.bytesize
+    byte = @buffer.getbyte(@position)
+    @position += 1
+    byte
+  end
+
+  private
+
+  def refill
+    @buffer = @io.read(BUFFER_SIZE)
+    @position = 0
+  end
+end
+----
+
+== Bibliography
+
+* xref:compression-algorithms.adoc[Compression Algorithms]
+* Binary I/O Best Practices

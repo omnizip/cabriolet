@@ -1,0 +1,112 @@
+---
+layout: default
+title: Troubleshooting
+nav_order: 3.5
+has_children: true
+---
+
+== Troubleshooting
+
+=== Overview
+
+This section provides solutions to common problems encountered when using Cabriolet.
+
+=== Quick Diagnosis
+
+[cols="1,2,1", options="header"]
+|===
+| Problem | Likely Cause | Solution
+
+| "Invalid CAB signature"
+| Corrupted or wrong file type
+| link:common-errors.html[Common Errors]
+
+| Slow extraction
+| Large LZX window or system resources
+| link:performance-issues.html[Performance Issues]
+
+| Encoding errors
+| Character encoding mismatch
+| link:encoding-issues.html[Encoding Issues]
+
+| Memory errors
+| Insufficient RAM for algorithm
+| link:performance-issues.html[Performance Issues]
+
+| Platform-specific failures
+| OS compatibility issues
+| link:platform-specific.html[Platform-Specific]
+|===
+
+=== Available Guides
+
+==== link:common-errors.html[Common Errors and Solutions]
+
+Solutions for frequently encountered errors:
+
+* Invalid file format errors
+* Checksum failures
+* Decompression errors
+* File not found issues
+
+==== link:platform-specific.html[Platform-Specific Issues]
+
+Operating system-specific problems:
+
+* Windows path handling
+* macOS file system issues
+* Linux permission problems
+* Character encoding differences
+
+==== link:performance-issues.html[Performance and Memory Problems]
+
+Resolving speed and resource issues:
+
+* Slow compression/decompression
+* High memory usage
+* Memory allocation failures
+* Optimization strategies
+
+==== link:corrupted-files.html[Handling Corrupted Archives]
+
+Dealing with damaged archives:
+
+* Detecting corruption
+* Using salvage mode
+* Partial recovery
+* Prevention strategies
+
+==== link:encoding-issues.html[Character Encoding Problems]
+
+Resolving text encoding issues:
+
+* Filename encoding
+* Content encoding
+* Cross-platform compatibility
+* UTF-8 vs. other encodings
+
+=== Getting Help
+
+If you can't find a solution here:
+
+1. Check the xref:reference/api/error-classes.adoc[Error Classes Reference]
+2. Review xref:examples/index.adoc[Examples] for correct usage
+3. Search https://github.com/omnizip/cabriolet/issues[existing issues]
+4. Create a https://github.com/omnizip/cabriolet/issues/new[new issue] with details
+
+=== Reporting Bugs
+
+When reporting issues, include:
+
+* Cabriolet version (`Cabriolet::VERSION`)
+* Ruby version (`ruby -v`)
+* Operating system and version
+* Minimal reproducible example
+* Error messages and stack traces
+* Sample files (if possible)
+
+=== See Also
+
+* xref:developer/debugging.adoc[Debugging Guide]
+* xref:guides/advanced-usage/error-handling.adoc[Error Handling]
+* xref:guides/advanced-usage/salvage-mode.adoc[Salvage Mode]

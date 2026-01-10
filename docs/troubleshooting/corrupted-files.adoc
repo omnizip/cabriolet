@@ -1,0 +1,109 @@
+---
+layout: default
+title: Corrupted Files
+parent: Troubleshooting
+---
+
+== Handling Corrupted Archives
+
+=== Detecting Corruption
+
+**Signs of corruption**:
+
+* Invalid signature errors
+* Checksum mismatches
+* Unexpected end of file
+* Decompression failures
+
+=== Using Salvage Mode
+
+[source,ruby]
+----
+# Enable salvage mode to recover what's possible
+extractor = Cabriolet::CAB::Extractor.new(
+  salvage_mode: true,
+  skip_checksum: true,
+  continue_on_error: true
+)
+
+begin
+  cabinet = extractor.parse('corrupted.cab')
+
+  recovered = 0
+  failed = 0
+
+  cabinet.files.each do |file|
+    begin
+      File.write("recovered/#{file.name}", file.data, mode: 'wb')
+      recovered += 1
+      puts "✓ #{file.name}"
+    rescue => e
+      failed += 1
+      puts "✗ #{file.name}: #{e.message}"
+    end
+  end
+
+  puts "\nRecovered: #{recovered}, Failed: #{failed}"
+rescue => e
+  puts "Partial recovery: #{e.message}"
+end
+----
+
+=== Partial Recovery Strategies
+
+1. **Extract file by file**:
+
+[source,ruby]
+----
+cab.files.each do |file|
+  begin
+    data = file.data
+    # Save successfully extracted file
+  rescue
+    # Skip corrupted file, continue with next
+  end
+end
+----
+
+2. **Skip checksum validation**:
+
+[source,ruby]
+----
+cab = Cabriolet::CAB::Parser.new(
+  skip_checksum: true
+).parse('file.cab')
+----
+
+3. **Use external tools**:
+   - Microsoft `expand.exe` (Windows)
+   - `cabextract` (Linux/macOS)
+   - Compare results with Cabriolet
+
+=== Prevention
+
+1. **Verify after creation**:
+
+[source,ruby]
+----
+# Test archive after creation
+cab = Cabriolet::CAB::Parser.new.parse('archive.cab')
+cab.files.each { |f| f.data }  # Trigger decompression
+----
+
+2. **Use checksums**:
+
+[source,ruby]
+----
+# Generate archive checksum
+checksum = Digest::SHA256.file('archive.cab').hexdigest
+File.write('archive.cab.sha256', checksum)
+----
+
+3. **Store redundant copies**
+4. **Use error-correcting storage** (RAID, cloud with redundancy)
+
+=== See Also
+
+* xref:examples/recover-corrupted-archive.adoc[Recovery Example]
+* xref:guides/advanced-usage/salvage-mode.adoc[Salvage Mode Guide]
+* link:common-errors.html[Common Errors]

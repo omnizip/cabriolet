@@ -1,0 +1,593 @@
+---
+layout: default
+title: Architecture Diagrams
+parent: Architecture
+---
+
+== Architecture Diagrams
+
+=== Overview
+
+This document provides visual representations of Cabriolet's architecture, including system structure, class hierarchies, data flow, and processing states.
+
+=== System Architecture
+
+==== High-Level Component Diagram
+
+[source]
+----
+┌─────────────────────────────────────────────────────────────────┐
+│                      Cabriolet Library                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐         │
+│  │   CLI Layer  │  │   API Layer  │  │  MCP Server  │         │
+│  │              │  │              │  │              │         │
+│  │  - Commands  │  │  - Public    │  │  - Tools     │         │
+│  │  - Options   │  │    Methods   │  │  - Resources │         │
+│  │  - Output    │  │  - Models    │  │  - Prompts   │         │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘         │
+│         │                 │                 │                  │
+│         └─────────────────┼─────────────────┘                  │
+│                           │                                    │
+│  ┌────────────────────────┴────────────────────────┐          │
+│  │           Format Layer                          │          │
+│  │                                                  │          │
+│  │  ┌─────┐ ┌─────┐ ┌─────┐ ┌──────┐ ┌─────┐     │          │
+│  │  │ CAB │ │ CHM │ │ HLP │ │ KWAJ │ │ ... │     │          │
+│  │  │     │ │     │ │     │ │      │ │     │     │          │
+│  │  │ P D │ │ P D │ │ P D │ │  P D │ │ P D │     │          │
+│  │  └──┬──┘ └──┬──┘ └──┬──┘ └───┬──┘ └──┬──┘     │          │
+│  │     │       │       │        │       │         │          │
+│  └─────┼───────┼───────┼────────┼───────┼─────────┘          │
+│        │       │       │        │       │                     │
+│  ┌─────┴───────┴───────┴────────┴───────┴─────────┐          │
+│  │         Compression Layer                       │          │
+│  │                                                  │          │
+│  │  ┌──────┐ ┌────────┐ ┌─────────┐ ┌─────────┐  │          │
+│  │  │ None │ │ MSZIP  │ │ Quantum │ │   LZX   │  │          │
+│  │  │      │ │ (Zlib) │ │         │ │         │  │          │
+│  │  │ C  D │ │  C  D  │ │   C  D  │ │   C  D  │  │          │
+│  │  └──────┘ └────────┘ └─────────┘ └─────────┘  │          │
+│  │                                                  │          │
+│  └──────────────────────┬───────────────────────────┘          │
+│                         │                                      │
+│  ┌──────────────────────┴───────────────────────┐             │
+│  │           System Layer                       │             │
+│  │                                               │             │
+│  │  ┌──────────┐  ┌─────────────┐              │             │
+│  │  │ I/O      │  │  Bitstream  │              │             │
+│  │  │ System   │  │  Handling   │              │             │
+│  │  │          │  │             │              │             │
+│  │  │ - File   │  │  - Reader   │              │             │
+│  │  │ - Memory │  │  - Writer   │              │             │
+│  │  └──────────┘  └─────────────┘              │             │
+│  │                                               │             │
+│  └───────────────────────────────────────────────┘             │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+
+Legend: P = Parser, D = Decompressor, C = Compressor
+----
+
+==== Layer Responsibilities
+
+[cols="1,3", options="header"]
+|===
+| Layer | Responsibilities
+
+| CLI Layer
+| Command-line interface, argument parsing, user interaction
+
+| API Layer
+| Public API, high-level operations, model classes
+
+| Format Layer
+| Format-specific parsing and generation for each archive type
+
+| Compression Layer
+| Compression/decompression algorithms implementation
+
+| System Layer
+| Low-level I/O operations, bitstream handling, platform abstraction
+|===
+
+=== Class Hierarchy
+
+==== Format Parser Classes
+
+[source]
+----
+Cabriolet
+  │
+  ├─ CAB
+  │   ├─ Parser
+  │   ├─ Decompressor
+  │   ├─ Compressor
+  │   └─ Extractor
+  │
+  ├─ CHM
+  │   ├─ Parser
+  │   ├─ Decompressor
+  │   └─ Compressor
+  │
+  ├─ HLP
+  │   ├─ Parser
+  │   ├─ Decompressor
+  │   └─ Compressor
+  │
+  ├─ KWAJ
+  │   ├─ Parser
+  │   ├─ Decompressor
+  │   └─ Compressor
+  │
+  ├─ LIT
+  │   ├─ Decompressor
+  │   └─ Compressor
+  │
+  ├─ OAB
+  │   ├─ Decompressor
+  │   └─ Compressor
+  │
+  └─ SZDD
+      ├─ Parser
+      ├─ Decompressor
+      └─ Compressor
+----
+
+==== Decompressor Class Hierarchy
+
+[source]
+----
+Cabriolet::Decompressors::Base
+           │
+           ├─ None        (Store/Copy)
+           ├─ LZSS        (SZDD, KWAJ)
+           ├─ MSZIP       (CAB Type 1)
+           ├─ Quantum     (CAB Type 2)
+           └─ LZX         (CAB Type 3, CHM)
+----
+
+==== Model Class Hierarchy
+
+[source]
+----
+Cabriolet::Models
+           │
+           ├─ Cabinet
+           │   ├─ Header (CFHEADER)
+           │   ├─ Folder (CFFOLDER)
+           │   ├─ FolderData (CFDATA)
+           │   └─ File (CFFILE)
+           │
+           ├─ CHMFile
+           │   ├─ Header
+           │   └─ Section
+           │
+           ├─ HLPFile
+           │   └─ Header
+           │
+           ├─ KWAJHeader
+           ├─ LITHeader
+           ├─ OABHeader
+           └─ SZDDHeader
+----
+
+=== Data Flow Diagrams
+
+==== CAB File Extraction Flow
+
+[source]
+----
+┌──────────┐
+│  Input   │
+│ CAB File │
+└────┬─────┘
+     │
+     ▼
+┌─────────────────┐
+│  Read Header    │
+│  (CFHEADER)     │◄───┐
+└────┬────────────┘    │
+     │                 │
+     ▼                 │
+┌─────────────────┐    │
+│ Parse Folders   │    │
+│  (CFFOLDER[])   │    │ Cabinet
+└────┬────────────┘    │ Structure
+     │                 │
+     ▼                 │
+┌─────────────────┐    │
+│  Parse Files    │    │
+│  (CFFILE[])     │◄───┘
+└────┬────────────┘
+     │
+     │  For each file to extract:
+     ▼
+┌─────────────────┐
+│ Locate Folder   │
+│   & Offset      │
+└────┬────────────┘
+     │
+     ▼
+┌─────────────────┐
+│ Read CFDATA     │
+│    Blocks       │
+└────┬────────────┘
+     │
+     ▼
+┌─────────────────┐
+│  Decompress     │
+│  (MSZIP/LZX/    │
+│   Quantum)      │
+└────┬────────────┘
+     │
+     ▼
+┌─────────────────┐
+│ Extract File    │
+│ Bytes at Offset │
+└────┬────────────┘
+     │
+     ▼
+┌─────────────────┐
+│ Write Output    │
+│  File/Memory    │
+└─────────────────┘
+----
+
+==== Compression Data Flow
+
+[source]
+----
+┌──────────────┐
+│ Input Files  │
+└──────┬───────┘
+       │
+       ▼
+┌──────────────────┐
+│ Organize into    │
+│    Folders       │
+│ (by compression) │
+└──────┬───────────┘
+       │
+       ▼
+┌──────────────────┐
+│ For each folder: │
+│                  │
+│ ┌──────────────┐ │
+│ │ Split into   │ │
+│ │ 32KB blocks  │ │
+│ └──────┬───────┘ │
+│        │         │
+│        ▼         │
+│ ┌──────────────┐ │
+│ │  Compress    │ │
+│ │   Block      │ │
+│ │ (Algorithm)  │ │
+│ └──────┬───────┘ │
+│        │         │
+│        ▼         │
+│ ┌──────────────┐ │
+│ │  Create      │ │
+│ │  CFDATA      │ │
+│ └──────┬───────┘ │
+└────────┼─────────┘
+         │
+         ▼
+┌────────────────┐
+│ Write Header   │
+│  (CFHEADER)    │
+└────────┬───────┘
+         │
+         ▼
+┌────────────────┐
+│ Write Folders  │
+│  (CFFOLDER[])  │
+└────────┬───────┘
+         │
+         ▼
+┌────────────────┐
+│ Write Files    │
+│  (CFFILE[])    │
+└────────┬───────┘
+         │
+         ▼
+┌────────────────┐
+│ Write Data     │
+│  (CFDATA[])    │
+└────────┬───────┘
+         │
+         ▼
+┌────────────────┐
+│   CAB File     │
+└────────────────┘
+----
+
+=== State Machine Diagrams
+
+==== LZX Decompressor State Machine
+
+[source]
+----
+                    ┌───────────┐
+                    │   START   │
+                    └─────┬─────┘
+                          │
+                          ▼
+                 ┌────────────────┐
+                 │ Read Block Type│
+                 └────┬───────────┘
+                      │
+        ┌─────────────┼─────────────┐
+        │             │             │
+        ▼             ▼             ▼
+  ┌──────────┐  ┌──────────┐  ┌──────────┐
+  │ Verbatim │  │ Aligned  │  │Uncompressed│
+  │  Block   │  │  Block   │  │   Block  │
+  └────┬─────┘  └────┬─────┘  └────┬─────┘
+       │             │              │
+       ▼             ▼              ▼
+  ┌─────────────────────────────────────┐
+  │      Decode Huffman Trees           │
+  │   (Main, Length, Aligned Offset)    │
+  └──────────────┬──────────────────────┘
+                 │
+                 ▼
+         ┌───────────────┐
+         │ Process Codes │◄────┐
+         │               │     │
+         │ - Literal     │     │
+         │ - Match       │     │
+         │ - E8 Call     │     │
+         └───┬───────────┘     │
+             │                 │
+             │ More codes?     │
+             └─────────────────┘
+             │
+             │ Block complete
+             ▼
+         ┌──────────┐
+         │  Write   │
+         │  Output  │
+         └────┬─────┘
+              │
+              │ More blocks?
+              ├───────────────────┐
+              │                   │
+              ▼                   │
+        ┌──────────┐              │
+        │   END    │              │
+        └──────────┘              │
+              ▲                   │
+              │                   │
+              └───────────────────┘
+----
+
+==== Parser State Machine
+
+[source]
+----
+    ┌────────┐
+    │ INIT   │
+    └───┬────┘
+        │
+        ▼
+    ┌────────────┐
+    │ READ_MAGIC │──── Validation
+    └───┬────────┘     Error
+        │              ──────►┌───────┐
+        ▼                     │ ERROR │
+    ┌──────────────┐          └───────┘
+    │ PARSE_HEADER │              ▲
+    └───┬──────────┘              │
+        │                         │
+        ▼                         │
+    ┌───────────────┐             │
+    │ READ_FOLDERS  │─────────────┤
+    └───┬───────────┘             │
+        │                         │
+        ▼                         │
+    ┌─────────────┐               │
+    │ READ_FILES  │───────────────┤
+    └───┬─────────┘               │
+        │                         │
+        ▼                         │
+    ┌──────────────┐              │
+    │ VALIDATE_    │              │
+    │ STRUCTURE    │──────────────┤
+    └───┬──────────┘              │
+        │                         │
+        ▼                         │
+    ┌──────────────┐              │
+    │ INDEX_DATA   │──────────────┤
+    └───┬──────────┘              │
+        │                         │
+        ▼                         │
+    ┌──────────────┐              │
+    │   READY      │              │
+    └───┬──────────┘              │
+        │                         │
+        │ Extract request         │
+        ▼                         │
+    ┌──────────────┐              │
+    │ EXTRACTING   │──────────────┘
+    └───┬──────────┘
+        │
+        ▼
+    ┌──────────────┐
+    │   COMPLETE   │
+    └──────────────┘
+----
+
+=== Interaction Diagrams
+
+==== Multi-Part Cabinet Extraction Sequence
+
+[source]
+----
+User    Parser   Cabinet1  Cabinet2  Cabinet3  Extractor
+ │        │         │         │         │          │
+ │ Extract│         │         │         │          │
+ ├───────►│         │         │         │          │
+ │        │ Parse   │         │         │          │
+ │        ├────────►│         │         │          │
+ │        │◄────────┤         │         │          │
+ │        │  Files  │         │         │          │
+ │        │         │         │         │          │
+ │        │ Check continuation flag     │          │
+ │        │         │         │         │          │
+ │        │ Parse next cabinet          │          │
+ │        ├─────────┼────────►│         │          │
+ │        │◄────────┼─────────┤         │          │
+ │        │         │  Files  │         │          │
+ │        │         │         │         │          │
+ │        │ Parse next cabinet          │          │
+ │        ├─────────┼─────────┼────────►│          │
+ │        │◄────────┼─────────┼─────────┤          │
+ │        │         │         │  Files  │          │
+ │        │         │         │         │          │
+ │        │ Extract spanning file       │          │
+ │        ├─────────┼─────────┼─────────┼─────────►│
+ │        │         │  Data   │         │          │
+ │        ├─────────┼────────►│         │          │
+ │        │         │         │  Data   │          │
+ │        ├─────────┼─────────┼────────►│          │
+ │        │         │         │         │  Data    │
+ │        ├─────────┼─────────┼─────────┼─────────►│
+ │        │         │         │         │          │
+ │        │         │         │         │  Combine │
+ │        │         │         │         │  ──────┐ │
+ │        │         │         │         │  ◄─────┘ │
+ │        │◄────────┼─────────┼─────────┼──────────┤
+ │◄───────┤         │         │         │   File   │
+ │  File  │         │         │         │          │
+ │        │         │         │         │          │
+----
+
+=== Memory Layout Diagrams
+
+==== CAB File On-Disk Structure
+
+[source]
+----
+Offset  Structure           Size      Description
+─────────────────────────────────────────────────────────────
+0x0000  CFHEADER            36+ bytes Cabinet header
+        ├─ signature        4 bytes   "MSCF"
+        ├─ reserved1        4 bytes   0x00000000
+        ├─ cbCabinet        4 bytes   Total file size
+        ├─ reserved2        4 bytes   0x00000000
+        ├─ coffFiles        4 bytes   Offset to files
+        ├─ reserved3        4 bytes   0x00000000
+        ├─ versionMinor     1 byte    Minor version
+        ├─ versionMajor     1 byte    Major version
+        ├─ cFolders         2 bytes   Folder count
+        ├─ cFiles           2 bytes   File count
+        ├─ flags            2 bytes   Option flags
+        ├─ setID            2 bytes   Cabinet set ID
+        ├─ iCabinet         2 bytes   Cabinet number
+        └─ [optional fields]          Based on flags
+─────────────────────────────────────────────────────────────
+        CFFOLDER[]          8*n bytes Folder descriptors
+        ├─ coffCabStart     4 bytes   Offset to data
+        ├─ cCFData          2 bytes   Data block count
+        └─ typeCompress     2 bytes   Compression type
+─────────────────────────────────────────────────────────────
+coffFiles CFFILE[]          16+*m     File descriptors
+        ├─ cbFile           4 bytes   Uncompressed size
+        ├─ uoffFolderStart  4 bytes   Folder offset
+        ├─ iFolder          2 bytes   Folder index
+        ├─ date             2 bytes   MS-DOS date
+        ├─ time             2 bytes   MS-DOS time
+        ├─ attribs          2 bytes   File attributes
+        └─ szName           var       Null-term name
+─────────────────────────────────────────────────────────────
+        CFDATA[]            8+*k      Data blocks
+        ├─ csum             4 bytes   Checksum
+        ├─ cbData           2 bytes   Compressed size
+        ├─ cbUncomp         2 bytes   Uncompressed size
+        └─ ab               var       Compressed data
+─────────────────────────────────────────────────────────────
+EOF
+----
+
+==== Decompression Window State
+
+[source]
+----
+LZX Window (32KB - 2MB depending on type code)
+
+┌────────────────────────────────────────────────────────┐
+│                                                        │
+│  ┌──────────────────────────────────────────────┐    │
+│  │        Previously Decompressed Data          │    │
+│  │                                              │    │
+│  │  Available for match references              │    │
+│  │                                              │    │
+│  └───────────────────────┬──────────────────────┘    │
+│                          │                            │
+│                          ▼                            │
+│                 ┌────────────────┐                    │
+│                 │  Current Block │                    │
+│                 │  Being Decoded │                    │
+│                 └────────────────┘                    │
+│                          │                            │
+│                          ▼                            │
+│  ┌──────────────────────────────────────────────┐    │
+│  │           Output Buffer                      │    │
+│  │  (Sliding window for next match refs)        │    │
+│  └──────────────────────────────────────────────┘    │
+│                                                        │
+└────────────────────────────────────────────────────────┘
+                         │
+                         ▼
+                  ┌──────────────┐
+                  │ Final Output │
+                  └──────────────┘
+----
+
+=== Component Dependencies
+
+==== Dependency Graph
+
+[source]
+----
+                    ┌──────────┐
+                    │   CLI    │
+                    └────┬─────┘
+                         │
+                    ┌────▼─────┐
+                    │   API    │
+                    └────┬─────┘
+                         │
+         ┌───────────────┼───────────────┐
+         │               │               │
+    ┌────▼────┐    ┌────▼────┐    ┌────▼────┐
+    │   CAB   │    │   CHM   │    │   HLP   │
+    │ Parser  │    │ Parser  │    │ Parser  │
+    └────┬────┘    └────┬────┘    └────┬────┘
+         │              │              │
+         │         ┌────┴────┐         │
+         │         │         │         │
+    ┌────▼─────────▼────┐    │    ┌────▼────┐
+    │   Decompressors   │◄───┘    │  Models │
+    │                   │         └─────────┘
+    │ - MSZIP           │
+    │ - LZX             │         ┌─────────┐
+    │ - Quantum         │────────►│Bitstream│
+    │ - LZSS            │         └─────────┘
+    └────┬──────────────┘
+         │
+    ┌────▼────┐
+    │   I/O   │
+    │ System  │
+    └─────────┘
+----
+
+=== See Also
+
+* xref:architecture/index.adoc[Architecture Overview]
+* xref:architecture/system-layer.adoc[System Layer]
+* xref:architecture/format-layer.adoc[Format Layer]
+* xref:concepts/cabinet-structure.adoc[Cabinet Structure]
+* xref:concepts/compression-algorithms.adoc[Compression Algorithms]

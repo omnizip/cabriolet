@@ -1,0 +1,215 @@
+---
+title: Format Guides
+parent: Guides
+has_children: true
+nav_order: 2
+---
+
+== Format Guides
+
+=== Purpose
+
+This section provides comprehensive guides for each of the 7 Microsoft compression formats supported by Cabriolet. Each format has unique characteristics and use cases documented here.
+
+=== References
+
+* <<../basic-usage/index#,Basic Usage>>
+* <<../../reference/cli/index#,CLI Reference>>
+* <<../../reference/api/index#,API Reference>>
+
+=== Concepts
+
+Microsoft has developed multiple compression formats over the years, each designed for specific purposes. Understanding these formats helps you choose the right tool for your task and work effectively with existing archives.
+
+=== Supported Formats
+
+==== CAB - Microsoft Cabinet
+
+<<cab-format#,CAB Format Guide>>
+
+* **Purpose**: General-purpose archive format for software distribution
+* **Use Cases**: Windows installers, software packages, system files
+* **Compression**: Multiple algorithms (MSZIP, LZX, Quantum)
+* **Features**: Multi-file, multi-folder, multi-part support
+
+==== CHM - Compiled HTML Help
+
+<<chm-format#,CHM Format Guide>>
+
+* **Purpose**: Windows help documentation format
+* **Use Cases**: Application help files, technical documentation
+* **Compression**: LZX compression
+* **Features**: Indexed HTML content, full-text search
+
+==== SZDD - Single-file LZSS
+
+<<szdd-format#,SZDD Format Guide>>
+
+* **Purpose**: Simple single-file compression
+* **Use Cases**: Compressed Windows system files (*.ex_, *.dl_)
+* **Compression**: LZSS algorithm
+* **Features**: Simple format, fast decompression
+
+==== KWAJ - KWAJ Compression
+
+<<kwaj-format#,KWAJ Format Guide>>
+
+* **Purpose**: Microsoft Setup compression format
+* **Use Cases**: Legacy installers, setup files
+* **Compression**: LZSS or MSZIP
+* **Features**: Single-file compression with metadata
+
+==== HLP - Windows Help
+
+<<hlp-format#,HLP Format Guide>>
+
+* **Purpose**: Legacy Windows help system
+* **Use Cases**: Windows 3.x/9x help files
+* **Compression**: LZ77 variant
+* **Features**: Topic-based help, hyperlinks
+
+==== LIT - Microsoft Reader
+
+<<lit-format#,LIT Format Guide>>
+
+* **Purpose**: eBook format for Microsoft Reader
+* **Use Cases**: Digital books, electronic publications
+* **Compression**: DES encryption + compression
+* **Features**: DRM support, annotations
+
+==== OAB - Offline Address Book
+
+<<oab-format#,OAB Format Guide>>
+
+* **Purpose**: Exchange/Outlook offline data
+* **Use Cases**: Email address books, contact lists
+* **Compression**: LZX compression
+* **Features**: Incremental updates
+
+=== Format Comparison
+
+[cols="1,2,1,2"]
+|===
+|Format |Primary Use |Compression |Complexity
+
+|CAB
+|Software distribution
+|Multiple
+|Medium
+
+|CHM
+|Help documentation
+|LZX
+|Medium
+
+|SZDD
+|Single files
+|LZSS
+|Low
+
+|KWAJ
+|Setup files
+|LZSS/MSZIP
+|Low
+
+|HLP
+|Legacy help
+|LZ77
+|Medium
+
+|LIT
+|eBooks
+|DES + LZX
+|High
+
+|OAB
+|Address books
+|LZX
+|Medium
+|===
+
+=== Choosing a Format
+
+Select the appropriate format based on your use case:
+
+**For software distribution:**
+
+* Use <<cab-format#,CAB>> - Industry standard, multi-file support
+
+**For documentation:**
+
+* Use <<chm-format#,CHM>> - Built-in search, indexed content
+
+**For individual file compression:**
+
+* Use <<szdd-format#,SZDD>> - Simple, fast, Windows compatible
+
+**For legacy support:**
+
+* <<kwaj-format#,KWAJ>> - Old installers
+* <<hlp-format#,HLP>> - Windows 3.x/9x help
+* <<lit-format#,LIT>> - Microsoft Reader books
+* <<oab-format#,OAB>> - Exchange data
+
+=== Common Operations by Format
+
+==== CAB Files
+
+[source,bash]
+----
+cabriolet list archive.cab
+cabriolet extract archive.cab
+cabriolet create new.cab files/
+----
+
+==== CHM Files
+
+[source,bash]
+----
+cabriolet chm-list help.chm
+cabriolet chm-extract help.chm output/
+cabriolet chm-info help.chm
+----
+
+==== SZDD Files
+
+[source,bash]
+----
+cabriolet expand notepad.ex_
+cabriolet compress program.exe
+cabriolet szdd-info file.dl_
+----
+
+==== Other Formats
+
+See individual format guides for specific commands and examples.
+
+=== Format Detection
+
+Cabriolet automatically detects formats:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Automatically detect and decompress
+Cabriolet.decompress('unknown.bin', 'output/')
+----
+
+Detection is based on:
+
+* File signatures (magic bytes)
+* File extension hints
+* Header structure analysis
+
+=== Next Steps
+
+* Choose your format and read its detailed guide
+* Learn about <<../compression/index#,compression algorithms>>
+* Explore <<../advanced-usage/index#,advanced techniques>>
+
+=== Bibliography
+
+* <<../../reference/cli/index#,CLI Command Reference>>
+* <<../../reference/formats/index#,Format Specifications>>
+* https://docs.microsoft.com/en-us/previous-versions/bb417343(v=msdn.10)[Microsoft Cabinet SDK]

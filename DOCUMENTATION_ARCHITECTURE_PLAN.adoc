@@ -1,0 +1,930 @@
+= Cabriolet Documentation Architecture Plan
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This document defines the comprehensive information architecture and documentation strategy for the Cabriolet library, ensuring a well-structured, discoverable, and maintainable documentation site using Jekyll and the Just the Docs theme.
+
+== References
+
+* Jekyll Documentation: https://jekyllrb.com/docs/
+* Just the Docs Theme: https://just-the-docs.com/
+* AsciiDoc Syntax: https://docs.asciidoctor.org/asciidoc/latest/
+* Lychee Link Checker: https://lychee.cli.rs/
+* MN 112 LADL Specification (reference for document structure)
+
+== Concepts
+
+=== Information Architecture Principles
+
+Onion Structure::
+Documentation reveals progressively more detail as users go deeper into topics.
+Users start with high-level concepts and gradually drill down to implementation details.
+
+Hierarchical Organization::
+Content organized in a tree structure mirroring the logical relationship between topics.
+Each level provides complete context for the next level.
+
+Consistent Structure::
+Every document follows the same structural template for predictability and ease of navigation.
+
+Cross-referencing::
+Liberal use of xref: links to connect related topics and prevent information silos.
+
+MECE Principle::
+Topics are Mutually Exclusive and Collectively Exhaustive - no overlap, no gaps.
+
+== Documentation Site Structure
+
+=== Top-Level Navigation (nav_order)
+
+[source]
+----
+docs/
+├── index.adoc (Home)                          [nav_order: 0]
+├── getting-started/                           [nav_order: 1]
+├── guides/                                    [nav_order: 2]
+├── examples/                                  [nav_order: 2.5]
+├── format-comparison.adoc                     [nav_order: 3]
+├── troubleshooting/                           [nav_order: 3.5]
+├── concepts/                                  [nav_order: 4]
+├── architecture/                              [nav_order: 5]
+├── reference/                                 [nav_order: 6]
+├── developer/                                 [nav_order: 7]
+└── appendix/                                  [nav_order: 8]
+----
+
+=== Complete Information Hierarchy
+
+==== Level 1: Getting Started
+
+[source]
+----
+getting-started/
+├── index.adoc                    [nav_order: 1, has_children: true]
+├── installation.adoc             [nav_order: 1]
+├── quick-start.adoc              [nav_order: 2]
+├── your-first-cab.adoc           [nav_order: 3]
+└── common-workflows.adoc         [nav_order: 4] NEW
+----
+
+Purpose: Enable users to install and use Cabriolet within 5-10 minutes.
+
+==== Level 2: Guides
+
+[source]
+----
+guides/
+├── index.adoc                                  [nav_order: 2, has_children: true]
+├── basic-usage/
+│   ├── index.adoc                             [nav_order: 1, has_children: true]
+│   ├── creating-archives.adoc                 [nav_order: 1]
+│   ├── extracting-files.adoc                  [nav_order: 2]
+│   ├── listing-contents.adoc                  [nav_order: 3]
+│   ├── testing-integrity.adoc                 [nav_order: 4]
+│   └── auto-detection.adoc                    [nav_order: 5] NEW
+├── advanced-usage/
+│   ├── index.adoc                             [nav_order: 2, has_children: true]
+│   ├── streaming-large-files.adoc             [nav_order: 1] NEW
+│   ├── parallel-extraction.adoc               [nav_order: 2] NEW
+│   ├── archive-modification.adoc              [nav_order: 3] NEW
+│   ├── validation-repair.adoc                 [nav_order: 4] NEW
+│   ├── custom-io-handlers.adoc                [nav_order: 5]
+│   ├── memory-operations.adoc                 [nav_order: 6]
+│   ├── multi-part-cabinets.adoc               [nav_order: 7]
+│   ├── embedded-cabinets.adoc                 [nav_order: 8]
+│   ├── salvage-mode.adoc                      [nav_order: 9]
+│   ├── error-handling.adoc                    [nav_order: 10]
+│   └── performance-tuning.adoc                [nav_order: 11]
+├── compression/
+│   ├── index.adoc                             [nav_order: 3, has_children: true]
+│   ├── choosing-algorithm.adoc                [nav_order: 1]
+│   ├── none-compression.adoc                  [nav_order: 2]
+│   ├── lzss-compression.adoc                  [nav_order: 3]
+│   ├── mszip-compression.adoc                 [nav_order: 4]
+│   ├── quantum-compression.adoc               [nav_order: 5]
+│   └── lzx-compression.adoc                   [nav_order: 6]
+├── formats/
+│   ├── index.adoc                             [nav_order: 4, has_children: true]
+│   ├── cab-format.adoc                        [nav_order: 1]
+│   ├── chm-format.adoc                        [nav_order: 2]
+│   ├── hlp-format.adoc                        [nav_order: 3]
+│   ├── kwaj-format.adoc                       [nav_order: 4]
+│   ├── lit-format.adoc                        [nav_order: 5]
+│   ├── oab-format.adoc                        [nav_order: 6]
+│   ├── szdd-format.adoc                       [nav_order: 7]
+│   └── format-specifications/
+│       ├── index.adoc                         [nav_order: 10, has_children: true]
+│       ├── cab-specification.adoc             [nav_order: 1]
+│       ├── compression-type-codes.adoc        [nav_order: 2]
+│       └── file-attributes.adoc               [nav_order: 3]
+└── use-cases/
+    ├── index.adoc                             [nav_order: 5, has_children: true]
+    ├── software-distribution.adoc             [nav_order: 1]
+    ├── data-archival.adoc                     [nav_order: 2]
+    ├── legacy-format-conversion.adoc          [nav_order: 3]
+    ├── automated-workflows.adoc               [nav_order: 4]
+    └── help-file-extraction.adoc              [nav_order: 5]
+----
+
+==== Level 2.5: Examples
+
+[source]
+----
+examples/
+├── index.adoc                                  [nav_order: 2.5, has_children: true]
+├── extract-installer.adoc                      [nav_order: 1]
+├── create-software-bundle.adoc                 [nav_order: 2]
+├── batch-processing.adoc                       [nav_order: 3]
+├── recover-corrupted-archive.adoc              [nav_order: 4]
+├── custom-compression-pipeline.adoc            [nav_order: 5]
+├── streaming-extraction.adoc                   [nav_order: 6] NEW
+├── parallel-batch-processing.adoc              [nav_order: 7] NEW
+└── archive-validation.adoc                     [nav_order: 8] NEW
+----
+
+==== Level 3: Format Comparison
+
+[source]
+----
+format-comparison.adoc                          [nav_order: 3]
+----
+
+Single comprehensive comparison page for all formats.
+
+==== Level 3.5: Troubleshooting
+
+[source]
+----
+troubleshooting/
+├── index.adoc                                  [nav_order: 3.5, has_children: true]
+├── common-errors.adoc                          [nav_order: 1]
+├── platform-specific.adoc                      [nav_order: 2]
+├── performance-issues.adoc                     [nav_order: 3]
+├── corrupted-files.adoc                        [nav_order: 4]
+└── encoding-issues.adoc                        [nav_order: 5]
+----
+
+==== Level 4: Concepts
+
+[source]
+----
+concepts/
+├── index.adoc                                  [nav_order: 4, has_children: true]
+├── cabinet-structure.adoc                      [nav_order: 1]
+├── folders-and-files.adoc                      [nav_order: 2]
+├── compression-algorithms.adoc                 [nav_order: 3]
+├── huffman-coding.adoc                         [nav_order: 4]
+├── bitstreams.adoc                             [nav_order: 5]
+├── io-abstraction.adoc                         [nav_order: 6]
+├── format-detection.adoc                       [nav_order: 7] NEW
+├── streaming-model.adoc                        [nav_order: 8] NEW
+└── parallel-processing-model.adoc              [nav_order: 9] NEW
+----
+
+==== Level 5: Architecture
+
+[source]
+----
+architecture/
+├── index.adoc                                  [nav_order: 5, has_children: true]
+├── design-principles.adoc                      [nav_order: 1]
+├── system-layer.adoc                           [nav_order: 2]
+├── format-layer.adoc                           [nav_order: 3]
+├── compression-layer.adoc                      [nav_order: 4]
+├── binary-layer.adoc                           [nav_order: 5]
+├── diagrams.adoc                               [nav_order: 6]
+├── extending.adoc                              [nav_order: 7]
+├── new-features-architecture.adoc              [nav_order: 8] NEW
+└── plugin-system.adoc                          [nav_order: 9] NEW (future)
+----
+
+==== Level 6: Reference
+
+[source]
+----
+reference/
+├── index.adoc                                  [nav_order: 6, has_children: true]
+├── api/
+│   ├── index.adoc                             [has_children: true]
+│   ├── cab-api.adoc
+│   ├── chm-api.adoc
+│   ├── hlp-api.adoc
+│   ├── kwaj-api.adoc
+│   ├── lit-api.adoc
+│   ├── oab-api.adoc
+│   ├── szdd-api.adoc
+│   ├── auto-api.adoc                          NEW
+│   ├── streaming-api.adoc                     NEW
+│   ├── validator-api.adoc                     NEW
+│   ├── repairer-api.adoc                      NEW
+│   ├── modifier-api.adoc                      NEW
+│   ├── parallel-api.adoc                      NEW
+│   ├── models.adoc
+│   ├── error-classes.adoc
+│   └── system-io.adoc
+└── cli/
+    ├── index.adoc                             [has_children: true]
+    ├── global-options.adoc
+    ├── cab-commands.adoc
+    ├── chm-commands.adoc
+    ├── hlp-commands.adoc
+    ├── kwaj-commands.adoc
+    ├── lit-commands.adoc
+    ├── oab-commands.adoc
+    ├── szdd-commands.adoc
+    ├── auto-commands.adoc                     NEW
+    ├── validate-commands.adoc                 NEW
+    ├── repair-commands.adoc                   NEW
+    └── batch-commands.adoc                    NEW
+----
+
+==== Level 7: Developer
+
+[source]
+----
+developer/
+├── index.adoc                                  [nav_order: 7, has_children: true]
+├── contributing.adoc                           [nav_order: 1]
+├── code-style.adoc                             [nav_order: 2]
+├── testing.adoc                                [nav_order: 3]
+├── debugging.adoc                              [nav_order: 4]
+├── release-process.adoc                        [nav_order: 5]
+├── implementing-formats.adoc                   [nav_order: 6] NEW
+├── implementing-compressors.adoc               [nav_order: 7] NEW
+└── performance-optimization.adoc               [nav_order: 8] NEW
+----
+
+==== Level 8: Appendix
+
+[source]
+----
+appendix/
+├── index.adoc                                  [nav_order: 8, has_children: true]
+├── bibliography.adoc                           [nav_order: 1]
+├── glossary.adoc                               [nav_order: 2]
+├── compatibility.adoc                          [nav_order: 3]
+├── migration.adoc                              [nav_order: 4]
+├── performance.adoc                            [nav_order: 5]
+├── faq.adoc                                    [nav_order: 6]
+└── benchmarks/
+    ├── index.adoc                             [has_children: true]
+    ├── compression-benchmarks.adoc
+    ├── format-benchmarks.adoc
+    ├── platform-benchmarks.adoc
+    └── memory-benchmarks.adoc
+----
+
+== Document Template Structure
+
+Every documentation page MUST follow this structure:
+
+[source,asciidoc]
+----
+---
+layout: default
+title: <Page Title>
+parent: <Parent Page>
+grand_parent: <Grandparent Page>  # If applicable
+nav_order: <Number>
+has_children: <true/false>        # If applicable
+---
+
+== <Page Title>
+
+=== Purpose
+
+[Clear statement of what this page covers and why it matters to the reader]
+
+=== References
+
+[Optional section listing key references, specifications, or related standards]
+
+* Reference 1
+* Reference 2
+
+=== Concepts
+
+[Core concepts needed to understand this topic]
+
+==== Concept 1
+
+[Definition and explanation]
+
+==== Concept 2
+
+[Definition and explanation]
+
+=== [Main Body Sections]
+
+[Organized content with clear subsection hierarchy]
+
+==== Subsection 1
+
+Content...
+
+==== Subsection 2
+
+Content...
+
+=== Examples
+
+[Practical, runnable code examples]
+
+[example]
+====
+[source,ruby]
+----
+# Example code
+----
+====
+
+=== See Also
+
+[Cross-references to related documentation]
+
+* xref:path/to/related.adoc[Related Topic]
+* xref:another/topic.adoc[Another Topic]
+
+=== Bibliography
+
+[Optional section for references and citations]
+
+* Citation 1
+* Citation 2
+----
+
+== Required New Documents
+
+=== Getting Started
+
+==== common-workflows.adoc
+- Quick reference for 5 most common tasks
+- Copy-paste ready code snippets
+- Troubleshooting quick links
+
+=== Guides - Basic Usage
+
+==== auto-detection.adoc
+- How to use Cabriolet::Auto
+- Format detection examples
+- When to use auto vs manual format specification
+
+=== Guides - Advanced Usage
+
+==== streaming-large-files.adoc
+- Memory-efficient processing
+- Chunked data handling
+- When to use streaming vs. standard API
+
+==== parallel-extraction.adoc
+- Multi-core extraction
+- Worker configuration
+- Performance benchmarks
+
+==== archive-modification.adoc
+- Adding/updating/removing files
+- In-place modifications
+- Rebuilding archives
+
+==== validation-repair.adoc
+- Validation levels
+- Integrity checking
+- Repair strategies
+- Salvage mode
+
+=== Concepts
+
+==== format-detection.adoc
+- Magic byte signatures
+- Detection algorithm
+- Fallback strategies
+
+==== streaming-model.adoc
+- Lazy evaluation
+- Memory management
+- Chunked I/O
+
+==== parallel-processing-model.adoc
+- Thread pool architecture
+- Work distribution
+- Thread safety
+
+=== Architecture
+
+==== new-features-architecture.adoc
+- Auto-detection design
+- Streaming architecture
+- Parallel processing model
+- Validation system design
+
+=== Reference - API
+
+==== auto-api.adoc
+- Cabriolet::Auto module
+- Cabriolet::FormatDetector class
+- Methods and options
+
+==== streaming-api.adoc
+- Cabriolet::Streaming::StreamParser
+- Cabriolet::Streaming::LazyFile
+- Cabriolet::Streaming::BatchProcessor
+
+==== validator-api.adoc
+- Cabriolet::Validator
+- Cabriolet::ValidationReport
+- Validation levels
+
+==== repairer-api.adoc
+- Cabriolet::Repairer
+- Cabriolet::RepairReport
+- Cabriolet::SalvageReport
+
+==== modifier-api.adoc
+- Cabriolet::Modifier
+- Cabriolet::ModificationReport
+- Operations (add/update/remove/rename)
+
+==== parallel-api.adoc
+- Cabriolet::Parallel::Extractor
+- Cabriolet::Parallel::BatchProcessor
+- Cabriolet::Parallel::ThreadPool
+
+=== Reference - CLI
+
+==== auto-commands.adoc
+- cabriolet extract --auto
+- cabriolet info
+- cabriolet detect
+
+==== validate-commands.adoc
+- cabriolet validate
+- Validation levels
+- Output formats
+
+==== repair-commands.adoc
+- cabriolet repair
+- cabriolet salvage
+- Options and flags
+
+==== batch-commands.adoc
+- cabriolet batch extract
+- cabriolet batch validate
+- Parallel processing options
+
+=== Examples
+
+==== streaming-extraction.adoc
+- Large file handling
+- Memory-constrained scenarios
+- Chunked processing
+
+==== parallel-batch-processing.adoc
+- Multi-archive extraction
+- Worker configuration
+- Progress reporting
+
+==== archive-validation.adoc
+- Pre-processing validation
+- CI/CD integration
+- Automated testing
+
+=== Developer
+
+==== implementing-formats.adoc
+- Adding new format support
+- Parser requirements
+- Testing strategy
+
+==== implementing-compressors.adoc
+- Algorithm implementation guide
+- Decompressor interface
+- Compressor interface
+
+==== performance-optimization.adoc
+- Profiling techniques
+- Memory optimization
+- Speed improvements
+
+== YAML Front Matter Standards
+
+=== Required Fields
+
+Every .adoc file MUST include:
+
+[source,yaml]
+----
+---
+layout: default
+title: Page Title
+parent: Parent Page Title  # If not top-level
+nav_order: N               # Numeric ordering
+---
+----
+
+=== Optional Fields
+
+[source,yaml]
+----
+grand_parent: Grandparent Page Title  # For 3+ level nesting
+has_children: true                     # For parent pages
+nav_exclude: false                     # To hide from navigation
+---
+----
+
+=== Navigation Order Guidelines
+
+* Use integers for main sections (1, 2, 3...)
+* Use decimals for intermediate sections (2.5, 3.5...)
+* Within sections, use sequential integers (1, 2, 3...)
+* Leave gaps (10, 20, 30) to allow future insertions
+
+== Cross-Reference Guidelines
+
+=== Internal Links
+
+Use `xref:` for all internal documentation links:
+
+[source,asciidoc]
+----
+xref:path/to/file.adoc[Link Text]
+xref:guides/basic-usage/extracting-files.adoc[Extracting Files]
+xref:reference/api/cab-api.adoc#extract-method[extract method]
+----
+
+=== Code References
+
+Use inline code with links for API references:
+
+[source,asciidoc]
+----
+The [`Cabriolet::Auto.open()`](reference/api/auto-api.adoc#open-method) method...
+----
+
+=== External Links
+
+Use direct URLs for external references:
+
+[source,asciidoc]
+----
+https://github.com/omnizip/cabriolet[Cabriolet on GitHub]
+----
+
+== Code Example Standards
+
+=== Format
+
+All code examples MUST:
+
+1. Be syntactically correct and runnable
+2. Include clear comments
+3. Show expected output
+4. Handle errors appropriately
+
+[source,asciidoc]
+----
+[example]
+====
+[source,ruby]
+----
+require 'cabriolet'
+
+# Auto-detect and extract
+archive = Cabriolet::Auto.open('unknown.cab')
+archive.files.each do |file|
+  puts "#{file.name}: #{file.size} bytes"
+end
+----
+
+Expected output:
+[source]
+----
+file1.txt: 1024 bytes
+file2.dll: 524288 bytes
+----
+====
+----
+
+=== Complete Examples
+
+For workflow examples:
+
+1. Show full script from require to output
+2. Include error handling
+3. Demonstrate best practices
+4. Provide variations
+
+== Link Checking Strategy
+
+=== Lychee Configuration
+
+Create `docs/.lycheeto.ml` for link validation:
+
+[source,toml]
+----
+# Lychee link checker configuration
+
+# Check all links recursively
+include_verbatim = false
+
+# Follow redirects
+max_redirects = 5
+
+# Timeout for requests (seconds)
+timeout = 30
+
+# Accept HTTP status codes
+accept = [200, 201, 204, 206, 301, 302, 303, 304, 307, 308]
+
+# Exclude patterns
+exclude = [
+  # Exclude localhost and examples
+  "http://localhost",
+  "http://127.0.0.1",
+  "http://example.com",
+
+  # Exclude email addresses
+  "mailto:*",
+
+  # Exclude anchors in same page
+  "#*"
+]
+
+# Include patterns (only check these)
+include = [
+  "docs/**/*.html",
+  "docs/**/*.adoc"
+]
+----
+
+=== CI/CD Integration
+
+Set up two workflows:
+
+1. **build_deploy.yml** - Build and deploy documentation
+2. **links.yml** - Validate all links in built site
+
+== Document Content Guidelines
+
+=== Purpose Section
+
+Every document's purpose section MUST answer:
+
+1. What does this page cover?
+2. Who should read this page?
+3. What will readers learn?
+4. When should readers use this information?
+
+Template:
+
+[source]
+----
+=== Purpose
+
+This document describes [WHAT] for [WHO].
+
+It covers:
+
+* [Key topic 1]
+* [Key topic 2]
+* [Key topic 3]
+
+After reading this guide, you will understand [OUTCOME] and be able to [ACTION].
+
+Use this guide when you need to [USE CASE].
+----
+
+=== Concepts Section
+
+Concepts MUST be:
+
+1. Defined clearly in plain language
+2. Illustrated with examples
+3. Connected to related concepts
+4. Independent of implementation details
+
+Template:
+
+[source]
+----
+=== Concepts
+
+==== Concept Name
+
+[Clear definition in 1-2 sentences]
+
+[Extended explanation with context]
+
+[example]
+====
+[Concrete example illustrating the concept]
+====
+
+The concept of [NAME] relates to [RELATED CONCEPTS].
+
+See also: xref:related.adoc[Related Concept]
+----
+
+=== Examples Section
+
+Examples MUST:
+
+1. Be complete and runnable
+2. Show realistic use cases
+3. Include expected output
+4. Handle errors appropriately
+5. Demonstrate best practices
+
+Template:
+
+[source]
+----
+=== Examples
+
+==== Example Name
+
+[Brief description of what this example demonstrates]
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Clear comments explaining each step
+code_here
+
+# Result
+result
+----
+
+Expected output:
+[source]
+----
+output_here
+----
+
+This example demonstrates [KEY CONCEPT]. Note how [IMPORTANT DETAIL].
+----
+
+=== Bibliography Section
+
+Include for pages referencing:
+
+1. Official specifications
+2. Academic papers
+3. Third-party libraries
+4. Standards documents
+
+Template:
+
+[source]
+----
+=== Bibliography
+
+* Microsoft Cabinet SDK Documentation, Microsoft Corporation, 1997
+* RFC 1951: DEFLATE Compressed Data Format Specification
+* libmspack documentation, https://www.cabextract.org.uk/libmspack/
+----
+
+== Migration Plan for Existing Documents
+
+=== Phase 1: Structural Updates
+
+1. Add proper YAML front matter to all existing .adoc files
+2. Ensure nav_order is set correctly
+3. Verify parent/child relationships
+4. Add has_children where needed
+
+=== Phase 2: Content Standardization
+
+1. Add Purpose section to documents lacking it
+2. Add Concepts section where appropriate
+3. Ensure all code examples are complete
+4. Add cross-references
+
+=== Phase 3: New Content Creation
+
+1. Create new documents for advanced features
+2. Create API reference for new modules
+3. Create CLI reference for new commands
+4. Add examples for new features
+
+=== Phase 4: Link Validation
+
+1. Set up lychee configuration
+2. Run link checker
+3. Fix broken links
+4. Verify all xref: links resolve
+
+== Content Quality Checklist
+
+Every document MUST pass this checklist:
+
+=== Structure
+- [ ] Has YAML front matter
+- [ ] Has Purpose section
+- [ ] Has proper heading hierarchy (==, ===, ====)
+- [ ] Has See Also section with ≥3 links
+- [ ] Has Examples section (where applicable)
+
+=== Content
+- [ ] Purpose clearly stated
+- [ ] Key concepts defined
+- [ ] Code examples are complete and runnable
+- [ ] No broken internal links
+- [ ] No broken external links (verified by lychee)
+
+=== Style
+- [ ] Uses sentence case for headings
+- [ ] Code blocks use proper syntax highlighting
+- [ ] Examples use [example] wrapper
+- [ ] Lists properly formatted
+- [ ] Line length ≤80 characters (except code)
+
+=== Cross-References
+- [ ] Links to parent topic
+- [ ] Links to related topics
+- [ ] Links to API reference (where applicable)
+- [ ] Links to examples (where applicable)
+
+== Build and Deployment
+
+=== Local Testing
+
+[source,shell]
+----
+# Install dependencies
+cd docs && bundle install
+
+# Build site
+bundle exec jekyll build
+
+# Serve locally
+bundle exec jekyll serve
+
+# Check links
+lychee --config .lychee.toml '_site/**/*.html'
+----
+
+=== CI/CD Pipeline
+
+1. On push/PR: Build site
+2. On push/PR: Run link checker
+3. On main branch: Deploy to GitHub Pages
+4. Generate sitemap automatically
+
+== Implementation Priority
+
+=== Immediate (Week 1)
+
+1. Create GitHub workflows (build_deploy.yml, links.yml)
+2. Create lychee.toml configuration
+3. Update docs/_config.yml to match template
+4. Add YAML front matter to all existing docs
+
+=== Short-term (Weeks 2-3)
+
+5. Create new feature documentation (auto, streaming, validation, etc.)
+6. Update API reference for new modules
+7. Create new CLI command reference
+8. Add new examples
+
+=== Medium-term (Week 4)
+
+9. Create new concept documents
+10. Update architecture documentation
+11. Create developer guides for new features
+12. Comprehensive link validation and fixing
+
+== Success Metrics
+
+Documentation quality measured by:
+
+* **Link Health**: 100% of links valid (verified by lychee)
+* **Coverage**: Every public API documented
+* **Examples**: Every guide has ≥1 runnable example
+* **Navigation**: Every page reachable from home in ≤3 clicks
+* **Search**: Key topics findable via search
+* **Cross-refs**: Every page has ≥3 see-also links
+
+== Maintenance
+
+=== Weekly
+
+* Run link checker
+* Review for broken links
+* Update changelogs
+
+=== Per Release
+
+* Update API documentation
+* Add examples for new features
+* Update benchmarks
+* Review and update troubleshooting
+
+=== Quarterly
+
+* Review information architecture
+* Reorganize if needed
+* Update examples for best practices
+* Refresh benchmarks

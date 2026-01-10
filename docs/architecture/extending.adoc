@@ -1,0 +1,40 @@
+---
+layout: default
+title: Extending Cabriolet
+parent: Architecture
+nav_order: 6
+---
+
+== Extending Cabriolet
+
+=== Adding New Formats
+
+To add a new format:
+
+1. Create model classes in `lib/cabriolet/models/`
+2. Implement parser in `lib/cabriolet/{format}/parser.rb`
+3. Implement decompressor in `lib/cabriolet/{format}/decompressor.rb`
+4. Add tests in `spec/{format}/`
+5. Update documentation
+
+=== Adding Compression Algorithms
+
+To add a new algorithm:
+
+1. Implement in `lib/cabriolet/decompressors/{algorithm}.rb`
+2. Inherit from `Decompressors::Base`
+3. Implement `decompress` method
+4. Add tests
+5. Register in format's compression type mapping
+
+=== Best Practices
+
+* Follow existing patterns
+* Maintain MECE principles
+* Write comprehensive tests
+* Document thoroughly
+
+=== Bibliography
+
+* xref:../developer/contributing.adoc[Contributing Guide]
+* xref:design-principles.adoc[Design Principles]

@@ -1,0 +1,298 @@
+---
+title: Quick Start
+parent: Getting Started
+nav_order: 2
+---
+
+== Quick Start Guide
+
+=== Purpose
+
+This 5-minute guide gets you extracting CAB files immediately. You'll learn the essential commands to work with Microsoft Cabinet archives.
+
+=== References
+
+* <<installation#,Installation Guide>>
+* <<your-first-cab#,Creating Your First CAB>>
+* <<../reference/cli/cab-commands#,CAB Commands Reference>>
+
+=== Concepts
+
+CAB (Cabinet) files are Microsoft's archive format for distributing software. They can contain multiple files compressed with various algorithms. Cabriolet makes working with them simple through both CLI commands and a Ruby API.
+
+=== Prerequisites
+
+Ensure Cabriolet is installed:
+
+[source,bash]
+----
+cabriolet --version
+----
+
+If not installed, see <<installation#,Installation>>.
+
+=== Step 1: Get a Sample CAB File
+
+For this tutorial, you can use any CAB file. Common locations:
+
+* Windows: `C:\Windows\System32\` (many `.cab` files)
+* Downloaded software installers
+* Windows update packages
+
+Or download a sample from the Cabriolet test fixtures.
+
+=== Step 2: List CAB Contents
+
+View what's inside a CAB file without extracting:
+
+[source,bash]
+----
+cabriolet list archive.cab
+----
+
+.Example Output
+[source,text]
+----
+Files in archive.cab:
+  readme.txt (1,245 bytes)
+  setup.exe (524,288 bytes)
+  config.ini (512 bytes)
+
+Total: 3 files, 526,045 bytes
+Compression: MSZIP
+----
+
+This shows:
+
+* File names in the archive
+* Uncompressed file sizes
+* Compression method used
+
+=== Step 3: Extract All Files
+
+Extract everything to the current directory:
+
+[source,bash]
+----
+cabriolet extract archive.cab
+----
+
+Or specify an output directory:
+
+[source,bash]
+----
+cabriolet extract archive.cab output/
+----
+
+.Example Output
+[source,text]
+----
+Extracting archive.cab...
+  readme.txt (1,245 bytes) ✓
+  setup.exe (524,288 bytes) ✓
+  config.ini (512 bytes) ✓
+
+Successfully extracted 3 files to output/
+----
+
+=== Step 4: Get Archive Information
+
+View detailed information about the CAB file:
+
+[source,bash]
+----
+cabriolet info archive.cab
+----
+
+.Example Output
+[source,text]
+----
+Cabinet: archive.cab
+  Set ID: 12345
+  Cabinet number: 1
+  Total size: 320,512 bytes
+
+Folders: 1
+  Folder 1:
+    Compression: MSZIP
+    Data offset: 36
+    Data size: 320,476 bytes
+
+Files: 3
+  readme.txt
+    Size: 1,245 bytes
+    Folder: 1
+    Offset: 0
+    Attributes: Archive
+
+  setup.exe
+    Size: 524,288 bytes
+    Folder: 1
+    Offset: 1,245
+    Attributes: Archive
+
+  config.ini
+    Size: 512 bytes
+    Folder: 1
+    Offset: 525,533
+    Attributes: Archive
+----
+
+=== Step 5: Test Archive Integrity
+
+Verify the archive is not corrupted:
+
+[source,bash]
+----
+cabriolet test archive.cab
+----
+
+.Example Output
+[source,text]
+----
+Testing archive.cab...
+  readme.txt ✓
+  setup.exe ✓
+  config.ini ✓
+
+All 3 files OK
+----
+
+=== Common Operations
+
+==== Extract Specific Files
+
+Extract only certain files (not yet implemented):
+
+[source,bash]
+----
+# This feature is coming soon
+# cabriolet extract archive.cab readme.txt setup.exe
+----
+
+For now, extract all and select needed files from output directory.
+
+==== Search for Embedded CABs
+
+Some executables contain embedded CAB files. Search for them:
+
+[source,bash]
+----
+cabriolet search installer.exe
+----
+
+.Example Output
+[source,text]
+----
+Found embedded CAB at offset 245,760 (size: 1,024,000 bytes)
+Found embedded CAB at offset 1,269,760 (size: 512,000 bytes)
+
+Total: 2 embedded CAB files found
+----
+
+==== Verbose Output
+
+Get detailed progress information:
+
+[source,bash]
+----
+cabriolet --verbose extract archive.cab
+----
+
+This shows:
+
+* Decompression progress
+* Individual file extraction
+* Any warnings or issues
+
+=== Using the Ruby API
+
+The same operations in Ruby code:
+
+.List files
+[source,ruby]
+----
+require 'cabriolet'
+
+Cabriolet::CAB::Decompressor.new('archive.cab').each_file do |file|
+  puts "#{file.name} (#{file.size} bytes)"
+end
+----
+
+.Extract files
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+decompressor.extract('output/')
+----
+
+.Get archive info
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+cabinet = decompressor.cabinet
+
+puts "Files: #{cabinet.files.count}"
+puts "Folders: #{cabinet.folders.count}"
+cabinet.files.each do |file|
+  puts "  #{file.name} (#{file.size} bytes)"
+end
+----
+
+For complete API documentation, see <<../reference/api/cab-api#,CAB API Reference>>.
+
+=== Troubleshooting
+
+==== "Cannot open file" Error
+
+Ensure the file path is correct and the file exists:
+
+[source,bash]
+----
+ls -l archive.cab
+----
+
+==== "Invalid CAB signature" Error
+
+The file may not be a valid CAB file, or it could be corrupted. Try:
+
+[source,bash]
+----
+file archive.cab
+----
+
+This should show `Microsoft Cabinet archive data`.
+
+==== Extraction Fails
+
+If extraction fails, try verbose mode to see details:
+
+[source,bash]
+----
+cabriolet --verbose extract archive.cab
+----
+
+Check for:
+
+* Sufficient disk space
+* Write permissions in output directory
+* Corrupted archive (test with `cabriolet test`)
+
+=== Next Steps
+
+Now that you can extract CAB files:
+
+* Learn to <<your-first-cab#,create your own CAB archives>>
+* Explore <<../guides/formats/index#,other formats>> (CHM, SZDD, etc.)
+* Review <<../guides/compression/index#,compression algorithms>> to understand MSZIP, LZX, and more
+* Check the <<../reference/cli/cab-commands#,complete CAB command reference>>
+
+=== Bibliography
+
+* <<../reference/cli/cab-commands#,CAB Commands Reference>>
+* <<../guides/formats/cab-format#,CAB Format Guide>>
+* https://docs.microsoft.com/en-us/previous-versions/bb417343(v=msdn.10)[Microsoft Cabinet SDK Documentation]

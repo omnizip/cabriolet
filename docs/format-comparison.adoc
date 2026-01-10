@@ -1,0 +1,796 @@
+---
+layout: default
+title: Format Comparison
+nav_order: 3
+---
+
+== Format Comparison
+:toc:
+:toclevels: 3
+
+=== Overview
+
+Cabriolet supports seven distinct Microsoft compression formats, each designed for specific use cases and historical contexts. This page provides a comprehensive comparison to help you understand the differences and choose the right format for your needs.
+
+=== Quick Comparison Table
+
+[cols="1,1,1,1,1,1,1", options="header"]
+|===
+| Feature | CAB | CHM | HLP | KWAJ | LIT | OAB | SZDD
+
+| **Primary Use**
+| Software distribution
+| Help files
+| Windows 3.x help
+| File compression
+| E-books
+| Outlook data
+| Single file compression
+
+| **Multi-file Support**
+| Yes
+| Yes
+| Yes
+| No
+| Yes
+| Yes
+| No
+
+| **Compression Algorithms**
+| None, MSZIP, Quantum, LZX
+| LZX
+| LZ77
+| LZSS, MSZIP, Quantum
+| DES + LZ
+| LZ
+| LZSS
+
+| **Max Uncompressed Size**
+| 2GB per folder
+| Unlimited
+| 16MB
+| 2GB
+| Unlimited
+| 2GB
+| 2GB
+
+| **Metadata Support**
+| Extensive
+| Rich
+| Basic
+| Minimal
+| Rich
+| Minimal
+| Minimal
+
+| **File Attributes**
+| Full Windows
+| Limited
+| None
+| Basic
+| None
+| Basic
+| Basic
+
+| **Timestamps**
+| MS-DOS format
+| None
+| None
+| MS-DOS format
+| None
+| None
+| MS-DOS format
+
+| **Multi-part Archives**
+| Yes (spanning)
+| No
+| No
+| No
+| No
+| No
+| No
+
+| **Embedded Archives**
+| Yes
+| Yes
+| No
+| No
+| No
+| No
+| No
+
+| **Compression Ratio**
+| Good-Excellent
+| Excellent
+| Good
+| Good
+| Good
+| Moderate
+| Good
+
+| **Extraction Speed**
+| Fast-Moderate
+| Fast
+| Fast
+| Fast
+| Slow
+| Fast
+| Very Fast
+
+| **Era Introduced**
+| Mid-1990s
+| Late 1990s
+| Early 1990s
+| Mid-1990s
+| Early 2000s
+| Late 1990s
+| Early 1990s
+|===
+
+=== Detailed Format Analysis
+
+==== CAB (Cabinet Files)
+
+[[cab-format]]
+===== Purpose and History
+
+Cabinet files were introduced by Microsoft in 1996 as part of Windows 95. They became the standard format for software distribution, Windows updates, and installer packages.
+
+===== Technical Characteristics
+
+* **File Extension**: `.cab`
+* **Magic Bytes**: `MSCF` (0x4D534346)
+* **Structure**: Multi-folder, multi-file with sophisticated metadata
+* **Compression Types**:
+** None (Type 0) - Store only
+** MSZIP (Type 1) - Deflate-based, block compression
+** Quantum (Type 2) - Proprietary quantum algorithm
+** LZX (Type 3) - Advanced sliding window compression
+
+===== When to Use CAB
+
+* Software installers and update packages
+* Large software distributions requiring multiple CDs
+* Windows component updates
+* Application deployment requiring file integrity
+* Archives requiring strong compression with good speed
+
+===== Advantages
+
+* Industry-standard format with broad tool support
+* Excellent compression ratios with LZX
+* Multi-volume support for large distributions
+* Rich metadata and file attributes
+* Digital signature support
+
+===== Limitations
+
+* 2GB limit per folder (not per archive)
+* Complex structure can slow down small archives
+* Quantum compression is proprietary and less efficient
+
+==== CHM (Compiled HTML Help)
+
+[[chm-format]]
+===== Purpose and History
+
+CHM files replaced the older HLP format in Windows 98. They were designed to provide rich, HTML-based help documentation with full-text search and navigation.
+
+===== Technical Characteristics
+
+* **File Extension**: `.chm`
+* **Magic Bytes**: `ITSF` (Internal Title Storage Format)
+* **Structure**: Compound file with multiple streams
+* **Compression**: LZX compression exclusively
+* **Features**: Index, full-text search, navigation hierarchy
+
+===== When to Use CHM
+
+* Software documentation and help systems
+* Technical manuals requiring HTML rendering
+* Knowledge bases with cross-referencing
+* Documentation requiring search capabilities
+
+===== Advantages
+
+* Rich HTML content with CSS and JavaScript
+* Built-in full-text search engine
+* Tree-based navigation structure
+* Excellent compression for HTML/text content
+* Native Windows support
+
+===== Limitations
+
+* Windows-only format (limited cross-platform support)
+* Security restrictions in modern Windows versions
+* Cannot be easily edited without specialized tools
+* Not suitable for non-HTML content
+
+==== HLP (Windows Help)
+
+[[hlp-format]]
+===== Purpose and History
+
+The original Windows Help format, introduced with Windows 3.0. Widely used throughout the 1990s but deprecated in favor of CHM.
+
+===== Technical Characteristics
+
+* **File Extension**: `.hlp`
+* **Magic Bytes**: `?_` (0x3F5F) or `LN` (0x4C4E)
+* **Structure**: Binary format with topic-based organization
+* **Compression**: LZ77 variant (Phrase compression)
+* **Maximum Size**: 16MB uncompressed
+
+===== When to Use HLP
+
+* Legacy software documentation
+* Converting old help files to modern formats
+* Archival of historical documentation
+* Windows 3.x/95 compatibility requirements
+
+===== Advantages
+
+* Simple, straightforward format
+* Fast decompression
+* Small file sizes for the era
+* Good compression for text content
+
+===== Limitations
+
+* 16MB size limit
+* Deprecated format (no native support in Windows 10+)
+* Limited multimedia support
+* Outdated text formatting capabilities
+
+==== KWAJ (Compressed Files)
+
+[[kwaj-format]]
+===== Purpose and History
+
+KWAJ is a general-purpose compression format used internally by Microsoft for various utilities and installation packages.
+
+===== Technical Characteristics
+
+* **File Extension**: Various (often `.ex_`, `.dl_`)
+* **Magic Bytes**: `KWAJ` (0x4B57414A) or `SZDD` (variant)
+* **Structure**: Single compressed file
+* **Compression**: LZSS, MSZIP, or Quantum
+* **Header**: Contains original filename and metadata
+
+===== When to Use KWAJ
+
+* Single file compression with metadata
+* Distribution of renamed compressed files
+* Compression with original filename preservation
+* Legacy file decompression
+
+===== Advantages
+
+* Preserves original filename
+* Multiple compression algorithm support
+* Simple single-file format
+* Good compression ratios
+
+===== Limitations
+
+* Single file only (no multi-file archives)
+* Less common than CAB format
+* Limited tool support
+* Proprietary format
+
+==== LIT (Microsoft Reader E-books)
+
+[[lit-format]]
+===== Purpose and History
+
+LIT files were Microsoft's e-book format for the Microsoft Reader application, used from 2000 to 2011. The format combined DRM with compression.
+
+===== Technical Characteristics
+
+* **File Extension**: `.lit`
+* **Magic Bytes**: `ITOLITLS` (encapsulated OEB)
+* **Structure**: Compound document with encryption
+* **Compression**: DES encryption + LZ compression
+* **Content**: HTML-based text with images
+
+===== When to Use LIT
+
+* Reading archived Microsoft Reader e-books
+* Converting LIT books to modern formats
+* E-book preservation and archival
+* DRM-free LIT file extraction
+
+===== Advantages
+
+* Rich text formatting
+* Image and multimedia support
+* Chapter navigation
+* Annotation support
+
+===== Limitations
+
+* Obsolete format (Microsoft Reader discontinued)
+* May include DRM (not supported by Cabriolet)
+* Limited to e-book content
+* Complex format requiring specialized handling
+
+==== OAB (Offline Address Book)
+
+[[oab-format]]
+===== Purpose and History
+
+OAB files are used by Microsoft Outlook to store compressed copies of the Global Address List for offline use.
+
+===== Technical Characteristics
+
+* **File Extension**: `.oab`
+* **Magic Bytes**: Format-specific header
+* **Structure**: Compressed data blocks
+* **Compression**: LZ-based compression
+* **Content**: Address book entries and metadata
+
+===== When to Use OAB
+
+* Extracting Outlook address book data
+* Migrating email contact information
+* Offline address book analysis
+* Email system forensics
+
+===== Advantages
+
+* Efficient storage of contact data
+* Fast decompression
+* Structured data format
+* Good compression for text data
+
+===== Limitations
+
+* Specialized format for Outlook only
+* Limited general-purpose use
+* Requires understanding of address book structure
+* May require additional parsing of decompressed data
+
+==== SZDD (Single File Compression)
+
+[[szdd-format]]
+===== Purpose and History
+
+SZDD is one of Microsoft's earliest compression formats, using LZSS compression. It was commonly used for compressing individual files in Windows 3.x distributions.
+
+===== Technical Characteristics
+
+* **File Extension**: Often `.??_` (third character changed to `_`)
+* **Magic Bytes**: `SZDD` (0x535A4444)
+* **Structure**: Simple header + compressed data
+* **Compression**: LZSS algorithm exclusively
+* **Header**: Contains original filename character
+
+===== When to Use SZDD
+
+* Legacy Windows 3.x file decompression
+* Simple single-file compression
+* Converting old compressed files
+* Archival of historical software
+
+===== Advantages
+
+* Very simple format
+* Fast decompression
+* Small overhead
+* Reliable for text files
+
+===== Limitations
+
+* Single file only
+* LZSS compression only (moderate ratios)
+* Minimal metadata
+* Obsolete format
+
+=== Features Matrix
+
+==== Compression Algorithm Support
+
+[cols="1,7*^", options="header"]
+|===
+| Algorithm | CAB | CHM | HLP | KWAJ | LIT | OAB | SZDD
+
+| None (Store)
+| ✓
+|
+|
+|
+|
+|
+|
+
+| LZSS
+|
+|
+|
+| ✓
+|
+|
+| ✓
+
+| MSZIP (Deflate)
+| ✓
+|
+|
+| ✓
+|
+|
+|
+
+| Quantum
+| ✓
+|
+|
+| ✓
+|
+|
+|
+
+| LZX
+| ✓
+| ✓
+|
+|
+|
+|
+|
+
+| LZ77
+|
+|
+| ✓
+|
+|
+| ✓
+|
+
+| DES + LZ
+|
+|
+|
+|
+| ✓
+|
+|
+|===
+
+=== Feature Support Matrix
+
+[cols="1,7*^", options="header"]
+|===
+| Feature | CAB | CHM | HLP | KWAJ | LIT | OAB | SZDD
+
+| Multi-file archives
+| ✓
+| ✓
+| ✓
+|
+| ✓
+| ✓
+|
+
+| Folder hierarchy
+| ✓
+| ✓
+| ✓
+|
+| ✓
+|
+|
+
+| File attributes
+| ✓
+| ~
+|
+| ~
+|
+| ~
+| ~
+
+| Timestamps
+| ✓
+|
+|
+| ✓
+|
+|
+| ✓
+
+| Metadata
+| ✓
+| ✓
+| ~
+| ~
+| ✓
+| ~
+|
+
+| Digital signatures
+| ✓
+|
+|
+|
+|
+|
+|
+
+| Spanning/Multi-volume
+| ✓
+|
+|
+|
+|
+|
+|
+
+| Embedded archives
+| ✓
+| ✓
+|
+|
+|
+|
+|
+
+| Encryption/DRM
+| ~
+|
+|
+|
+| ✓
+|
+|
+
+| Full-text search
+|
+| ✓
+| ✓
+|
+|
+|
+|
+|===
+
+Legend: ✓ = Full support, ~ = Partial support, (blank) = Not supported
+
+== Use Case Recommendations
+
+=== Software Distribution
+
+**Recommended**: CAB
+
+* Multi-file support with folders
+* Excellent compression ratios
+* Digital signature support
+* Industry standard for Windows installers
+* Multi-volume support for large distributions
+
+**Alternative**: KWAJ (single files only)
+
+=== Documentation and Help
+
+**Recommended**: CHM
+
+* Rich HTML content support
+* Built-in search and navigation
+* Excellent for technical documentation
+* Native Windows integration
+
+**Alternative**: HLP (legacy systems only)
+
+=== Single File Compression
+
+**Recommended**: KWAJ or SZDD
+
+* Simple single-file format
+* Preserves original filename (KWAJ)
+* Fast compression/decompression
+* Good for distribution of individual files
+
+=== E-book Management
+
+**Recommended**: LIT
+
+* Only option for Microsoft Reader books
+* Suitable for DRM-free e-books
+* Convert to modern formats (EPUB, MOBI)
+
+=== Outlook Data Extraction
+
+**Recommended**: OAB
+
+* Only format for Outlook address books
+* Efficient storage and retrieval
+* Specialized for contact data
+
+=== Legacy System Support
+
+**Recommended**: Depends on era
+
+* Windows 3.x: SZDD, HLP
+* Windows 95/98: CAB, HLP
+* Windows 2000/XP: CAB, CHM
+* Modern: CAB, CHM
+
+== Performance Characteristics
+
+=== Compression Ratio Comparison
+
+Based on typical use cases (higher is better):
+
+[cols="1,1,1", options="header"]
+|===
+| Format | Text Files | Binary Files
+
+| CAB (LZX)
+| 85-90%
+| 60-75%
+
+| CAB (MSZIP)
+| 70-80%
+| 50-65%
+
+| CAB (Quantum)
+| 75-85%
+| 55-70%
+
+| CHM (LZX)
+| 85-90%
+| N/A
+
+| HLP (LZ77)
+| 65-75%
+| N/A
+
+| KWAJ (MSZIP)
+| 70-80%
+| 50-65%
+
+| LIT (DES+LZ)
+| 70-80%
+| N/A
+
+| OAB (LZ)
+| 65-75%
+| 55-65%
+
+| SZDD (LZSS)
+| 55-70%
+| 40-55%
+|===
+
+=== Decompression Speed Comparison
+
+Relative speed on typical hardware (higher is better):
+
+* **Very Fast**: SZDD, OAB
+* **Fast**: HLP, KWAJ, CAB (MSZIP)
+* **Moderate**: CAB (LZX), CAB (Quantum), CHM
+* **Slow**: LIT (due to encryption)
+
+=== Memory Requirements
+
+Approximate memory usage during decompression:
+
+* **Low** (< 1MB): SZDD, KWAJ, OAB
+* **Moderate** (1-8MB): CAB (MSZIP), HLP
+* **High** (8-32MB): CAB (LZX), CAB (Quantum), CHM
+* **Variable**: LIT (depends on e-book size)
+
+== Interoperability Notes
+
+=== Cross-platform Support
+
+[cols="1,1,1,1", options="header"]
+|===
+| Format | Windows | macOS/Linux | Web Browsers
+
+| CAB
+| Native
+| Via tools
+| Limited
+
+| CHM
+| Native
+| Third-party
+| No
+
+| HLP
+| Legacy only
+| Third-party
+| No
+
+| KWAJ
+| Via tools
+| Via tools
+| No
+
+| LIT
+| Via tools
+| Via tools
+| No
+
+| OAB
+| Via Outlook
+| Via tools
+| No
+
+| SZDD
+| Via tools
+| Via tools
+| No
+|===
+
+=== Format Conversion Paths
+
+Common conversion scenarios:
+
+* **HLP → CHM**: Modernize help files
+* **LIT → EPUB**: Convert e-books to modern format
+* **CAB → ZIP**: Create cross-platform archives
+* **SZDD/KWAJ → Uncompressed**: Extract for modern use
+* **OAB → CSV/vCard**: Export contact data
+
+== Historical Context and Evolution
+
+=== Timeline
+
+* **Early 1990s**: SZDD, HLP introduced with Windows 3.x
+* **Mid 1990s**: CAB format debuts with Windows 95
+* **Late 1990s**: CHM replaces HLP, OAB for Outlook
+* **Early 2000s**: LIT format for Microsoft Reader
+* **Present**: CAB and CHM remain in active use, others legacy
+
+=== Format Evolution
+
+The progression shows Microsoft's changing priorities:
+
+1. **Simplicity** (SZDD): Basic single-file compression
+2. **Sophistication** (CAB): Multi-file, multi-algorithm archives
+3. **Specialization** (CHM, OAB, LIT): Purpose-built formats
+4. **Consolidation**: Modern Windows uses primarily CAB and CHM
+
+== Format Selection Guide
+
+=== Decision Tree
+
+[source]
+----
+Need to compress files?
+├── Single file?
+│   ├── Legacy Windows 3.x? → SZDD
+│   ├── Need metadata? → KWAJ
+│   └── Modern system? → Use ZIP/7z instead
+├── Multiple files?
+│   ├── Help documentation?
+│   │   ├── HTML-based? → CHM
+│   │   └── Legacy? → HLP
+│   ├── E-book content? → LIT
+│   ├── Outlook data? → OAB
+│   └── Software distribution? → CAB
+└── Archive or read existing files? → Use appropriate format
+----
+
+=== Best Practices
+
+1. **For new projects**: Use standard formats (ZIP, 7z) unless Windows-specific features required
+2. **For Windows installers**: Use CAB with LZX compression
+3. **For documentation**: Use CHM for Windows-only, HTML for cross-platform
+4. **For legacy support**: Maintain tools for reading old formats
+5. **For archival**: Convert to modern formats when possible
+
+== Further Reading
+
+* xref:guides/formats/cab-format.adoc[CAB Format Guide]
+* xref:guides/formats/chm-format.adoc[CHM Format Guide]
+* xref:guides/formats/hlp-format.adoc[HLP Format Guide]
+* xref:guides/formats/kwaj-format.adoc[KWAJ Format Guide]
+* xref:guides/formats/lit-format.adoc[LIT Format Guide]
+* xref:guides/formats/oab-format.adoc[OAB Format Guide]
+* xref:guides/formats/szdd-format.adoc[SZDD Format Guide]
+* xref:guides/compression/choosing-algorithm.adoc[Choosing Compression Algorithm]
+* xref:appendix/benchmarks/index.adoc[Performance Benchmarks]

@@ -1,0 +1,645 @@
+---
+title: OAB Commands
+parent: CLI Reference
+grand_parent: Reference
+nav_order: 7
+---
+
+== OAB Commands Reference
+
+=== Purpose
+
+Complete command-line reference for all OAB (Offline Address Book) format operations. This document provides detailed syntax, options, and examples for the 3 OAB commands.
+
+=== References
+
+* <<../../guides/formats/oab-format#,OAB Format Guide>>
+* <<../api/oab-api#,OAB API Reference>>
+* <<global-options#,Global Options>>
+
+=== Concepts
+
+OAB commands operate on Outlook Offline Address Book files with LZX block-based compression. Commands support both full files and incremental patches for efficient synchronization.
+
+=== Command Overview
+
+[cols="1,3"]
+|===
+|Command |Purpose
+
+|<<oab-extract,oab-extract>>
+|Extract (decompress) OAB file
+
+|<<oab-create,oab-create>>
+|Create compressed OAB file
+
+|<<oab-info,oab-info>>
+|Show OAB file information
+|===
+
+'''
+
+[[oab-extract]]
+=== oab-extract - Extract OAB File
+
+Decompress an Outlook Offline Address Book file or apply an incremental patch.
+
+==== Syntax
+
+[source,text]
+----
+cabriolet oab-extract [OPTIONS] INPUT OUTPUT
+----
+
+==== Parameters
+
+`INPUT`:: (required) Path to the OAB file to extract (full or patch)
+
+`OUTPUT`:: (required) Path for the decompressed output file
+
+==== Options
+
+`--base=FILE`:: Base file for incremental patch (required for patch files)
+
+`--verbose, -v`:: Show extraction progress
+
+==== Returns
+
+* Exit code 0 on success
+* Exit code 1 on error
+* Exit code 2 if required base file not specified for patch
+* Exit code 3 if file not found
+* Exit code 4 if permission denied
+
+==== Description
+
+The `oab-extract` command decompresses OAB files. For full OAB files, it simply decompresses the content. For incremental patch files, it requires a base file and applies the patch to produce the updated output.
+
+==== Examples
+
+.Extract full OAB file
+[source,bash]
+----
+cabriolet oab-extract full.oab address.dat
+----
+
+.Output
+[source,text]
+----
+Extracted full.oab -> address.dat (2,097,152 bytes)
+----
+
+.Apply incremental patch
+[source,bash]
+----
+cabriolet oab-extract --base=full.oab patch.oab updated.dat
+----
+
+.Output
+[source,text]
+----
+Applied patch: patch.oab + full.oab -> updated.dat (2,105,344 bytes)
+----
+
+.Extract with verbose output
+[source,bash]
+----
+cabriolet oab-extract --verbose full.oab address.dat
+----
+
+.Output
+[source,text]
+----
+Extracting: full.oab -> address.dat
+Type: Full OAB
+Version: 4.0
+Block size: 32768 bytes
+Target size: 2,097,152 bytes
+
+Decompressing blocks...
+  Block 1/64... OK
+  Block 2/64... OK
+  ...
+  Block 64/64... OK
+
+Extracted full.oab -> address.dat (2,097,152 bytes)
+----
+
+.Apply patch with verbose output
+[source,bash]
+----
+cabriolet oab-extract --base=old.oab --verbose patch.oab new.oab
+----
+
+.Output
+[source,text]
+----
+Applying patch: patch.oab + old.oab -> new.oab
+Type: Incremental Patch
+Version: 4.0
+Block size: 32768 bytes
+Source size: 2,097,152 bytes
+Target size: 2,105,344 bytes
+Source CRC: 0x12345678
+Target CRC: 0x9abcdef0
+
+Validating base file...
+  Base CRC: 0x12345678... Match!
+
+Applying delta patches...
+  Processing patch blocks...
+  Progress: 100%
+
+Verifying output...
+  Target CRC: 0x9abcdef0... Match!
+
+Applied patch: patch.oab + old.oab -> new.oab (2,105,344 bytes)
+----
+
+==== Common Errors
+
+* **Invalid OAB header**: File is not a valid OAB file
+* **Source CRC mismatch**: Patch doesn't match the provided base file
+* **Decompression failed**: LZX decompression error
+* **Missing base file**: Patch requires --base option but none provided
+
+==== See Also
+
+* <<oab-create,oab-create>> - Create OAB files
+* <<oab-info,oab-info>> - Show file information
+* <<../../guides/formats/oab-format#extracting-full-oab-files,OAB Format Guide - Extracting>>
+
+'''
+
+[[oab-create]]
+=== oab-create - Create OAB File
+
+Compress an address book file to OAB format or create an incremental patch.
+
+==== Syntax
+
+[source,text]
+----
+cabriolet oab-create [OPTIONS] INPUT OUTPUT
+----
+
+==== Parameters
+
+`INPUT`:: (required) Path to the uncompressed address book file
+
+`OUTPUT`:: (required) Path for the compressed OAB file
+
+==== Options
+
+`--base=FILE`:: Base file for creating incremental patch
+
+`--block-size=SIZE`:: Block size in bytes (default: 32768)
+
+`--verbose, -v`:: Show compression progress
+
+==== Returns
+
+* Exit code 0 on success
+* Exit code 1 on error
+* Exit code 3 if source file not found
+* Exit code 4 if permission denied
+
+==== Description
+
+The `oab-create` command compresses address book data to OAB format using LZX block-based compression. Without a base file, it creates a full OAB. With a base file, it creates an incremental patch.
+
+==== Examples
+
+.Create full OAB with default block size
+[source,bash]
+----
+cabriolet oab-create address.dat full.oab
+----
+
+.Output
+[source,text]
+----
+Created full.oab (1,048,576 bytes)
+----
+
+.Create with custom block size
+[source,bash]
+----
+cabriolet oab-create --block-size=65536 address.dat full.oab
+----
+
+.Output
+[source,text]
+----
+Created full.oab (1,024,000 bytes)
+----
+
+.Create incremental patch
+[source,bash]
+----
+cabriolet oab-create --base=old.dat new.dat patch.oab
+----
+
+.Output
+[source,text]
+----
+Created patch: patch.oab (131,072 bytes)
+----
+
+.Create with verbose output
+[source,bash]
+----
+cabriolet oab-create --verbose --block-size=32768 address.dat full.oab
+----
+
+.Output
+[source,text]
+----
+Compressing: address.dat -> full.oab
+Type: Full OAB
+Block size: 32768 bytes
+Uncompressed size: 2,097,152 bytes
+
+Compressing blocks...
+  Block 1/64 (32768 bytes -> 16384 bytes, 50.0%)
+  Block 2/64 (32768 bytes -> 16384 bytes, 50.0%)
+  ...
+  Block 64/64 (32768 bytes -> 16384 bytes, 50.0%)
+
+Writing OAB file...
+  Header: 16 bytes
+  Compressed data: 1,048,576 bytes
+
+Created full.oab (1,048,592 bytes)
+Overall compression: 50.0%
+----
+
+.Create patch with verbose output
+[source,bash]
+----
+cabriolet oab-create --base=old.dat --verbose new.dat patch.oab
+----
+
+.Output
+[source,text]
+----
+Creating patch: new.dat (base: old.dat) -> patch.oab
+Type: Incremental Patch
+Block size: 32768 bytes
+Source size: 2,097,152 bytes
+Target size: 2,105,344 bytes
+
+Computing CRCs...
+  Source CRC: 0x12345678
+  Target CRC: 0x9abcdef0
+
+Creating delta patches...
+  Analyzing changes...
+  Changed blocks: 8 of 64 (12.5%)
+
+  Compressing changed blocks...
+  Progress: 100%
+
+Writing patch file...
+  Header: 28 bytes
+  Patch data: 131,072 bytes
+
+Created patch: patch.oab (131,100 bytes)
+Patch size vs. full: 12.5%
+----
+
+==== Common Errors
+
+* **Source file not found**: Verify input file path
+* **Cannot create output file**: Check write permissions and disk space
+* **Compression failed**: Input file may be unreadable
+* **Base file required**: Specify --base when creating patch
+* **Block size mismatch**: Base and target must use same block size
+
+==== See Also
+
+* <<oab-extract,oab-extract>> - Extract OAB files
+* <<oab-info,oab-info>> - Show file information
+* <<../../guides/formats/oab-format#creating-oab-files,OAB Format Guide - Creating>>
+
+'''
+
+[[oab-info]]
+=== oab-info - Show OAB Information
+
+Display detailed information about an Outlook Offline Address Book file.
+
+==== Syntax
+
+[source,text]
+----
+cabriolet oab-info [OPTIONS] FILE
+----
+
+==== Parameters
+
+`FILE`:: (required) Path to the OAB file to analyze
+
+==== Options
+
+`--verbose, -v`:: Show additional technical details
+
+==== Returns
+
+* Exit code 0 on success
+* Exit code 1 on error
+* Exit code 3 if file not found
+
+==== Description
+
+The `oab-info` command displays metadata about an OAB file, identifying whether it's a full file or incremental patch and showing compression details.
+
+==== Examples
+
+.Full OAB file information
+[source,bash]
+----
+cabriolet oab-info full.oab
+----
+
+.Output
+[source,text]
+----
+OAB File Information (Full)
+==================================================
+Filename: full.oab
+Version: 4.0
+Block size: 32768 bytes
+Target size: 2,097,152 bytes
+----
+
+.Patch file information
+[source,bash]
+----
+cabriolet oab-info patch.oab
+----
+
+.Output
+[source,text]
+----
+OAB File Information (Patch)
+==================================================
+Filename: patch.oab
+Version: 4.0
+Block size: 32768 bytes
+Source size: 2,097,152 bytes
+Target size: 2,105,344 bytes
+Source CRC: 0x12345678
+Target CRC: 0x9abcdef0
+----
+
+.Verbose information
+[source,bash]
+----
+cabriolet oab-info --verbose full.oab
+----
+
+.Output
+[source,text]
+----
+OAB File Information (Full)
+==================================================
+Filename: full.oab
+File size: 1,048,592 bytes
+
+Header:
+  Version: 4.0 (hi: 4, lo: 0)
+  Block max size: 32768 bytes
+  Target size: 2,097,152 bytes
+  Reserved: 0
+
+Type: Full OAB file
+Compression: LZX (block-based)
+
+Statistics:
+  Compressed size: 1,048,576 bytes
+  Uncompressed size: 2,097,152 bytes
+  Compression ratio: 50.0%
+  Estimated blocks: 64
+----
+
+.Check multiple files
+[source,bash]
+----
+for file in *.oab; do
+  echo "=== $file ==="
+  cabriolet oab-info "$file"
+  echo
+done
+----
+
+==== Common Errors
+
+* **Invalid OAB header**: File is not a valid OAB file
+* **Not a valid OAB file**: File header is corrupted or wrong format
+
+==== See Also
+
+* <<oab-extract,oab-extract>> - Extract OAB files
+* <<../../guides/formats/oab-format#getting-oab-information,OAB Format Guide - Info>>
+
+'''
+
+=== Global Options
+
+All OAB commands support these global options:
+
+`--verbose, -v`:: Enable verbose output with detailed progress
+
+`--help, -h`:: Display command help
+
+`--version`:: Show Cabriolet version
+
+See <<global-options#,Global Options>> for complete details.
+
+=== Exit Codes
+
+[cols="1,3"]
+|===
+|Code |Meaning
+
+|0
+|Success
+
+|1
+|General error
+
+|2
+|Invalid arguments (e.g., missing required --base)
+
+|3
+|File not found
+
+|4
+|Permission denied
+
+|5
+|Corrupt file
+
+|6
+|Unsupported format
+|===
+
+=== Block Size Guidelines
+
+Choose appropriate block size based on address book size:
+
+[cols="1,2,2"]
+|===
+|Block Size |Best For |Trade-off
+
+|16 KB
+|Small address books (<1 MB)
+|Faster random access, lower compression
+
+|32 KB
+|General purpose (default)
+|Balanced performance
+
+|64 KB
+|Large address books (>5 MB)
+|Better compression, slower access
+
+|128 KB
+|Very large address books (>20 MB)
+|Best compression, slowest access
+|===
+
+IMPORTANT: Base file and patch must use the **same block size**. Mismatched block sizes will cause patch application to fail.
+
+=== Common Workflows
+
+==== Initial Distribution
+
+[source,bash]
+----
+# Create full OAB for initial distribution
+cabriolet oab-create \
+  --block-size=32768 \
+  address-book.dat \
+  full-001.oab
+
+echo "Full OAB created: full-001.oab"
+----
+
+==== Incremental Updates
+
+[source,bash]
+----
+# Create update chain
+# Initial version
+cabriolet oab-create address-v1.dat full-v1.oab
+
+# First update
+cabriolet oab-create \
+  --base=address-v1.dat \
+  address-v2.dat \
+  patch-v1-to-v2.oab
+
+# Second update
+cabriolet oab-create \
+  --base=address-v2.dat \
+  address-v3.dat \
+  patch-v2-to-v3.oab
+
+echo "Created update chain: full + 2 patches"
+----
+
+==== Client Synchronization
+
+[source,bash]
+----
+# Download and apply updates
+
+# First sync: Download full OAB
+if [ ! -f local-address-book.dat ]; then
+  echo "Downloading full address book..."
+  # Download full-001.oab
+  cabriolet oab-extract full-001.oab local-address-book.dat
+  echo "Initial sync complete"
+fi
+
+# Later: Apply incremental updates
+if [ -f update-002.oab ]; then
+  echo "Applying update..."
+
+  # Backup current
+  cp local-address-book.dat local-address-book.bak
+
+  # Apply patch
+  cabriolet oab-extract \
+    --base=local-address-book.bak \
+    update-002.oab \
+    local-address-book.dat
+
+  echo "Update applied successfully"
+  rm local-address-book.bak
+fi
+----
+
+==== Optimize Distribution
+
+[source,bash]
+----
+# Decide between full and patch
+
+old_size=$(stat -f%z old.dat)
+new_size=$(stat -f%z new.dat)
+
+# Create both
+cabriolet oab-create new.dat full.oab
+cabriolet oab-create --base=old.dat new.dat patch.oab
+
+full_size=$(stat -f%z full.oab)
+patch_size=$(stat -f%z patch.oab)
+
+# Compare and choose
+if [ $patch_size -lt $((full_size / 3)) ]; then
+  echo "Use patch: $patch_size bytes (vs full: $full_size bytes)"
+  echo "Bandwidth savings: $(((100 * (full_size - patch_size)) / full_size))%"
+else
+  echo "Use full file: patch not significantly smaller"
+fi
+----
+
+==== Verify Patch Integrity
+
+[source,bash]
+----
+# Verify patch can be applied
+
+echo "Verifying patch..."
+
+# Get patch info
+if ! info=$(cabriolet oab-info patch.oab); then
+  echo "ERROR: Invalid patch file"
+  exit 1
+fi
+
+# Extract source CRC
+source_crc=$(echo "$info" | grep "Source CRC" | awk '{print $3}')
+
+echo "Patch requires base with CRC: $source_crc"
+echo "Verification: Patch file is valid"
+
+# Note: Actual CRC verification of base would require
+# computing CRC of the base file
+----
+
+=== Next Steps
+
+* Review <<../../guides/formats/oab-format#,OAB Format Guide>> for usage examples
+* Study <<../api/oab-api#,OAB API Reference>> for Ruby integration
+* Learn about <<../../guides/compression/lzx-compression#,LZX compression>>
+* Understand <<../../guides/formats/oab-format#incremental-patches,incremental patching>>
+
+=== Bibliography
+
+* <<../../guides/formats/oab-format#,OAB Format Guide>>
+* <<../api/oab-api#,OAB API Reference>>
+* https://docs.microsoft.com/en-us/previous-versions/office/developer/exchange-server-2010/aa580288(v=exchg.140)[Microsoft Exchange OAB Documentation]

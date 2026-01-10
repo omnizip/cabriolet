@@ -1,0 +1,305 @@
+---
+title: API Reference
+parent: Reference
+has_children: true
+nav_order: 2
+---
+
+== Ruby API Reference
+
+=== Purpose
+
+Complete reference for the Cabriolet Ruby API. Use this section to integrate Cabriolet into your Ruby applications with detailed class and method documentation.
+
+=== References
+
+* <<../cli/index#,CLI Reference>>
+* <<../../guides/basic-usage/index#,Basic Usage Guides>>
+* <<../../guides/advanced-usage/index#,Advanced Usage>>
+
+=== Concepts
+
+Cabriolet's Ruby API follows object-oriented design principles with a consistent interface across all formats. Each format provides Decompressor and Compressor classes, along with model classes representing the archive structure.
+
+=== API Organization
+
+==== Format APIs
+
+Complete API for each format:
+
+* <<cab-api#,CAB API>> - `Cabriolet::CAB` module
+* <<chm-api#,CHM API>> - `Cabriolet::CHM` module
+* <<szdd-api#,SZDD API>> - `Cabriolet::SZDD` module
+* <<kwaj-api#,KWAJ API>> - `Cabriolet::KWAJ` module
+* <<hlp-api#,HLP API>> - `Cabriolet::HLP` module
+* <<lit-api#,LIT API>> - `Cabriolet::LIT` module
+* <<oab-api#,OAB API>> - `Cabriolet::OAB` module
+
+==== Core Components
+
+Shared components used across formats:
+
+* <<models#,Models>> - Cabinet, Folder, File, Header classes
+* <<system-io#,System I/O>> - IOSystem, FileHandle, MemoryHandle
+* <<error-classes#,Error Classes>> - Exception hierarchy
+
+=== Quick API Reference
+
+==== CAB Format
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Decompress
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+decompressor.extract('output/')
+
+# Compress
+compressor = Cabriolet::CAB::Compressor.new(compression: :mszip)
+compressor.add_file('file.txt')
+compressor.write('new.cab')
+----
+
+==== CHM Format
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Decompress
+decompressor = Cabriolet::CHM::Decompressor.new('help.chm')
+decompressor.extract('output/')
+----
+
+==== SZDD Format
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Decompress
+decompressor = Cabriolet::SZDD::Decompressor.new('notepad.ex_')
+decompressor.extract('notepad.exe')
+
+# Compress
+compressor = Cabriolet::SZDD::Compressor.new
+compressor.compress('notepad.exe', 'notepad.ex_')
+----
+
+=== Module Hierarchy
+
+[source,text]
+----
+Cabriolet
+├── CAB
+│   ├── Decompressor
+│   ├── Compressor
+│   ├── Parser
+│   └── Extractor
+├── CHM
+│   ├── Decompressor
+│   ├── Compressor
+│   └── Parser
+├── SZDD
+│   ├── Decompressor
+│   ├── Compressor
+│   └── Parser
+├── KWAJ
+│   ├── Decompressor
+│   ├── Compressor
+│   └── Parser
+├── HLP
+│   ├── Decompressor
+│   ├── Compressor
+│   └── Parser
+├── LIT
+│   ├── Decompressor
+│   └── Compressor
+├── OAB
+│   ├── Decompressor
+│   └── Compressor
+├── Models
+│   ├── Cabinet
+│   ├── Folder
+│   ├── File
+│   ├── ChmHeader
+│   ├── SzddHeader
+│   ├── KwajHeader
+│   ├── HlpHeader
+│   └── LitHeader
+├── System
+│   ├── IOSystem
+│   ├── FileHandle
+│   └── MemoryHandle
+├── Decompressors
+│   ├── None
+│   ├── LZSS
+│   ├── MSZIP
+│   ├── LZX
+│   └── Quantum
+└── Errors
+    ├── Error
+    ├── FormatError
+    ├── CorruptionError
+    ├── UnsupportedError
+    └── IOError
+----
+
+=== Common Patterns
+
+==== Opening Archives
+
+All decompressors follow the same pattern:
+
+[source,ruby]
+----
+# From file path
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+
+# From file handle
+File.open('archive.cab', 'rb') do |f|
+  decompressor = Cabriolet::CAB::Decompressor.new(f)
+end
+
+# From IO object
+io = StringIO.new(cab_data)
+decompressor = Cabriolet::CAB::Decompressor.new(io)
+----
+
+==== Extracting Files
+
+[source,ruby]
+----
+# Extract all to directory
+decompressor.extract('output/')
+
+# Extract single file
+decompressor.extract_file('readme.txt', 'output/readme.txt')
+
+# Extract to memory
+data = decompressor.extract_to_memory('file.dat')
+
+# Iterate files
+decompressor.each_file do |file|
+  puts "#{file.name}: #{file.size} bytes"
+end
+----
+
+==== Creating Archives
+
+[source,ruby]
+----
+# Create new archive
+compressor = Cabriolet::CAB::Compressor.new
+
+# Add files
+compressor.add_file('readme.txt')
+compressor.add_file('data.bin')
+
+# Write to disk
+compressor.write('archive.cab')
+
+# Write to IO
+output = StringIO.new
+compressor.write(output)
+cab_data = output.string
+----
+
+==== Error Handling
+
+[source,ruby]
+----
+require 'cabriolet'
+
+begin
+  decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+  decompressor.extract('output/')
+rescue Cabriolet::FormatError => e
+  puts "Invalid format: #{e.message}"
+rescue Cabriolet::CorruptionError => e
+  puts "Corrupted archive: #{e.message}"
+rescue Cabriolet::IOError => e
+  puts "I/O error: #{e.message}"
+rescue Cabriolet::Error => e
+  puts "Error: #{e.message}"
+end
+----
+
+=== Thread Safety
+
+Cabriolet classes are thread-safe for read operations:
+
+* **Decompressors**: Safe to use from multiple threads
+* **Compressors**: Not thread-safe, use one per thread
+* **Models**: Immutable after creation, safe to share
+
+=== Performance Considerations
+
+==== Memory Usage
+
+[source,ruby]
+----
+# Low memory: Stream files one at a time
+decompressor.each_file do |file|
+  file.extract_to("output/#{file.name}")
+end
+
+# Higher memory: Load entire archive
+cabinet = decompressor.cabinet
+cabinet.files.each do |file|
+  # Process files
+end
+----
+
+==== I/O Efficiency
+
+[source,ruby]
+----
+# Efficient: Batch operations
+compressor = Cabriolet::CAB::Compressor.new
+Dir.glob('files/**/*').each do |path|
+  compressor.add_file(path) if File.file?(path)
+end
+compressor.write('archive.cab')
+
+# Inefficient: Multiple writes
+Dir.glob('files/**/*').each do |path|
+  compressor = Cabriolet::CAB::Compressor.new
+  compressor.add_file(path)
+  compressor.write("#{File.basename(path)}.cab")
+end
+----
+
+=== API Conventions
+
+==== Naming
+
+* **Classes**: CamelCase (e.g., `Decompressor`)
+* **Methods**: snake_case (e.g., `extract_file`)
+* **Constants**: SCREAMING_SNAKE_CASE (e.g., `COMPRESSION_NONE`)
+
+==== Parameters
+
+* **Required first**: `method(required, optional = default)`
+* **Options hash last**: `method(param, options = {})`
+* **Blocks accepted**: Many methods accept blocks for iteration
+
+==== Return Values
+
+* **Self for chaining**: Modification methods return `self`
+* **Enumerators**: Iteration methods return enumerators if no block
+* **Nil for side effects**: Write operations return `nil`
+
+=== Next Steps
+
+* Choose your format and review its API documentation
+* Study <<models#,Model classes>> for archive structure
+* Learn about <<system-io#,System I/O>> for custom backends
+* Review <<error-classes#,Error classes>> for exception handling
+
+=== Bibliography
+
+* <<../cli/index#,CLI Reference>>
+* <<../../guides/advanced-usage/index#,Advanced Usage Guides>>
+* https://github.com/omnizip/cabriolet[Cabriolet Source Code]

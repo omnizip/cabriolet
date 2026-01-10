@@ -1,0 +1,67 @@
+---
+layout: default
+title: Recovering from Corrupted Archives
+parent: Examples
+---
+
+== Recovering from Corrupted Archives
+
+=== Using Salvage Mode
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Enable salvage mode for corrupted CAB
+extractor = Cabriolet::CAB::Extractor.new(
+  salvage_mode: true,
+  skip_checksum: true
+)
+
+begin
+  cabinet = extractor.parse('corrupted.cab')
+
+  # Extract what we can
+  cabinet.files.each do |file|
+    begin
+      File.write("recovered/#{file.name}", file.data, mode: 'wb')
+      puts "✓ Recovered: #{file.name}"
+    rescue => e
+      puts "✗ Failed: #{file.name} - #{e.message}"
+    end
+  end
+rescue => e
+  puts "Partial recovery attempted: #{e.message}"
+end
+----
+
+=== Partial Recovery
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Try to recover files one by one
+cabinet = Cabriolet::CAB::Parser.new.parse('damaged.cab')
+
+recovered = 0
+failed = 0
+
+cabinet.files.each do |file|
+  begin
+    data = file.data  # May raise on corruption
+    File.write("output/#{file.name}", data, mode: 'wb')
+    recovered += 1
+  rescue => e
+    failed += 1
+    puts "Could not recover #{file.name}: #{e.message}"
+  end
+end
+
+puts "Recovered: #{recovered}, Failed: #{failed}"
+----
+
+=== See Also
+
+* xref:guides/advanced-usage/salvage-mode.adoc[Salvage Mode]
+* xref:troubleshooting/corrupted-files.adoc[Handling Corrupted Files]

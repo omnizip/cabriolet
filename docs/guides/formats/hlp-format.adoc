@@ -1,0 +1,639 @@
+---
+title: HLP Format
+parent: Format Guides
+grand_parent: Guides
+nav_order: 5
+---
+
+== HLP Format Guide
+
+=== Purpose
+
+This guide provides comprehensive documentation for working with Microsoft Windows Help (HLP) files using Cabriolet. HLP is Microsoft's proprietary format for delivering help documentation in Windows 3.x and Windows 9x systems.
+
+=== References
+
+* <<../../getting-started/quick-start#,Quick Start Guide>>
+* <<../../reference/cli/hlp-commands#,HLP Commands Reference>>
+* <<../../reference/api/hlp-api#,HLP API Reference>>
+* <<../compression/lzss-compression#,LZSS Compression>>
+
+=== Concepts
+
+==== What is an HLP File?
+
+HLP files are Microsoft's help system format used in older Windows and DOS systems. Cabriolet supports **two distinct HLP formats**:
+
+**QuickHelp (DOS)**::
+* Used in DOS-based Microsoft development tools (QuickC, QuickBASIC, early Visual C++)
+* Signature: `0x4C 0x4E` ("LN")
+* Uses Huffman coding and LZSS MODE_MSHELP compression
+* Topic-based organization with context strings
+
+**Windows Help (WinHelp)**::
+* Used in Windows 3.x through Windows XP
+* Signature: `0x35F3` (version 3.x) or `0x5F3F`/`0x3F5F` (version 4.x)
+* Uses Zeck LZ77 compression (4KB sliding window)
+* Internal file system with `|SYSTEM`, `|TOPIC`, and B-tree indexes
+
+Common sources of HLP files:
+
+* Windows 3.x/9x application help
+* Legacy software documentation
+* Microsoft development tools
+* Technical manuals and guides
+
+==== HLP File Structure
+
+An HLP file contains multiple internal files organized hierarchically:
+
+[source,text]
+----
+┌─────────────────────────┐
+│   HLP Header            │  File signature and metadata
+├─────────────────────────┤
+│   Internal File System  │
+│   ┌─────────────────┐   │
+│   │ |SYSTEM         │   │  System information
+│   ├─────────────────┤   │
+│   │ |TOPIC          │   │  Topic content
+│   ├─────────────────┤   │
+│   │ |Phrases        │   │  Phrase compression
+│   ├─────────────────┤   │
+│   │ |CONTEXT        │   │  Context mappings
+│   ├─────────────────┤   │
+│   │ Other files     │   │  Additional resources
+│   └─────────────────┘   │
+└─────────────────────────┘
+----
+
+**HLP Header**: Contains file version and internal file directory.
+
+**Internal Files**: Each HLP file contains multiple embedded files, each potentially compressed.
+
+**System Files**: Control help behavior and appearance (starting with `|`).
+
+**Content Files**: Topic text, graphics, and other resources.
+
+==== Compression Support
+
+HLP files use different compression depending on format:
+
+**QuickHelp (DOS)**::
+* **LZSS MODE_MSHELP** - Specialized LZSS variant for help files
+* **Huffman coding** - Optional statistical encoding
+* Fixed 4KB sliding window optimized for help text
+
+**Windows Help (WinHelp)**::
+* **Zeck LZ77** - Custom LZ77 variant specific to WinHelp
+* 4KB sliding window
+* Variable-length matches (3-271 bytes)
+* Flag-based token control (8 tokens per flag byte)
+
+For detailed algorithm information, see <<../compression/lzss-compression#mode-mshelp,LZSS MODE_MSHELP>>.
+
+==== Automatic Format Detection
+
+Cabriolet automatically detects the HLP format variant:
+
+[source,ruby]
+----
+decompressor = Cabriolet::HLP::Decompressor.new
+header = decompressor.open('help.hlp')
+
+case header
+when Cabriolet::Models::HLPHeader
+  puts "QuickHelp format (DOS)"
+  puts "Topics: #{header.topics.size}"
+when Cabriolet::Models::WinHelpHeader
+  puts "Windows Help format"
+  puts "Version: #{header.version}"  # :winhelp3 or :winhelp4
+  puts "Internal files: #{header.internal_files.size}"
+end
+----
+
+==== Internal File System
+
+HLP uses an internal filesystem with special characteristics:
+
+* **System files**: Start with `|` (pipe character)
+* **Regular files**: Content, graphics, tables
+* **Compressed files**: Can be individually compressed
+* **File metadata**: Size, compression status, offsets
+
+=== Basic Operations
+
+==== Listing HLP Contents
+
+View internal files without extracting:
+
+.Command-line
+[source,bash]
+----
+cabriolet hlp-list help.hlp
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::HLP::Decompressor.new
+header = decompressor.open('help.hlp')
+
+puts "HLP File: help.hlp"
+puts "Version: #{header.version}"
+puts "Files: #{header.files.size}"
+puts ""
+
+header.files.each do |file|
+  compression = file.compressed? ? "LZSS" : "none"
+  puts "#{file.filename}"
+  puts "  Uncompressed: #{file.length} bytes"
+  puts "  Compressed: #{file.compressed_length} bytes (#{compression})"
+end
+
+decompressor.close(header)
+----
+
+.Example Output
+[source,text]
+----
+HLP File Information
+==================================================
+Filename: help.hlp
+Version: 3
+Files: 8
+
+Files:
+  |SYSTEM
+    Uncompressed: 2,048 bytes
+    Compressed: 1,024 bytes (LZSS)
+  |TOPIC
+    Uncompressed: 32,768 bytes
+    Compressed: 16,384 bytes (LZSS)
+  |Phrases
+    Uncompressed: 4,096 bytes
+    Compressed: 2,048 bytes (LZSS)
+----
+
+==== Extracting HLP Files
+
+Extract all internal files:
+
+.Command-line
+[source,bash]
+----
+# Extract to current directory
+cabriolet hlp-extract help.hlp
+
+# Extract to specific directory
+cabriolet hlp-extract help.hlp output/
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+require 'fileutils'
+
+decompressor = Cabriolet::HLP::Decompressor.new
+header = decompressor.open('help.hlp')
+
+FileUtils.mkdir_p('output')
+
+count = decompressor.extract_all(header, 'output')
+
+decompressor.close(header)
+puts "Extracted #{count} files to output/"
+----
+
+==== Getting HLP Information
+
+Display detailed HLP information:
+
+.Command-line
+[source,bash]
+----
+cabriolet hlp-info help.hlp
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::HLP::Decompressor.new
+header = decompressor.open('help.hlp')
+
+puts "Version: #{header.version}"
+puts "Files: #{header.files.size}"
+
+# Count compressed vs uncompressed
+compressed = header.files.count { |f| f.compressed? }
+uncompressed = header.files.size - compressed
+
+puts "Compressed files: #{compressed}"
+puts "Uncompressed files: #{uncompressed}"
+
+decompressor.close(header)
+----
+
+==== Creating HLP Files
+
+Build new HLP files from source files:
+
+.Command-line
+[source,bash]
+----
+# Create with compression (default)
+cabriolet hlp-create help.hlp system.dat topic.dat
+
+# Create without compression
+cabriolet hlp-create --no-compress help.hlp file1.dat file2.dat
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::HLP::Compressor.new
+
+# Add files with compression
+compressor.add_file('system.dat', '|SYSTEM', compress: true)
+compressor.add_file('topic.dat', '|TOPIC', compress: true)
+compressor.add_file('phrases.dat', '|Phrases', compress: true)
+
+# Add uncompressed file
+compressor.add_file('context.dat', '|CONTEXT', compress: false)
+
+bytes = compressor.generate('help.hlp')
+puts "Created help.hlp (#{bytes} bytes)"
+----
+
+=== Advanced Features
+
+==== System Files
+
+Work with HLP system files (starting with `|`):
+
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::HLP::Decompressor.new
+header = decompressor.open('help.hlp')
+
+# Find system files
+system_files = header.files.select { |f| f.filename.start_with?('|') }
+
+system_files.each do |file|
+  puts "System file: #{file.filename}"
+  puts "  Size: #{file.length} bytes"
+  puts "  Compressed: #{file.compressed?}"
+end
+
+decompressor.close(header)
+----
+
+Common system files include:
+
+* `|SYSTEM` - Help system configuration
+* `|TOPIC` - Topic content and text
+* `|Phrases` - Phrase compression dictionary
+* `|CONTEXT` - Context ID mappings
+* `|FONT` - Font table
+* `|CTXOMAP` - Context offset map
+
+==== Compression Control
+
+Control which files are compressed:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::HLP::Compressor.new
+
+# Compress text files for better ratio
+compressor.add_file('topics.dat', '|TOPIC', compress: true)
+compressor.add_file('phrases.dat', '|Phrases', compress: true)
+
+# Don't compress already-compressed or small files
+compressor.add_file('image.bmp', 'image.bmp', compress: false)
+compressor.add_file('tiny.dat', 'tiny.dat', compress: false)
+
+compressor.generate('help.hlp')
+----
+
+==== File Metadata
+
+Access internal file metadata:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::HLP::Decompressor.new
+header = decompressor.open('help.hlp')
+
+header.files.each do |file|
+  puts "#{file.filename}:"
+  puts "  Uncompressed size: #{file.length}"
+  puts "  Compressed size: #{file.compressed_length}"
+
+  if file.compressed?
+    ratio = (1 - file.compressed_length.to_f / file.length) * 100
+    puts "  Compression ratio: #{ratio.round(1)}%"
+  end
+end
+
+decompressor.close(header)
+----
+
+==== Version Detection
+
+Detect HLP file version:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::HLP::Decompressor.new
+header = decompressor.open('help.hlp')
+
+case header.version
+when 3
+  puts "Windows 3.x Help format"
+when 4
+  puts "Windows 95 Help format"
+else
+  puts "Unknown HLP version: #{header.version}"
+end
+
+decompressor.close(header)
+----
+
+=== Performance Optimization
+
+==== Selective Compression
+
+Compress only files that benefit:
+
+[cols="1,2"]
+|===
+|File Type |Compress?
+
+|Text content (`|TOPIC`, `|Phrases`)
+|Yes - good compression ratio
+
+|System files (`|SYSTEM`, `|CONTEXT`)
+|Yes - moderate compression
+
+|Graphics (BMP, icon)
+|No - already optimized
+
+|Very small files (<256 bytes)
+|No - overhead too high
+|===
+
+==== Extraction Performance
+
+Extract efficiently:
+
+[source,ruby]
+----
+require 'cabriolet'
+require 'fileutils'
+
+decompressor = Cabriolet::HLP::Decompressor.new
+header = decompressor.open('help.hlp')
+
+# Efficient: Extract all at once
+count = decompressor.extract_all(header, 'output/')
+
+# Less efficient: Extract one by one
+# header.files.each do |file|
+#   decompressor.extract_file(file, "output/#{file.filename}")
+# end
+
+decompressor.close(header)
+----
+
+=== Common Use Cases
+
+==== Converting Legacy Help
+
+Extract and convert old help files:
+
+[source,ruby]
+----
+require 'cabriolet'
+require 'fileutils'
+
+decompressor = Cabriolet::HLP::Decompressor.new
+header = decompressor.open('oldapp.hlp')
+
+# Extract all content
+FileUtils.mkdir_p('help-conversion')
+decompressor.extract_all(header, 'help-conversion/')
+
+# Process topic file
+topic_file = header.files.find { |f| f.filename == '|TOPIC' }
+if topic_file
+  puts "Found topics: #{topic_file.length} bytes"
+  # Convert to modern format...
+end
+
+decompressor.close(header)
+----
+
+==== Analyzing Help Structure
+
+Examine help file organization:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::HLP::Decompressor.new
+header = decompressor.open('help.hlp')
+
+# Categorize files
+system = header.files.select { |f| f.filename.start_with?('|') }
+content = header.files.reject { |f| f.filename.start_with?('|') }
+
+puts "System files: #{system.count}"
+system.each { |f| puts "  - #{f.filename}" }
+
+puts "\nContent files: #{content.count}"
+content.each { |f| puts "  - #{f.filename}" }
+
+# Calculate total sizes
+total_uncompressed = header.files.sum { |f| f.length }
+total_compressed = header.files.sum { |f| f.compressed_length }
+
+puts "\nTotal uncompressed: #{total_uncompressed} bytes"
+puts "Total compressed: #{total_compressed} bytes"
+puts "Overall ratio: #{((1 - total_compressed.to_f / total_uncompressed) * 100).round(1)}%"
+
+decompressor.close(header)
+----
+
+==== Creating Custom Help
+
+Build custom help files:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::HLP::Compressor.new
+
+# Create minimal help structure
+compressor.add_file('my-system.dat', '|SYSTEM', compress: true)
+compressor.add_file('my-topics.dat', '|TOPIC', compress: true)
+compressor.add_file('my-context.dat', '|CONTEXT', compress: true)
+
+# Add custom content
+compressor.add_file('custom.dat', 'CustomFile', compress: false)
+
+bytes = compressor.generate('custom.hlp')
+puts "Created custom help file: #{bytes} bytes"
+----
+
+=== Troubleshooting
+
+==== Common Errors
+
+**"Invalid HLP signature"**
+
+The file is not a valid HLP file:
+
+[source,bash]
+----
+# Check file type
+file help.hlp
+# Should identify as Windows Help file
+----
+
+**"Unsupported HLP version"**
+
+The HLP version is not supported:
+
+[source,bash]
+----
+cabriolet hlp-info help.hlp  # Shows version
+----
+
+**"Decompression failed"**
+
+Internal file is corrupted:
+
+[source,bash]
+----
+# Try extracting uncompressed files only
+cabriolet hlp-extract help.hlp output/
+# Check which files failed
+----
+
+**"Cannot find internal file"**
+
+Specified internal file doesn't exist. List files first:
+
+[source,bash]
+----
+cabriolet hlp-info help.hlp
+----
+
+==== Validation
+
+Verify HLP file integrity:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+begin
+  decompressor = Cabriolet::HLP::Decompressor.new
+  header = decompressor.open('help.hlp')
+
+  puts "HLP file is valid"
+  puts "Version: #{header.version}"
+  puts "Files: #{header.files.size}"
+
+  # Verify all files can be read
+  header.files.each do |file|
+    if file.compressed? && file.compressed_length == 0
+      puts "Warning: #{file.filename} has zero compressed size"
+    end
+  end
+
+  decompressor.close(header)
+rescue Cabriolet::FormatError => e
+  puts "Invalid HLP file: #{e.message}"
+rescue Cabriolet::CorruptionError => e
+  puts "Corrupted HLP: #{e.message}"
+end
+----
+
+=== Best Practices
+
+1. **Preserve system files**: Keep all `|` files for proper help functionality
+
+2. **Compress text files**: Always compress `|TOPIC`, `|Phrases`, and text content
+
+3. **Don't compress graphics**: Leave BMP and other images uncompressed
+
+4. **Verify version**: Check HLP version for compatibility
+
+5. **Test extraction**: Verify all files extract correctly
+
+6. **Document structure**: Keep track of internal file organization
+
+=== Format Specifications
+
+==== File Signature
+
+HLP files use a proprietary format without a clear magic number. The file starts with:
+
+[source,text]
+----
+Offset  Bytes  Description
+0x0000  4      File size (little-endian)
+0x0004  2      Version (usually 3 or 4)
+0x0006  ...    Internal file directory
+----
+
+==== Internal File Structure
+
+Each internal file has:
+
+* **Filename**: Internal name (may start with `|`)
+* **Uncompressed size**: Original file size
+* **Compressed size**: Size after compression (0 if uncompressed)
+* **Offset**: Position in HLP file
+* **Compression flag**: Whether file is compressed
+
+==== Compression Method
+
+* **Algorithm**: LZSS MODE_MSHELP
+* **Window size**: 4096 bytes
+* **Specialized**: Optimized for help file text
+
+For complete format specifications, see <<../../reference/formats/hlp-specification#,HLP Specification>>.
+
+=== Next Steps
+
+* Learn about <<../compression/lzss-compression#mode-mshelp,LZSS MODE_MSHELP compression>>
+* Review <<../../reference/cli/hlp-commands#,complete HLP command reference>>
+* Study <<../../reference/api/hlp-api#,HLP API documentation>>
+
+=== Bibliography
+
+* <<../../reference/cli/hlp-commands#,HLP Commands Reference>>
+* <<../../reference/api/hlp-api#,HLP API Reference>>
+* <<../../reference/formats/hlp-specification#,HLP Format Specification>>
+* http://www.helpmaster.info/hlp-developmentkit/[HLP Development Kit Documentation]
+* https://en.wikipedia.org/wiki/WinHelp[Wikipedia: WinHelp]

@@ -1,0 +1,312 @@
+---
+title: LZSS Compression
+parent: Compression
+grand_parent: Guides
+nav_order: 3
+---
+
+== LZSS Compression
+
+=== Purpose
+
+This guide explains LZSS (Lempel-Ziv-Storer-Szymanski) compression used in SZDD, HLP, and KWAJ formats.
+
+=== References
+
+* <<choosing-algorithm#,Choosing a Compression Algorithm>>
+* <<../formats/szdd-format#compression-support,SZDD Format>>
+* <<../formats/hlp-format#compression-support,HLP Format>>
+* <<../formats/kwaj-format#compression-support,KWAJ Format>>
+
+=== Concepts
+
+==== What is LZSS?
+
+LZSS is a dictionary-based compression algorithm that replaces repeated data with references to previous occurrences. It's an improvement over LZ77 with better encoding efficiency.
+
+==== Algorithm Basics
+
+LZSS uses a sliding window to find matches:
+
+[source,text]
+----
+Input:  "the quick brown fox jumps over the lazy dog"
+Window: 4096 bytes
+Matches: "the" appears twice → encode second as reference
+
+Output: "the quick brown fox jumps over " + <ref to "the"> + " lazy dog"
+----
+
+==== LZSS Variants
+
+Cabriolet implements three LZSS variants:
+
+[cols="1,2,2"]
+|===
+|Variant |Window Size |Used In
+
+|MODE_EXPAND
+|4096 bytes
+|SZDD files (MS-DOS EXPAND.EXE)
+
+|MODE_MSHELP
+|4096 bytes
+|HLP (Windows Help files)
+
+|MODE_QBASIC
+|4096 bytes
+|SZDD QBasic variant
+|===
+
+=== Performance Characteristics
+
+[cols="1,2"]
+|===
+|Metric |Value
+
+|Compression ratio
+|30-50% for text, 20-40% for executables
+
+|Compression speed
+|Fast (10-50 MB/s)
+
+|Decompression speed
+|Very fast (50-200 MB/s)
+
+|Memory usage
+|Low (4-8 KB)
+
+|Window size
+|Fixed 4096 bytes
+|===
+
+=== Usage
+
+==== SZDD Files (MODE_EXPAND)
+
+[source,ruby]
+----
+compressor = Cabriolet::SZDD::Compressor.new
+
+# Automatically uses LZSS MODE_EXPAND
+bytes = compressor.compress('file.txt', 'file.tx_')
+----
+
+Command line:
+[source,bash]
+----
+cabriolet compress file.txt file.tx_
+cabriolet expand file.tx_ file.txt
+----
+
+==== HLP Files (MODE_MSHELP)
+
+[source,ruby]
+----
+compressor = Cabriolet::HLP::Compressor.new
+
+# Compress with LZSS MODE_MSHELP
+compressor.add_file('topic.dat', '|TOPIC', compress: true)
+compressor.generate('help.hlp')
+----
+
+==== KWAJ Files (via SZDD option)
+
+[source,ruby]
+----
+compressor = Cabriolet::KWAJ::Compressor.new
+
+# Use SZDD compression (LZSS)
+bytes = compressor.compress(
+  'file.txt',
+  'file.kwj',
+  compression: :szdd
+)
+----
+
+=== Algorithm Details
+
+==== Encoding Process
+
+1. **Initialize** sliding window (4096 bytes)
+2. **Search** for longest match in window
+3. **Encode** match as:
+   * Literal byte (if no match or short)
+   * Reference (offset, length) if match found
+4. **Slide** window forward
+5. **Repeat** until end of input
+
+==== Match Requirements
+
+* **Minimum match**: 3 bytes
+* **Maximum match**: 18 bytes (MODE_EXPAND/MSHELP)
+* **Window**: 4096 bytes
+
+==== Bit Encoding
+
+[source,text]
+----
+Flag bit: 1 = literal, 0 = reference
+
+Literal: 8 bits (raw byte)
+
+Reference: 12 bits offset + 4 bits length
+  Offset: 0-4095 (window position)
+  Length: 3-18 (match length - 3)
+----
+
+=== Compression Effectiveness
+
+==== Good For
+
+* **Text files** - 40-50% compression
+* **Source code** - 45-55% compression
+* **HTML/XML** - 45-55% compression
+* **Configuration files** - 40-50% compression
+
+==== Poor For
+
+* **Already compressed** - 0-5% (JPG, PNG, ZIP)
+* **Random data** - 0-10%
+* **Encrypted files** - 0-5%
+* **Very small files** - Overhead > savings
+
+=== Comparison with Other Algorithms
+
+[cols="1,1,1,1,1"]
+|===
+|Algorithm |Ratio |Speed |Memory |Window
+
+|LZSS
+|30-50%
+|Fast
+|Low
+|4 KB
+
+|MSZIP
+|40-60%
+|Medium
+|Medium
+|32 KB
+
+|LZX
+|50-70%
+|Slow
+|High
+|32KB-2MB
+
+|Quantum
+|45-65%
+|Medium
+|Medium
+|Variable
+|===
+
+=== Best Practices
+
+1. **Use for text** - LZSS excels on text files
+2. **Fast operations** - Choose when speed matters
+3. **Low memory** - Good for constrained environments
+4. **Legacy support** - Required for SZDD/HLP formats
+5. **Skip pre-compressed** - Don't compress JPG, PNG, etc.
+
+=== Examples
+
+==== Compress MS-DOS File
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Compress for MS-DOS EXPAND.EXE
+compressor = Cabriolet::SZDD::Compressor.new
+compressor.compress('readme.txt', 'readme.tx_', format: :normal)
+
+puts "Compressed with LZSS MODE_EXPAND"
+----
+
+==== Create Windows Help
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::HLP::Compressor.new
+
+# Add files with LZSS MODE_MSHELP compression
+compressor.add_file('system.dat', '|SYSTEM', compress: true)
+compressor.add_file('topics.dat', '|TOPIC', compress: true)
+
+# Images uncompressed
+compressor.add_file('image.bmp', 'image.bmp', compress: false)
+
+compressor.generate('help.hlp')
+----
+
+==== Batch Compress Files
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::SZDD::Compressor.new
+
+Dir.glob('*.txt').each do |file|
+  output = file.sub(/\.([^.])$/, '._')
+  bytes = compressor.compress(file, output)
+
+  original = File.size(file)
+  ratio = (1 - bytes.to_f / original) * 100
+
+  puts "#{file}: #{original} → #{bytes} (#{ratio.round(1)}%)"
+end
+----
+
+=== Troubleshooting
+
+==== Low Compression Ratio
+
+If compression ratio is poor:
+
+* Check file isn't already compressed
+* Verify file has repeating patterns
+* Consider MSZIP or LZX for better ratio
+
+==== Compatibility Issues
+
+For MS-DOS compatibility:
+
+* Use SZDD format with MODE_EXPAND
+* Include missing character in header
+* Test with MS-DOS EXPAND.EXE
+
+=== Technical Notes
+
+==== Variant Differences
+
+MODE_EXPAND vs MODE_MSHELP:
+
+* Same core algorithm
+* Different bit-packing format
+* MODE_EXPAND: MS-DOS compatible
+* MODE_MSHELP: Windows Help optimized
+
+==== Performance Tuning
+
+LZSS is already fast, but optimize by:
+
+* Buffering I/O operations
+* Processing large chunks
+* Avoiding frequent small writes
+
+=== See Also
+
+* <<choosing-algorithm#,Choosing a Compression Algorithm>>
+* <<mszip-compression#,MSZIP Compression>> - Better ratio
+* <<../formats/szdd-format#,SZDD Format Guide>>
+* <<../formats/hlp-format#,HLP Format Guide>>
+
+=== Bibliography
+
+* https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Storer%E2%80%93Szymanski[Wikipedia: LZSS]
+* https://www.cabextract.org.uk/[cabextract Documentation]

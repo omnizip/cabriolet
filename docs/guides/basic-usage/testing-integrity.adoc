@@ -1,0 +1,380 @@
+---
+title: Testing Integrity
+parent: Basic Usage
+grand_parent: Guides
+nav_order: 4
+---
+
+== Testing Integrity Guide
+
+=== Purpose
+
+Learn how to verify archive integrity and detect corruption before extraction.
+
+=== References
+
+* <<../../getting-started/quick-start#,Quick Start Guide>>
+* <<../formats/index#,Format Guides>>
+* <<../../reference/cli/index#,CLI Reference>>
+
+=== Concepts
+
+Integrity testing verifies archives are not corrupted by checking signatures, checksums, and attempting decompression without extraction.
+
+=== By Format
+
+==== CAB Files
+
+[source,bash]
+----
+# Test archive integrity
+cabriolet test archive.cab
+
+# Verbose testing
+cabriolet test --verbose archive.cab
+----
+
+Ruby API:
+[source,ruby]
+----
+decompressor = Cabriolet::CAB::Decompressor.new
+cabinet = decompressor.open('archive.cab')
+
+# Test by attempting to read all files
+valid = decompressor.test
+
+if valid
+  puts "Archive is valid"
+else
+  puts "Archive is corrupted"
+end
+----
+
+==== CHM Files
+
+[source,bash]
+----
+# Verify can open and list
+cabriolet chm-info help.chm
+----
+
+Ruby API:
+[source,ruby]
+----
+begin
+  decompressor = Cabriolet::CHM::Decompressor.new
+  chm = decompressor.open('help.chm')
+
+  # Verify file count
+  puts "Valid: #{chm.all_files.count} files"
+  decompressor.close
+rescue Cabriolet::FormatError => e
+  puts "Invalid CHM: #{e.message}"
+end
+----
+
+==== SZDD Files
+
+[source,bash]
+----
+# Check header validity
+cabriolet szdd-info file.tx_
+----
+
+Ruby API:
+[source,ruby]
+----
+begin
+  decompressor = Cabriolet::SZDD::Decompressor.new
+  header = decompressor.open('file.tx_')
+
+  puts "Valid SZDD file"
+  puts "Format: #{header.format}"
+  decompressor.close(header)
+rescue Cabriolet::FormatError => e
+  puts "Invalid: #{e.message}"
+end
+----
+
+==== KWAJ Files
+
+[source,bash]
+----
+cabriolet kwaj-info setup.kwj
+----
+
+Ruby API:
+[source,ruby]
+----
+begin
+  decompressor = Cabriolet::KWAJ::Decompressor.new
+  header = decompressor.open('setup.kwj')
+
+  puts "Valid KWAJ file"
+  puts "Compression: #{header.compression_name}"
+  decompressor.close(header)
+rescue Cabriolet::FormatError => e
+  puts "Invalid: #{e.message}"
+end
+----
+
+==== HLP Files
+
+[source,bash]
+----
+cabriolet hlp-info help.hlp
+----
+
+Ruby API:
+[source,ruby]
+----
+begin
+  decompressor = Cabriolet::HLP::Decompressor.new
+  header = decompressor.open('help.hlp')
+
+  puts "Valid HLP file"
+  puts "Files: #{header.files.size}"
+  decompressor.close(header)
+rescue Cabriolet::FormatError => e
+  puts "Invalid: #{e.message}"
+end
+----
+
+==== LIT Files
+
+[source,bash]
+----
+cabriolet lit-info book.lit
+----
+
+Ruby API:
+[source,ruby]
+----
+begin
+  decompressor = Cabriolet::LIT::Decompressor.new
+  header = decompressor.open('book.lit')
+
+  puts "Valid LIT file"
+  puts "Encrypted: #{header.encrypted?}"
+  puts "Files: #{header.files.size}"
+  decompressor.close(header)
+rescue Cabriolet::FormatError => e
+  puts "Invalid: #{e.message}"
+end
+----
+
+==== OAB Files
+
+[source,bash]
+----
+cabriolet oab-info full.oab
+----
+
+Ruby API:
+[source,ruby]
+----
+begin
+  io_system = Cabriolet::System::IOSystem.new
+  handle = io_system.open('full.oab', Cabriolet::Constants::MODE_READ)
+  header_data = io_system.read(handle, 16)
+
+  full_header = Cabriolet::Binary::OABStructures::FullHeader.read(header_data)
+
+  if full_header.valid?
+    puts "Valid OAB file"
+  else
+    puts "Invalid OAB header"
+  end
+
+  io_system.close(handle)
+rescue StandardError => e
+  puts "Error: #{e.message}"
+end
+----
+
+=== Common Patterns
+
+==== Batch Validation
+
+[source,bash]
+----
+#!/bin/bash
+# Validate all CAB files
+
+for file in *.cab; do
+  if cabriolet test "$file" > /dev/null 2>&1; then
+    echo "✓ $file"
+  else
+    echo "✗ $file FAILED"
+  fi
+done
+----
+
+==== Pre-extraction Verification
+
+[source,ruby]
+----
+def safe_extract(filename, output_dir)
+  begin
+    decompressor = Cabriolet::CAB::Decompressor.new
+    cabinet = decompressor.open(filename)
+
+    # Test before extracting
+    if decompressor.test
+      decompressor.extract_all(cabinet, output_dir)
+      puts "Successfully extracted #{filename}"
+    else
+      puts "Skipping corrupted file: #{filename}"
+    end
+  rescue Cabriolet::Error => e
+    puts "Error with #{filename}: #{e.message}"
+  end
+end
+----
+
+==== Checksum Verification
+
+[source,ruby]
+----
+require 'digest'
+
+def verify_with_checksum(filename, expected_sha256)
+  # Verify file integrity
+  actual = Digest::SHA256.file(filename).hexdigest
+
+  if actual == expected_sha256
+    puts "Checksum verified"
+
+    # Then test archive
+    decompressor = Cabriolet::CAB::Decompressor.new
+    cabinet = decompressor.open(filename)
+    decompressor.test
+  else
+    puts "Checksum mismatch!"
+    false
+  end
+end
+----
+
+==== Report Generation
+
+[source,ruby]
+----
+require 'cabriolet'
+
+def generate_integrity_report(files)
+  report = []
+
+  files.each do |file|
+    status = begin
+      decompressor = Cabriolet::CAB::Decompressor.new
+      cabinet = decompressor.open(file)
+      valid = decompressor.test
+
+      {
+        file: file,
+        valid: valid,
+        files: cabinet.files.count,
+        size: File.size(file)
+      }
+    rescue => e
+      {
+        file: file,
+        valid: false,
+        error: e.message
+      }
+    end
+
+    report << status
+  end
+
+  report
+end
+
+# Usage
+files = Dir.glob('archives/*.cab')
+report = generate_integrity_report(files)
+
+report.each do |entry|
+  status = entry[:valid] ? "PASS" : "FAIL"
+  puts "#{status}: #{entry[:file]}"
+  puts "  Error: #{entry[:error]}" if entry[:error]
+end
+----
+
+=== Error Types
+
+==== Format Errors
+
+Invalid file format or signature:
+
+[source,ruby]
+----
+begin
+  decompressor.open('notacab.txt')
+rescue Cabriolet::FormatError => e
+  puts "Not a valid archive: #{e.message}"
+end
+----
+
+==== Corruption Errors
+
+Damaged data or checksums:
+
+[source,ruby]
+----
+begin
+  decompressor.test
+rescue Cabriolet::CorruptionError => e
+  puts "Archive is corrupted: #{e.message}"
+end
+----
+
+==== Version Errors
+
+Unsupported format version:
+
+[source,ruby]
+----
+begin
+  decompressor.open('future-version.cab')
+rescue Cabriolet::UnsupportedError => e
+  puts "Unsupported version: #{e.message}"
+end
+----
+
+=== Best Practices
+
+1. **Test before extraction** - Always verify integrity first
+2. **Check exit codes** - Use return values in scripts
+3. **Handle errors gracefully** - Catch and report problems
+4. **Validate downloads** - Test files after download
+5. **Use verbose mode** - Get detailed error information
+6. **Keep backups** - Don't delete originals until verified
+
+=== Salvage Mode
+
+For corrupted archives, some formats support salvage mode:
+
+[source,bash]
+----
+# Try to extract what's possible
+cabriolet extract --salvage damaged.cab output/
+----
+
+Ruby API:
+[source,ruby]
+----
+decompressor = Cabriolet::CAB::Decompressor.new
+decompressor.salvage = true
+
+cabinet = decompressor.open('damaged.cab')
+# Attempts to extract readable files
+decompressor.extract_all(cabinet, 'recovered/')
+----
+
+=== See Also
+
+* <<extracting-files#,Extracting Files>>
+* <<listing-contents#,Listing Contents>>
+* <<creating-archives#,Creating Archives>>

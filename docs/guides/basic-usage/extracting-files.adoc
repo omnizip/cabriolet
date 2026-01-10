@@ -1,0 +1,213 @@
+---
+title: Extracting Files
+parent: Basic Usage
+grand_parent: Guides
+nav_order: 1
+---
+
+== Extracting Files Guide
+
+=== Purpose
+
+Learn how to extract files from all supported archive formats using Cabriolet.
+
+=== References
+
+* <<../../getting-started/quick-start#,Quick Start Guide>>
+* <<../formats/index#,Format Guides>>
+* <<../../reference/cli/index#,CLI Reference>>
+
+=== Concepts
+
+Extraction decompresses and saves files from archives to disk. Different formats require different commands but follow similar patterns.
+
+=== By Format
+
+==== CAB Files
+
+[source,bash]
+----
+# Extract all files
+cabriolet extract archive.cab
+
+# Extract to specific directory
+cabriolet extract archive.cab output/
+
+# Verbose output
+cabriolet extract --verbose archive.cab
+----
+
+Ruby API:
+[source,ruby]
+----
+decompressor = Cabriolet::CAB::Decompressor.new
+cabinet = decompressor.open('archive.cab')
+decompressor.extract_all(cabinet, 'output/')
+----
+
+==== CHM Files
+
+[source,bash]
+----
+cabriolet chm-extract help.chm output/
+----
+
+Ruby API:
+[source,ruby]
+----
+decompressor = Cabriolet::CHM::Decompressor.new
+chm = decompressor.open('help.chm')
+
+chm.all_files.each do |file|
+  next if file.system_file?
+  decompressor.extract(file, "output/#{file.filename}")
+end
+----
+
+==== SZDD Files
+
+[source,bash]
+----
+# Auto-detect output name
+cabriolet expand file.tx_
+
+# Specify output
+cabriolet expand file.tx_ file.txt
+----
+
+Ruby API:
+[source,ruby]
+----
+decompressor = Cabriolet::SZDD::Decompressor.new
+header = decompressor.open('file.tx_')
+decompressor.extract(header, 'file.txt')
+----
+
+==== KWAJ Files
+
+[source,bash]
+----
+cabriolet kwaj-extract setup.kwj setup.exe
+----
+
+Ruby API:
+[source,ruby]
+----
+decompressor = Cabriolet::KWAJ::Decompressor.new
+header = decompressor.open('setup.kwj')
+decompressor.extract(header, 'setup.kwj', 'setup.exe')
+----
+
+==== HLP Files
+
+[source,bash]
+----
+cabriolet hlp-extract help.hlp output/
+----
+
+Ruby API:
+[source,ruby]
+----
+decompressor = Cabriolet::HLP::Decompressor.new
+header = decompressor.open('help.hlp')
+decompressor.extract_all(header, 'output/')
+----
+
+==== LIT Files
+
+[source,bash]
+----
+# Check for DRM first
+cabriolet lit-info book.lit
+
+# Extract if not encrypted
+cabriolet lit-extract book.lit output/
+----
+
+Ruby API:
+[source,ruby]
+----
+decompressor = Cabriolet::LIT::Decompressor.new
+header = decompressor.open('book.lit')
+
+unless header.encrypted?
+  decompressor.extract_all(header, 'output/')
+end
+----
+
+==== OAB Files
+
+[source,bash]
+----
+# Full file
+cabriolet oab-extract full.oab address.dat
+
+# Incremental patch
+cabriolet oab-extract --base=old.oab patch.oab new.oab
+----
+
+Ruby API:
+[source,ruby]
+----
+decompressor = Cabriolet::OAB::Decompressor.new
+
+# Full file
+decompressor.decompress('full.oab', 'address.dat')
+
+# Patch
+decompressor.decompress_incremental('patch.oab', 'old.oab', 'new.oab')
+----
+
+=== Common Patterns
+
+==== Batch Extraction
+
+[source,bash]
+----
+# Extract all CAB files
+for file in *.cab; do
+  cabriolet extract "$file" "extracted/$(basename "$file" .cab)"
+done
+----
+
+==== Selective Extraction
+
+[source,ruby]
+----
+decompressor = Cabriolet::CAB::Decompressor.new
+cabinet = decompressor.open('archive.cab')
+
+# Extract only .txt files
+cabinet.files.each do |file|
+  if file.filename.end_with?('.txt')
+    decompressor.extract_file(file, "output/#{file.filename}")
+  end
+end
+----
+
+==== Progress Tracking
+
+[source,ruby]
+----
+decompressor = Cabriolet::CAB::Decompressor.new
+cabinet = decompressor.open('archive.cab')
+
+cabinet.files.each_with_index do |file, i|
+  puts "Extracting #{i+1}/#{cabinet.files.count}: #{file.filename}"
+  decompressor.extract_file(file, "output/#{file.filename}")
+end
+----
+
+=== Best Practices
+
+1. **Check before extracting** - Verify archive integrity
+2. **Create output directories** - Ensure destination exists
+3. **Handle errors** - Catch and handle extraction failures
+4. **Preserve paths** - Maintain directory structure
+5. **Verify DRM** - Check LIT files for encryption
+
+=== See Also
+
+* <<creating-archives#,Creating Archives>>
+* <<listing-contents#,Listing Contents>>
+* <<testing-integrity#,Testing Integrity>>

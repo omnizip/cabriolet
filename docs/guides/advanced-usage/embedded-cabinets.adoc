@@ -1,0 +1,491 @@
+---
+layout: default
+title: Embedded Cabinets
+parent: Advanced Usage
+grand_parent: Guides
+nav_order: 2
+---
+
+== Embedded Cabinets
+:toc:
+
+=== Purpose
+
+This guide explains how to find and extract cabinet files embedded within other files, such as executables, installers, and data files.
+
+=== References
+
+* xref:../../reference/cli/cab-commands.adoc[CAB Search Command]
+* xref:../../reference/api/cab-api.adoc[CAB API Reference]
+* xref:../formats/cab-format.adoc[CAB Format Guide]
+
+=== Understanding Embedded Cabinets
+
+==== What Are Embedded Cabinets?
+
+Many Windows installers and applications embed CAB files within executable files. Common scenarios include:
+
+* **Self-extracting installers**: EXE files containing embedded CAB archives
+* **Software packages**: MSI or setup files with embedded resources
+* **Game installers**: Installation executables with asset archives
+* **Driver packages**: Hardware driver installers with embedded CAB files
+* **Application resources**: Programs storing data in embedded cabinets
+
+==== Why Embed Cabinets?
+
+Embedding provides several advantages:
+
+1. **Single-file distribution**: Everything in one executable
+2. **Simpler installation**: No separate archive files to manage
+3. **Better branding**: Custom installer interface
+4. **Integrity checking**: Combined executable and data validation
+5. **Backward compatibility**: Support for older Windows versions
+
+==== CAB File Signatures
+
+CAB files are identified by a 4-byte signature: `MSCF` (0x4D534346). When searching for embedded cabinets, Cabriolet looks for this signature within host files.
+
+=== Searching for Embedded Cabinets
+
+==== Basic Search
+
+Find embedded cabinets in a file:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Search for embedded cabinets
+results = Cabriolet::CAB::Decompressor.search('installer.exe')
+
+results.each do |result|
+  puts "Found CAB at offset: #{result[:offset]}"
+  puts "  Size: #{result[:size]} bytes"
+  puts "  Files: #{result[:file_count]}"
+end
+----
+
+==== CLI Search
+
+[source,shell]
+----
+$ cabriolet cab search installer.exe
+
+Found 2 embedded cabinet(s) in installer.exe:
+
+Cabinet 1:
+  Offset: 0x12A400
+  Size: 2,458,624 bytes
+  Files: 156
+  Folders: 3
+  Set ID: 1234
+  Cabinet ID: 1
+
+Cabinet 2:
+  Offset: 0x386C00
+  Size: 1,234,567 bytes
+  Files: 45
+  Folders: 1
+  Set ID: 5678
+  Cabinet ID: 1
+----
+
+==== Advanced Search Options
+
+Search with specific criteria:
+
+[source,ruby]
+----
+# Search with options
+options = {
+  min_size: 1000,           # Minimum cabinet size in bytes
+  max_results: 10,          # Stop after finding 10 cabinets
+  validate: true,           # Validate cabinet headers
+  deep_scan: true          # Scan entire file (slower but thorough)
+}
+
+results = Cabriolet::CAB::Decompressor.search('large_file.bin', options)
+----
+
+=== Extracting Embedded Cabinets
+
+==== Extract by Offset
+
+Extract a specific embedded cabinet:
+
+[source,ruby]
+----
+# Find cabinets
+results = Cabriolet::CAB::Decompressor.search('installer.exe')
+
+# Extract first embedded cabinet
+if results.any?
+  offset = results.first[:offset]
+
+  decompressor = Cabriolet::CAB::Decompressor.new(
+    'installer.exe',
+    offset: offset
+  )
+
+  decompressor.extract_all('output')
+end
+----
+
+==== Extract All Embedded Cabinets
+
+Extract all found cabinets:
+
+[source,ruby]
+----
+results = Cabriolet::CAB::Decompressor.search('installer.exe')
+
+results.each_with_index do |result, index|
+  output_dir = "cabinet_#{index + 1}"
+
+  decompressor = Cabriolet::CAB::Decompressor.new(
+    'installer.exe',
+    offset: result[:offset]
+  )
+
+  puts "Extracting cabinet #{index + 1} to #{output_dir}..."
+  decompressor.extract_all(output_dir)
+end
+----
+
+==== CLI Extraction
+
+[source,shell]
+----
+# Extract specific embedded cabinet by index
+$ cabriolet cab extract installer.exe --embedded 0 --output cabinet1/
+
+# Extract all embedded cabinets
+$ cabriolet cab extract installer.exe --all-embedded --output extracted/
+
+# Creates:
+#   extracted/cabinet_1/
+#   extracted/cabinet_2/
+----
+
+=== Working with Multiple Embedded Archives
+
+==== Identifying Cabinet Sets
+
+When multiple cabinets are embedded, they may be part of a multi-part set:
+
+[source,ruby]
+----
+results = Cabriolet::CAB::Decompressor.search('installer.exe')
+
+# Group by set ID
+sets = results.group_by { |r| r[:set_id] }
+
+sets.each do |set_id, cabinets|
+  puts "Cabinet Set #{set_id}:"
+  cabinets.sort_by { |c| c[:cabinet_id] }.each do |cab|
+    puts "  Part #{cab[:cabinet_id]} at offset #{cab[:offset]}"
+  end
+end
+----
+
+Output:
+[source]
+----
+Cabinet Set 1234:
+  Part 1 at offset 1222656
+  Part 2 at offset 3768320
+  Part 3 at offset 5242880
+----
+
+==== Extracting Multi-Part Embedded Sets
+
+[source,ruby]
+----
+# Find all parts of set 1234
+set_parts = results
+  .select { |r| r[:set_id] == 1234 }
+  .sort_by { |r| r[:cabinet_id] }
+
+# Extract using first part
+first_offset = set_parts.first[:offset]
+
+decompressor = Cabriolet::CAB::Decompressor.new(
+  'installer.exe',
+  offset: first_offset
+)
+
+# Provide offsets for continuation cabinets
+set_parts[1..-1].each do |part|
+  decompressor.add_continuation_offset(part[:offset])
+end
+
+decompressor.extract_all('complete_set')
+----
+
+=== In-Memory Extraction
+
+==== Extract to Memory
+
+Extract embedded cabinet contents without writing to disk:
+
+[source,ruby]
+----
+# Find cabinet
+results = Cabriolet::CAB::Decompressor.search('installer.exe')
+offset = results.first[:offset]
+
+# Open with memory I/O
+memory_io = Cabriolet::System::IOSystem.new
+handle = memory_io.open('installer.exe', 'rb')
+handle.seek(offset)
+
+decompressor = Cabriolet::CAB::Decompressor.new(handle)
+
+# Extract files to memory
+files = {}
+decompressor.files.each do |file|
+  files[file.filename] = decompressor.extract_to_memory(file.filename)
+end
+
+# Use extracted data
+config_data = files['config.ini']
+puts "Config: #{config_data}"
+----
+
+==== Stream Processing
+
+Process embedded cabinet contents on-the-fly:
+
+[source,ruby]
+----
+decompressor = Cabriolet::CAB::Decompressor.new(
+  'installer.exe',
+  offset: embedded_offset
+)
+
+decompressor.each_file do |filename, io|
+  case File.extname(filename)
+  when '.txt'
+    # Process text files
+    content = io.read
+    analyze_text(content)
+  when '.dll'
+    # Check DLL signatures
+    signature = io.read(2)
+    verify_signature(signature)
+  end
+end
+----
+
+=== Advanced Techniques
+
+==== Custom Search Patterns
+
+Search for cabinets with specific characteristics:
+
+[source,ruby]
+----
+class CustomCabinetSearch
+  def self.find_signed_cabinets(filename)
+    all_results = Cabriolet::CAB::Decompressor.search(filename)
+
+    all_results.select do |result|
+      # Check if cabinet has reserve data (often used for signatures)
+      has_signature?(filename, result[:offset])
+    end
+  end
+
+  def self.has_signature?(filename, offset)
+    File.open(filename, 'rb') do |f|
+      f.seek(offset + 20)  # Offset to flags field
+      flags = f.read(2).unpack1('v')
+
+      # Check RESERVE_PRESENT flag
+      (flags & 0x0004) != 0
+    end
+  end
+end
+
+signed_cabs = CustomCabinetSearch.find_signed_cabinets('installer.exe')
+----
+
+==== Extracting from Compressed Executables
+
+Some installers are themselves compressed (e.g., UPX-packed):
+
+[source,ruby]
+----
+# First, decompress the executable if needed
+if upx_packed?('installer.exe')
+  system('upx', '-d', 'installer.exe', '-o', 'installer_unpacked.exe')
+  search_file = 'installer_unpacked.exe'
+else
+  search_file = 'installer.exe'
+end
+
+# Then search for embedded cabinets
+results = Cabriolet::CAB::Decompressor.search(search_file)
+----
+
+==== Handling Large Files
+
+Efficiently search very large files:
+
+[source,ruby]
+----
+# Use chunked searching for large files
+class ChunkedCabinetSearch
+  CHUNK_SIZE = 10 * 1024 * 1024  # 10 MB chunks
+
+  def self.search(filename)
+    results = []
+    File.open(filename, 'rb') do |f|
+      offset = 0
+
+      while chunk = f.read(CHUNK_SIZE)
+        chunk_results = find_in_chunk(chunk, offset)
+        results.concat(chunk_results)
+        offset += CHUNK_SIZE
+      end
+    end
+
+    results
+  end
+
+  def self.find_in_chunk(chunk, base_offset)
+    results = []
+    pos = 0
+
+    while (index = chunk.index('MSCF', pos))
+      # Validate and add result
+      if valid_cabinet_header?(chunk, index)
+        results << {
+          offset: base_offset + index,
+          # ... other metadata
+        }
+      end
+      pos = index + 1
+    end
+
+    results
+  end
+end
+----
+
+=== Forensic Analysis
+
+==== Analyzing Installer Structure
+
+Examine installer structure without extraction:
+
+[source,ruby]
+----
+results = Cabriolet::CAB::Decompressor.search('installer.exe')
+
+results.each_with_index do |result, index|
+  puts "\n=== Cabinet #{index + 1} ==="
+  puts "Location: 0x#{result[:offset].to_s(16)}"
+
+  # Open cabinet for analysis
+  decompressor = Cabriolet::CAB::Decompressor.new(
+    'installer.exe',
+    offset: result[:offset]
+  )
+
+  # Analyze compression methods
+  compression_stats = Hash.new(0)
+  decompressor.folders.each do |folder|
+    compression_stats[folder.compression_type] += 1
+  end
+
+  puts "Compression methods:"
+  compression_stats.each do |type, count|
+    puts "  #{type}: #{count} folder(s)"
+  end
+
+  # List largest files
+  puts "\nTop 5 largest files:"
+  decompressor.files
+    .sort_by { |f| -f.uncompressed_size }
+    .first(5)
+    .each do |file|
+      puts "  #{file.filename}: #{file.uncompressed_size} bytes"
+    end
+end
+----
+
+==== Detecting Malicious Content
+
+Screen embedded cabinets for suspicious patterns:
+
+[source,ruby]
+----
+def analyze_cabinet_safety(filename, offset)
+  decompressor = Cabriolet::CAB::Decompressor.new(filename, offset: offset)
+
+  suspicious = []
+
+  decompressor.files.each do |file|
+    # Check for suspicious filenames
+    if file.filename =~ /\.(exe|dll|scr|bat|cmd|vbs|js)$/i
+      suspicious << "Executable file: #{file.filename}"
+    end
+
+    # Check for path traversal
+    if file.filename.include?('..')
+      suspicious << "Path traversal attempt: #{file.filename}"
+    end
+
+    # Check for unusual attributes
+    if file.attributes & 0x02 != 0  # Hidden attribute
+      suspicious << "Hidden file: #{file.filename}"
+    end
+  end
+
+  suspicious
+end
+
+# Scan all embedded cabinets
+results = Cabriolet::CAB::Decompressor.search('suspicious.exe')
+results.each_with_index do |result, index|
+  issues = analyze_cabinet_safety('suspicious.exe', result[:offset])
+
+  if issues.any?
+    puts "Cabinet #{index + 1} - WARNINGS:"
+    issues.each { |issue| puts "  - #{issue}" }
+  end
+end
+----
+
+=== Best Practices
+
+==== Search Optimization
+
+1. **Use deep_scan sparingly**: Only when necessary, as it's slower
+2. **Set size limits**: Use min_size to filter out false positives
+3. **Validate results**: Always verify cabinet headers
+4. **Cache results**: Store search results for repeated operations
+5. **Check file size first**: Skip files that are too small
+
+==== Extraction Safety
+
+1. **Scan before extracting**: Check for malicious content
+2. **Use temporary directories**: Extract to isolated locations first
+3. **Validate paths**: Prevent path traversal attacks
+4. **Check disk space**: Ensure sufficient space before extraction
+5. **Verify checksums**: Validate extracted files
+
+==== Error Handling
+
+1. **Handle corrupted cabinets**: Use salvage mode when needed
+2. **Check offsets**: Verify offset validity before extraction
+3. **Handle partial data**: Some embedded cabinets may be incomplete
+4. **Log failures**: Track which cabinets failed to extract
+5. **Provide context**: Include offset and size in error messages
+
+==== Bibliography
+
+* Microsoft Cabinet SDK Documentation
+* Portable Executable (PE) File Format
+* xref:../formats/cab-format.adoc[CAB Format Guide]
+* xref:salvage-mode.adoc[Salvage Mode Guide]
