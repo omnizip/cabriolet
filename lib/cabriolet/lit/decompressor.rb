@@ -156,6 +156,9 @@ module Cabriolet
             filename = entry.name
           end
 
+          # Sanitize filename for Windows compatibility (colons not allowed)
+          filename = sanitize_filename(filename)
+
           # Create output path
           output_path = ::File.join(output_dir, filename)
 
@@ -200,6 +203,27 @@ module Cabriolet
       end
 
       private
+
+      # Sanitize filename for cross-platform compatibility
+      #
+      # Windows does not allow: \ / : * ? " < > |
+      # LIT internal files often use :: prefix (e.g., ::DataSpace)
+      #
+      # @param filename [String] Original filename
+      # @return [String] Sanitized filename safe for all platforms
+      def sanitize_filename(filename)
+        # Replace colons with underscores (except drive letter on Windows)
+        # Also handle other Windows-invalid characters
+        sanitized = filename.gsub(/[:<>"|?*]/, "_")
+
+        # Remove leading underscores that resulted from :: prefix
+        sanitized = sanitized.sub(/^_+/, "") if sanitized.start_with?("_")
+
+        # Ensure we don't return empty string
+        sanitized = "_unnamed_" if sanitized.empty?
+
+        sanitized
+      end
 
       # Get section data (cached or freshly decompressed)
       #
