@@ -137,7 +137,6 @@ Value   Meaning
 
 == CFDATA Structure
 
-[source]
 ----
 Offset  Size  Field              Description
 --------------------------------------------------------------

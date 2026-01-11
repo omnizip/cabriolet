@@ -1,5 +1,5 @@
-title: Cabriolet Documentation
-description: Pure Ruby implementation for Microsoft compression formats
+title: "Cabriolet: work with Microsoft archive formats in Ruby"
+description: Archiver for Microsoft archive formats (CAB, LZMA, CHM) written in pure Ruby.
 url: https://omnizip.github.io
 baseurl: /cabriolet
 
