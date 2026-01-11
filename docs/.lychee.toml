@@ -21,26 +21,26 @@ max_retries = 3
 # User agent string
 user_agent = "lychee/cabriolet-docs"
 
-# Exclude patterns
+# Exclude patterns (use regex syntax)
 exclude = [
   # Exclude localhost and example URLs
-  "http://localhost",
-  "http://127.0.0.1",
-  "http://example.com",
-  "https://example.com",
+  "http://localhost.*",
+  "http://127\\.0\\.0\\.1.*",
+  "http://example\\.com.*",
+  "https://example\\.com.*",
 
   # Exclude email addresses
-  "mailto:*",
+  "mailto:.*",
 
   # Exclude same-page anchors (handled by Jekyll/AsciiDoc)
   "^#.*",
 
   # Exclude common placeholder URLs
-  "http://www.example.com",
-  "https://www.example.com",
+  "http://www\\.example\\.com.*",
+  "https://www\\.example\\.com.*",
 
   # Exclude GitHub edit links (these are templates)
-  "**/edit/**"
+  ".*/edit/.*"
 ]
 
 # Cache responses to avoid repeated checks
