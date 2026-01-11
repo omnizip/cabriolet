@@ -46,9 +46,6 @@ exclude = [
 # Cache responses to avoid repeated checks
 cache = true
 
-# Verbose output for debugging
-verbose = false
-
 # Only check unique links
 no_progress = true
 
