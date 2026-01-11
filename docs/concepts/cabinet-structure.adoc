@@ -125,15 +125,19 @@ Offset  Size  Field              Description
 
 === Special iFolder Values
 
-[source]
-----
-Value   Meaning
--------------------------------------------
-0xFFFD  File continues from previous cabinet
-0xFFFE  File continues to next cabinet
-0xFFFF  File spans previous and next cabinets
--------------------------------------------
-----
+[cols="1,3", stripes=even]
+|===
+|Value |Meaning
+
+|0xFFFD
+|File continues from previous cabinet
+
+|0xFFFE
+|File continues to next cabinet
+
+|0xFFFF
+|File spans previous and next cabinets
+|===
 
 == CFDATA Structure
 
