@@ -137,15 +137,30 @@ Value   Meaning
 
 == CFDATA Structure
 
-----
-Offset  Size  Field              Description
---------------------------------------------------------------
-0       4     csum               Checksum (optional)
-4       2     cbData             Compressed data size
-6       2     cbUncomp           Uncompressed data size
-8       ?     ab                 Compressed data
---------------------------------------------------------------
-----
+[cols="1,1,1,4", stripes=even]
+|===
+|Offset |Size |Field |Description
+
+|0
+|4
+|csum
+|Checksum (optional)
+
+|4
+|2
+|cbData
+|Compressed data size
+
+|6
+|2
+|cbUncomp
+|Uncompressed data size
+
+|8
+|?
+|ab
+|Compressed data
+|===
 
 == Bibliography
 
