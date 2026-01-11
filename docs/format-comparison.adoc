@@ -14,7 +14,7 @@ Cabriolet supports seven distinct Microsoft compression formats, each designed f
 
 === Quick Comparison Table
 
-[cols="1,1,1,1,1,1,1", options="header"]
+[cols="1,1,1,1,1,1,1,1", options="header"]
 |===
 | Feature | CAB | CHM | HLP | KWAJ | LIT | OAB | SZDD
 

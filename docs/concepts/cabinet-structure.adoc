@@ -109,19 +109,45 @@ Value   Name       Description
 
 === Fields
 
-[source]
-----
-Offset  Size  Field              Description
---------------------------------------------------------------
-0       4     cbFile             Uncompressed file size
-4       4     uoffFolderStart    Uncompressed offset in folder
-8       2     iFolder            Folder index (or special value)
-10      2     date               MS-DOS date
-12      2     time               MS-DOS time
-14      2     attribs            File attributes
-16      ?     szName             Null-terminated filename
---------------------------------------------------------------
-----
+[cols="1,1,1,1,4", stripes=even]
+|===
+|Offset |Size |Field |Description
+
+|0
+|4
+|cbFile
+|Uncompressed file size
+
+|4
+|4
+|uoffFolderStart
+|Uncompressed offset in folder
+
+|8
+|2
+|iFolder
+|Folder index (or special value)
+
+|10
+|2
+|date
+|MS-DOS date
+
+|12
+|2
+|time
+|MS-DOS time
+
+|14
+|2
+|attribs
+|File attributes
+
+|16
+|?
+|szName
+|Null-terminated filename
+|===
 
 === Special iFolder Values
 
