@@ -5,6 +5,19 @@
 *.chm binary
 *.lit binary
 
-# Test fixtures must remain binary (except Ruby scripts which need proper line endings)
-spec/fixtures/** binary
-spec/fixtures/**/*.rb text eol=lf
+# Ruby scripts use text mode with LF line endings
+*.rb text eol=lf
+
+# Test fixtures are binary (data files for compression testing)
+spec/fixtures/cab/** binary
+spec/fixtures/chm/** binary
+spec/fixtures/hlp/** binary
+spec/fixtures/kwaj/** binary
+spec/fixtures/lit/** binary
+spec/fixtures/oab/** binary
+spec/fixtures/szdd/** binary
+spec/fixtures/libmspack/** binary
+spec/fixtures/cabextract/** binary
+
+# Test fixture scripts use text mode with LF
+spec/fixtures/generate_format_fixtures.rb text eol=lf
