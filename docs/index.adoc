@@ -3,11 +3,13 @@ title: Home
 nav_order: 0
 ---
 
-== Cabriolet Documentation
+== Cabriolet: working with Microsoft archive formats in Ruby
 
 === Purpose
 
-Cabriolet is a pure Ruby implementation for Microsoft compression formats, providing comprehensive support for CAB, CHM, SZDD, KWAJ, HLP, LIT, and OAB file formats with multiple compression algorithms.
+Cabriolet is a pure Ruby implementation for Microsoft compression formats,
+providing comprehensive support for CAB, CHM, SZDD, KWAJ, HLP, LIT, and OAB file
+formats with multiple compression algorithms.
 
 === Quick Start
 
@@ -23,25 +25,22 @@ Get started with Cabriolet in minutes:
 
 Follow this learning path:
 
-[source]
-----
-1. Install Cabriolet
-   └─→ <<getting-started/installation#,Installation Guide>>
+. Install Cabriolet
+** <<getting-started/installation#,Installation Guide>>
 
-2. Quick Start (5 minutes)
-   └─→ <<getting-started/quick-start#,Quick Start>>
+. Quick Start (5 minutes)
+** <<getting-started/quick-start#,Quick Start>>
 
-3. Create Your First Archive
-   └─→ <<getting-started/your-first-cab#,Your First CAB>>
+. Create Your First Archive
+** <<getting-started/your-first-cab#,Your First CAB>>
 
-4. Learn Basic Operations
-   ├─→ <<guides/basic-usage/extracting-files#,Extracting Files>>
-   ├─→ <<guides/basic-usage/listing-contents#,Listing Contents>>
-   └─→ <<guides/basic-usage/creating-archives#,Creating Archives>>
+. Learn Basic Operations
+** <<guides/basic-usage/extracting-files#,Extracting Files>>
+** <<guides/basic-usage/listing-contents#,Listing Contents>>
+** <<guides/basic-usage/creating-archives#,Creating Archives>>
 
-5. Explore Advanced Features
-   └─→ <<guides/advanced-usage/index#,Advanced Usage Guide>>
-----
+. Explore Advanced Features
+** <<guides/advanced-usage/index#,Advanced Usage Guide>>
 
 ==== Looking for Something Specific?
 
