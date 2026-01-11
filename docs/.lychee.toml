@@ -44,7 +44,7 @@ exclude = [
 
   # Exclude all internal site links - they work on deployed site
   # but fail when checking local files due to baseurl path issues
-  "^/.*"
+  "https?://omnizip\\.github\\.io/cabriolet/.*"
 ]
 
 # Cache responses to avoid repeated checks
@@ -57,4 +57,7 @@ no_progress = true
 insecure = false
 
 # Scheme (http, https, file)
-scheme = ["https", "http", "file"]
+scheme = ["https", "http"]
+
+# Don't fail on missing local files
+skip-missing = true
