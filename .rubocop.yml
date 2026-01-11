@@ -10,6 +10,11 @@ inherit_from:
 AllCops:
   NewCops: enable
 
+# Line endings are managed via .gitattributes
+# Disable EndOfLine cop to avoid cross-platform issues
+Layout/EndOfLine:
+  Enabled: false
+
 plugins:
   - rubocop-rake
   - rubocop-rspec
