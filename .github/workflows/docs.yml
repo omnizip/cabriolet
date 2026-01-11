@@ -79,7 +79,7 @@ jobs:
       - name: Run link checker
         run: |
           cd docs
-          lychee --config .lychee.toml _site --format markdown --output lychee-report.md
+          lychee --config .lychee.toml --root-dir "$PWD/_site/" --base-url "file://$PWD/_site/" _site --format markdown --output lychee-report.md
         continue-on-error: true
 
       - name: Display link check summary
@@ -95,7 +95,7 @@ jobs:
         run: |
           cd docs
           # Re-run lychee without continue-on-error to actually fail the job
-          lychee --config .lychee.toml _site
+          lychee --config .lychee.toml --root-dir "$PWD/_site/" --base-url "file://$PWD/_site/" _site
 
   validate-structure:
     name: Validate Documentation Structure
