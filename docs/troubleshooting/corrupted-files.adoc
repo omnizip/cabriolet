@@ -51,8 +51,8 @@ end
 
 === Partial Recovery Strategies
 
-1. **Extract file by file**:
-
+1. **Extract file by file**::
++
 [source,ruby]
 ----
 cab.files.each do |file|
@@ -64,40 +64,44 @@ cab.files.each do |file|
   end
 end
 ----
++
 
-2. **Skip checksum validation**:
-
+2. **Skip checksum validation**::
++
 [source,ruby]
 ----
 cab = Cabriolet::CAB::Parser.new(
   skip_checksum: true
 ).parse('file.cab')
 ----
++
 
-3. **Use external tools**:
+3. **Use external tools**::
    - Microsoft `expand.exe` (Windows)
    - `cabextract` (Linux/macOS)
    - Compare results with Cabriolet
 
 === Prevention
 
-1. **Verify after creation**:
-
+1. **Verify after creation**::
++
 [source,ruby]
 ----
 # Test archive after creation
 cab = Cabriolet::CAB::Parser.new.parse('archive.cab')
 cab.files.each { |f| f.data }  # Trigger decompression
 ----
++
 
-2. **Use checksums**:
-
+2. **Use checksums**::
++
 [source,ruby]
 ----
 # Generate archive checksum
 checksum = Digest::SHA256.file('archive.cab').hexdigest
 File.write('archive.cab.sha256', checksum)
 ----
++
 
 3. **Store redundant copies**
 4. **Use error-correcting storage** (RAID, cloud with redundancy)

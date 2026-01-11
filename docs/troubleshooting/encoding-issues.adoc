@@ -95,22 +95,24 @@ end
 
 === Best Practices
 
-1. **Always use UTF-8**:
-
+1. **Always use UTF-8**::
++
 [source,ruby]
 ----
 # Set default encoding
 Encoding.default_external = Encoding::UTF_8
 Encoding.default_internal = Encoding::UTF_8
 ----
++
 
-2. **Validate filenames**:
-
+2. **Validate filenames**::
++
 [source,ruby]
 ----
 # Remove invalid characters
 safe_name = filename.gsub(/[^\w\s\-.]/, '_')
 ----
++
 
 3. **Test with international content**
 

@@ -274,8 +274,9 @@ For batch operations on thousands of files, this is negligible compared to actua
 
 ==== Optimization Tips
 
-1. **Cache format detection**:
+1. **Cache format detection**::
 
++
 [example]
 ====
 [source,ruby]
@@ -289,9 +290,11 @@ if format == :cab
 end
 ----
 ====
++
 
-2. **Batch detection**:
+2. **Batch detection**::
 
++
 [example]
 ====
 [source,ruby]
@@ -308,6 +311,8 @@ files_by_format.each do |format, files|
 end
 ----
 ====
++
++
 
 === See Also
 
