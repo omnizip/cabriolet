@@ -46,70 +46,147 @@ CAB File Structure:
 
 === Fields
 
-[source]
-----
-Offset  Size  Field              Description
---------------------------------------------------------------
-0       4     signature          'MSCF' (0x4D534346)
-4       4     reserved1          Must be 0
-8       4     cbCabinet          Cabinet file size in bytes
-12      4     reserved2          Must be 0
-16      4     coffFiles          Offset of first CFFILE entry
-20      4     reserved3          Must be 0
-24      1     versionMinor       File format minor version
-25      1     versionMajor       File format major version
-26      2     cFolders           Number of CFFOLDER entries
-28      2     cFiles             Number of CFFILE entries
-30      2     flags              Option flags
-32      2     setID              Cabinet set ID
-34      2     iCabinet           Cabinet number in set (0-based)
---------------------------------------------------------------
-```
+[cols="1,1,1,3", stripes=even]
+|===
+|Offset |Size |Field |Description
+
+|0
+|4
+|signature
+|'MSCF' (0x4D534346)
+
+|4
+|4
+|reserved1
+|Must be 0
+
+|8
+|4
+|cbCabinet
+|Cabinet file size in bytes
+
+|12
+|4
+|reserved2
+|Must be 0
+
+|16
+|4
+|coffFiles
+|Offset of first CFFILE entry
+
+|20
+|4
+|reserved3
+|Must be 0
+
+|24
+|1
+|versionMinor
+|File format minor version
+
+|25
+|1
+|versionMajor
+|File format major version
+
+|26
+|2
+|cFolders
+|Number of CFFOLDER entries
+
+|28
+|2
+|cFiles
+|Number of CFFILE entries
+
+|30
+|2
+|flags
+|Option flags
+
+|32
+|2
+|setID
+|Cabinet set ID
+
+|34
+|2
+|iCabinet
+|Cabinet number in set (0-based)
+|===
 
 === Flags
 
-[source]
-----
-Flag Bit  Value   Meaning
--------------------------------------------
-0         0x0001  PREV_CABINET: Previous cabinet info present
-1         0x0002  NEXT_CABINET: Next cabinet info present
-2         0x0004  RESERVE_PRESENT: Reserve area present
--------------------------------------------
-----
+[cols="1,1,3", stripes=even]
+|===
+|Flag Bit |Value |Meaning
+
+|0
+|0x0001
+|PREV_CABINET: Previous cabinet info present
+
+|1
+|0x0002
+|NEXT_CABINET: Next cabinet info present
+
+|2
+|0x0004
+|RESERVE_PRESENT: Reserve area present
+|===
 
 == CFFOLDER Structure
 
 === Fields
 
-[source]
-----
-Offset  Size  Field              Description
---------------------------------------------------------------
-0       4     coffCabStart       Offset of first CFDATA block
-4       2     cCFData            Number of CFDATA blocks
-6       2     typeCompress       Compression type
---------------------------------------------------------------
-----
+[cols="1,1,1,3", stripes=even]
+|===
+|Offset |Size |Field |Description
+
+|0
+|4
+|coffCabStart
+|Offset of first CFDATA block
+
+|4
+|2
+|cCFData
+|Number of CFDATA blocks
+
+|6
+|2
+|typeCompress
+|Compression type
+|===
 
 === Compression Types
 
-[source]
-----
-Value   Name       Description
--------------------------------------------
-0x0000  NONE       No compression
-0x0001  MSZIP      MSZIP compression
-0x0002  QUANTUM    Quantum compression
-0x0003  LZX        LZX compression
--------------------------------------------
-----
+[cols="1,1,3", stripes=even]
+|===
+|Value |Name |Description
+
+|0x0000
+|NONE
+|No compression
+
+|0x0001
+|MSZIP
+|MSZIP compression
+
+|0x0002
+|QUANTUM
+|Quantum compression
+
+|0x0003
+|LZX
+|LZX compression
+|===
 
 ## CFFILE Structure
 
 === Fields
 
-[cols="1,1,1,1,4", stripes=even]
+[cols="1,1,1,3", stripes=even]
 |===
 |Offset |Size |Field |Description
 
