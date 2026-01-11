@@ -5,5 +5,6 @@
 *.chm binary
 *.lit binary
 
-# Test fixtures must remain binary
+# Test fixtures must remain binary (except Ruby scripts which need proper line endings)
 spec/fixtures/** binary
+spec/fixtures/**/*.rb text eol=lf
