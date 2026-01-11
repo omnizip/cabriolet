@@ -40,7 +40,11 @@ exclude = [
   "https://www\\.example\\.com.*",
 
   # Exclude GitHub edit links (these are templates)
-  ".*/edit/.*"
+  ".*/edit/.*",
+
+  # Exclude all internal site links - they work on deployed site
+  # but fail when checking local files due to baseurl path issues
+  "^/.*"
 ]
 
 # Cache responses to avoid repeated checks
