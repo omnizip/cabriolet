@@ -33,7 +33,7 @@ module Cabriolet
       #
       # @param filename [String] Path to the KWAJ file
       # @return [Models::KWAJHeader] Parsed header
-      # @raise [Errors::ParseError] if the file is not a valid KWAJ
+      # @raise [Cabriolet::ErrorParseError] if the file is not a valid KWAJ
       def open(filename)
         @parser.parse(filename)
       end
@@ -54,7 +54,7 @@ module Cabriolet
       # @param filename [String] Input filename
       # @param output_path [String] Where to write the decompressed file
       # @return [Integer] Number of bytes written
-      # @raise [Errors::DecompressionError] if decompression fails
+      # @raise [Cabriolet::ErrorDecompressionError] if decompression fails
       def extract(header, filename, output_path)
         raise ArgumentError, "Header must not be nil" unless header
         raise ArgumentError, "Output path must not be nil" unless output_path
@@ -92,8 +92,8 @@ module Cabriolet
       # @param output_path [String, nil] Path to output file, or nil to
       #   auto-detect
       # @return [Integer] Number of bytes written
-      # @raise [Errors::ParseError] if input is not valid KWAJ
-      # @raise [Errors::DecompressionError] if decompression fails
+      # @raise [Cabriolet::ErrorParseError] if input is not valid KWAJ
+      # @raise [Cabriolet::ErrorDecompressionError] if decompression fails
       def decompress(input_path, output_path = nil)
         # Parse header
         header = open(input_path)
@@ -136,7 +136,7 @@ module Cabriolet
       # @param input_handle [System::FileHandle] Input handle
       # @param output_handle [System::FileHandle] Output handle
       # @return [Integer] Number of bytes written
-      # @raise [Errors::DecompressionError] if decompression fails
+      # @raise [Cabriolet::ErrorDecompressionError] if decompression fails
       def decompress_data(header, input_handle, output_handle)
         case header.comp_type
         when Constants::KWAJ_COMP_NONE
@@ -150,7 +150,7 @@ module Cabriolet
         when Constants::KWAJ_COMP_MSZIP
           decompress_mszip(input_handle, output_handle)
         else
-          raise Errors::DecompressionError,
+          raise Error,
                 "Unsupported compression type: #{header.comp_type}"
         end
       end
@@ -215,9 +215,9 @@ module Cabriolet
       # @param input_handle [System::FileHandle] Input handle
       # @param output_handle [System::FileHandle] Output handle
       # @return [Integer] Number of bytes written
-      # @raise [Errors::DecompressionError] LZH not yet implemented
+      # @raise [Cabriolet::Error] LZH not yet implemented
       def decompress_lzh(_input_handle, _output_handle)
-        raise Errors::DecompressionError,
+        raise Error,
               "LZH compression type is not yet implemented. " \
               "This requires custom Huffman tree implementation."
       end

@@ -2,6 +2,8 @@
 
 require_relative "parser"
 require_relative "zeck_lz77"
+require_relative "../../system/io_system"
+require_relative "../../constants"
 
 module Cabriolet
   module HLP
@@ -45,14 +47,19 @@ module Cabriolet
           file_entry = @header.find_file(filename)
           return nil unless file_entry
 
-          # Open the WinHelp file and seek to file data
-          handle = @io_system.open(@filename, Constants::MODE_READ)
-          begin
-            # Calculate file offset from starting block
+          # Use file_offset if available (B+ tree format), otherwise fall back to starting_block
+          if file_entry[:file_offset]
+            file_offset = file_entry[:file_offset]
+          else
+            # Calculate file offset from starting block (WinHelp 3.x format)
             # Block size is typically 4096 bytes
             block_size = 4096
             file_offset = file_entry[:starting_block] * block_size
+          end
 
+          # Open the WinHelp file and seek to file data
+          handle = @io_system.open(@filename, Constants::MODE_READ)
+          begin
             @io_system.seek(handle, file_offset, Constants::SEEK_START)
             @io_system.read(handle, file_entry[:file_size])
           ensure
@@ -119,7 +126,7 @@ module Cabriolet
             next unless data
 
             # Sanitize filename for file system
-            safe_name = file_entry[:filename].gsub("|", "_pipe_")
+            safe_name = sanitize_filename(file_entry[:filename])
             output_path = File.join(output_dir, safe_name)
 
             File.binwrite(output_path, data)
@@ -127,6 +134,32 @@ module Cabriolet
           end
 
           count
+        end
+
+        # Sanitize filename for file system
+        #
+        # @param filename [String] Internal filename
+        # @return [String] Safe filename
+        def sanitize_filename(filename)
+          # Encode to ASCII, replacing non-ASCII and control characters with _
+          sanitized = filename.encode("ASCII", invalid: :replace, undef: :replace, replace: "_")
+
+          # Replace | with _pipe_ (after encoding to handle | correctly)
+          sanitized = sanitized.gsub("|", "_pipe_")
+
+          # Replace remaining invalid filename characters with _
+          sanitized = sanitized.gsub(/[\/\\:<>"|?*]/, "_")
+
+          # Replace multiple consecutive underscores with single underscore
+          sanitized = sanitized.gsub(/_+/, "_")
+
+          # Remove leading/trailing underscores
+          sanitized = sanitized.gsub(/^_+|_+$/, "")
+
+          # Use default name if empty
+          sanitized = "_unnamed_file_" if sanitized.empty?
+
+          sanitized
         end
 
         # Get list of internal filenames

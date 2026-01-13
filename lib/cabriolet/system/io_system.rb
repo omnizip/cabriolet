@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require_relative "file_handle"
+require_relative "memory_handle"
+
 module Cabriolet
   module System
     # IOSystem provides an abstraction layer for file I/O operations,

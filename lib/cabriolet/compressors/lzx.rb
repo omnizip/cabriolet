@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "base"
 require_relative "../binary/bitstream_writer"
 require_relative "../huffman/encoder"
 

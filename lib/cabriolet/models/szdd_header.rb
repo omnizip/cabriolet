@@ -64,8 +64,10 @@ module Cabriolet
         return compressed_filename unless normal_format? && @missing_char
 
         # Replace trailing underscore with missing character
-        # Pattern: ends with .XX_ where XX is any 2+ characters
-        compressed_filename.sub(/\.(\w+)_$/, ".\\1#{@missing_char}")
+        # SZDD headers store the missing character in lowercase,
+        # but DOS filenames are traditionally uppercase
+        missing_char_upper = @missing_char.upcase
+        compressed_filename.sub(/\.(\w+)_$/, ".\\1#{missing_char_upper}")
       end
     end
   end
