@@ -13,7 +13,7 @@ This guide explains MSZIP (Microsoft ZIP) compression, the default compression a
 
 === References
 
-* <<choosing-algorithm#,Choosing a Compression Algorithm>>
+* <<../../getting-started/index,Getting Started Guide>>
 * <<../formats/cab-format#compression-support,CAB Format>>
 * <<../formats/kwaj-format#compression-support,KWAJ Format>>
 
@@ -30,7 +30,7 @@ MSZIP is Microsoft's implementation of the DEFLATE algorithm, the same compressi
 * **Huffman coding** - Statistical encoding for better compression
 * **Block-based** - Compresses data in 32 KB blocks (CAB)
 
-=== Performance Characteristics
+=== Performance characteristics
 
 [cols="1,2"]
 |===
@@ -180,7 +180,7 @@ This is handled automatically by the decompressor's `@window_offset` tracking.
 |Variable
 |===
 
-=== Best Practices
+=== Best practices
 
 1. **Default choice** - Use for general-purpose CAB files
 2. **Mixed content** - Good for varied file types
@@ -245,12 +245,11 @@ puts "Compression ratio: #{ratio.round(1)}%"
 puts "#{original_size} → #{compressed_size} bytes"
 ----
 
-=== See Also
+=== See also
 
-* <<choosing-algorithm#,Choosing a Compression Algorithm>>
-* <<lzss-compression#,LZSS Compression>> - Faster, lower ratio
-* <<lzx-compression#,LZX Compression>> - Slower, higher ratio
-* <<../formats/cab-format#,CAB Format Guide>>
+* <<none-compression,None Compression>> for faster speed, lower ratio
+* <<lzx-compression,LZX Compression>> for slower speed, higher ratio
+* <<choosing-algorithm,Choosing a Compression Algorithm>>
 
 === Bibliography
 

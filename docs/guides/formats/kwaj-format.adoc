@@ -13,10 +13,10 @@ This guide provides comprehensive documentation for working with Microsoft KWAJ 
 
 === References
 
-* <<../../getting-started/quick-start#,Quick Start Guide>>
-* <<../../reference/cli/kwaj-commands#,KWAJ Commands Reference>>
-* <<../../reference/api/kwaj-api#,KWAJ API Reference>>
-* <<../compression/index#,Compression Algorithms>>
+* <<../../getting-started/index,Getting Started Guide>>
+* <<../../reference/cli/kwaj-commands,KWAJ CLI Commands>>
+* <<../compression/index,Compression Algorithms Guide>>
+* <<../../reference/api/index,Ruby API Reference>>
 
 === Concepts
 
@@ -69,7 +69,7 @@ KWAJ files support multiple compression algorithms:
 * **SZDD** (Type 2) - LZSS compression
 * **MSZIP** (Type 3) - DEFLATE compression
 
-For detailed algorithm information, see <<../compression/index#,Compression Algorithms>>.
+For detailed algorithm information, see link:.
 
 ==== Filename Embedding
 
@@ -98,10 +98,13 @@ Decompress KWAJ files:
 [source,bash]
 ----
 # Auto-detect output filename from header
-cabriolet kwaj-extract setup.kwj
+cabriolet extract setup.kwj
 
 # Specify output filename
-cabriolet kwaj-extract setup.kwj setup.exe
+cabriolet extract setup.kwj setup.exe
+
+# For explicit format specification:
+cabriolet extract --format kwaj setup.kwj setup.exe
 ----
 
 .Ruby API
@@ -135,7 +138,10 @@ Display KWAJ file metadata:
 .Command-line
 [source,bash]
 ----
-cabriolet kwaj-info setup.kwj
+cabriolet info setup.kwj
+
+# For explicit format specification:
+cabriolet info --format kwaj setup.kwj
 ----
 
 .Ruby API
@@ -180,16 +186,19 @@ Create KWAJ compressed files:
 [source,bash]
 ----
 # Compress with default SZDD compression
-cabriolet kwaj-compress setup.exe setup.kwj
+cabriolet create setup.kwj setup.exe
 
 # Compress with MSZIP
-cabriolet kwaj-compress --compression=mszip setup.exe setup.kwj
+cabriolet create --compression=mszip setup.kwj setup.exe
 
 # Include original filename in header
-cabriolet kwaj-compress --filename=setup.exe data.kwj
+cabriolet create --filename=setup.exe data.kwj setup.exe
 
 # Include extra metadata
-cabriolet kwaj-compress --extra-data="Version: 1.0" setup.exe setup.kwj
+cabriolet create --extra-data="Version: 1.0" setup.kwj setup.exe
+
+# For explicit format specification:
+cabriolet create --format kwaj --compression=mszip setup.kwj setup.exe
 ----
 
 .Ruby API
@@ -517,7 +526,7 @@ Unknown compression method:
 
 [source,bash]
 ----
-cabriolet kwaj-info setup.kwj  # Shows compression type
+cabriolet info setup.kwj  # Shows compression type
 ----
 
 **"Decompression failed"**
@@ -526,7 +535,7 @@ Corrupted compressed data. Check compression type:
 
 [source,bash]
 ----
-cabriolet kwaj-info setup.kwj
+cabriolet info setup.kwj
 # Verify compression method is supported
 ----
 
@@ -536,7 +545,7 @@ No embedded filename. Specify output explicitly:
 
 [source,bash]
 ----
-cabriolet kwaj-extract setup.kwj output.exe
+cabriolet extract setup.kwj output.exe
 ----
 
 ==== Validation
@@ -567,7 +576,7 @@ rescue Cabriolet::CorruptionError => e
 end
 ----
 
-=== Best Practices
+=== Best practices
 
 1. **Include metadata**: Store filename and length for better usability
 
@@ -615,17 +624,22 @@ Header can include:
 * **Length**: 4-byte uncompressed size
 * **Extra data**: Variable-length custom data
 
-For complete format specifications, see <<../../reference/formats/kwaj-specification#,KWAJ Specification>>.
+For complete format specifications, see <<../../reference/formats/index,Format Specifications>>.
 
-=== Next Steps
+=== Next steps
 
-* Learn about <<../compression/index#,compression algorithms>>
-* Review <<../../reference/cli/kwaj-commands#,complete KWAJ command reference>>
-* Study <<../../reference/api/kwaj-api#,KWAJ API documentation>>
+* Learn about <<../compression/index,compression algorithms>>
+* Review <<../basic-usage/extracting-files,extracting files>>
+* Study <<../../reference/api/index,Ruby API>>
+
+=== See also
+
+* <<szdd-format,SZDD Format>>
+* <<cab-format,CAB Format>>
+* <<index,All Format Guides>>
 
 === Bibliography
 
-* <<../../reference/cli/kwaj-commands#,KWAJ Commands Reference>>
-* <<../../reference/api/kwaj-api#,KWAJ API Reference>>
-* <<../../reference/formats/kwaj-specification#,KWAJ Format Specification>>
+* https://github.com/omnizip/cabriolet[Cabriolet on GitHub]
 * https://www.cabextract.org.uk/[cabextract Documentation]
+* https://docs.microsoft.com/en-us/previous-versions/bb417343(v=msdn.10)[Microsoft Cabinet SDK]

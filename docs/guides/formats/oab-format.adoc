@@ -13,10 +13,10 @@ This guide provides comprehensive documentation for working with Microsoft Outlo
 
 === References
 
-* <<../../getting-started/quick-start#,Quick Start Guide>>
-* <<../../reference/cli/oab-commands#,OAB Commands Reference>>
-* <<../../reference/api/oab-api#,OAB API Reference>>
-* <<../compression/lzx-compression#,LZX Compression>>
+* <<../../getting-started/index,Getting Started Guide>>
+* <<../../reference/cli/oab-commands,OAB CLI Commands>>
+* <<../compression/lzx-compression,LZX Compression Guide>>
+* <<../../reference/api/index,Ruby API Reference>>
 
 === Concepts
 
@@ -93,7 +93,7 @@ OAB files use LZX compression:
 * **Block-based** - Compressed in configurable block sizes
 * **Default block size** - 32KB (32,768 bytes)
 
-For detailed algorithm information, see <<../compression/lzx-compression#,LZX Compression>>.
+For detailed algorithm information, see link:.
 
 ==== Incremental Patches
 
@@ -125,7 +125,10 @@ Decompress a complete OAB file:
 [source,bash]
 ----
 # Extract full OAB
-cabriolet oab-extract full.oab address.dat
+cabriolet extract full.oab address.dat
+
+# For explicit format specification:
+cabriolet extract --format oab full.oab address.dat
 ----
 
 .Ruby API
@@ -155,7 +158,10 @@ Apply a patch to a base file:
 [source,bash]
 ----
 # Apply patch with base file
-cabriolet oab-extract --base=full.oab patch.oab updated.dat
+cabriolet extract --base=full.oab patch.oab updated.dat
+
+# For explicit format specification:
+cabriolet extract --format oab --base=full.oab patch.oab updated.dat
 ----
 
 .Ruby API
@@ -189,10 +195,13 @@ Display OAB file metadata:
 [source,bash]
 ----
 # Show full file info
-cabriolet oab-info full.oab
+cabriolet info full.oab
 
 # Show patch file info
-cabriolet oab-info patch.oab
+cabriolet info patch.oab
+
+# For explicit format specification:
+cabriolet info --format oab full.oab
 ----
 
 .Ruby API
@@ -249,13 +258,16 @@ Compress address data to OAB format:
 [source,bash]
 ----
 # Create full OAB with default 32KB blocks
-cabriolet oab-create address.dat full.oab
+cabriolet create full.oab address.dat
 
 # Create with custom block size
-cabriolet oab-create --block-size=65536 address.dat full.oab
+cabriolet create --block-size=65536 full.oab address.dat
 
 # Create incremental patch
-cabriolet oab-create --base=old.dat new.dat patch.oab
+cabriolet create --base=old.dat patch.oab new.dat
+
+# For explicit format specification:
+cabriolet create --format oab --block-size=65536 full.oab address.dat
 ----
 
 .Ruby API
@@ -575,7 +587,7 @@ Patch doesn't match base file:
 
 [source,bash]
 ----
-cabriolet oab-info patch.oab
+cabriolet info patch.oab
 # Check Source CRC matches your base file
 ----
 
@@ -586,7 +598,7 @@ LZX decompression error:
 [source,bash]
 ----
 # Try extracting with verbose output
-cabriolet oab-extract --verbose file.oab output.dat
+cabriolet extract --verbose file.oab output.dat
 ----
 
 **"Block size mismatch"**
@@ -633,7 +645,7 @@ rescue StandardError => e
 end
 ----
 
-=== Best Practices
+=== Best practices
 
 1. **Use appropriate block size**:
    * 32KB for general use
@@ -683,17 +695,22 @@ Offset  Bytes  Description
 * **Block-based**: Fixed-size blocks
 * **Default block size**: 32,768 bytes (32KB)
 
-For complete format specifications, see <<../../reference/formats/oab-specification#,OAB Specification>>.
+For complete format specifications, see <<../../reference/formats/index,Format Specifications>>.
 
-=== Next Steps
+=== Next steps
 
-* Learn about <<../compression/lzx-compression#,LZX compression algorithm>>
-* Review <<../../reference/cli/oab-commands#,complete OAB command reference>>
-* Study <<../../reference/api/oab-api#,OAB API documentation>>
+* Learn about <<../compression/lzx-compression,LZX compression>>
+* Review <<../basic-usage/extracting-files,extracting files>>
+* Study <<../../reference/api/index,Ruby API>>
+
+=== See also
+
+* <<cab-format,CAB Format>>
+* <<szdd-format,SZDD Format>>
+* <<index,All Format Guides>>
 
 === Bibliography
 
-* <<../../reference/cli/oab-commands#,OAB Commands Reference>>
-* <<../../reference/api/oab-api#,OAB API Reference>>
-* <<../../reference/formats/oab-specification#,OAB Format Specification>>
+* https://github.com/omnizip/cabriolet[Cabriolet on GitHub]
 * https://docs.microsoft.com/en-us/previous-versions/office/developer/exchange-server-2010/aa580288(v=exchg.140)[Microsoft Exchange OAB Documentation]
+* https://en.wikipedia.org/wiki/Offline_Address_Book[Wikipedia: Offline Address Book]

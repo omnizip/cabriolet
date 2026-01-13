@@ -15,9 +15,9 @@ formats with multiple compression algorithms.
 
 Get started with Cabriolet in minutes:
 
-* <<getting-started/installation#,Installation>> - Install the gem and dependencies
-* <<getting-started/quick-start#,Quick Start>> - Extract your first CAB file in 5 minutes
-* <<getting-started/your-first-cab#,Your First CAB>> - Create a simple archive
+* link:getting-started/installation[Install the gem and dependencies]
+* link:getting-started/quick-start[Extract your first CAB file in 5 minutes]
+* link:getting-started/your-first-cab[Create a simple archive]
 
 === Documentation Map
 
@@ -26,95 +26,95 @@ Get started with Cabriolet in minutes:
 Follow this learning path:
 
 . Install Cabriolet
-** <<getting-started/installation#,Installation Guide>>
+** link:getting-started/installation[Installation Guide]
 
 . Quick Start (5 minutes)
-** <<getting-started/quick-start#,Quick Start>>
+** link:getting-started/quick-start[Quick Start Guide]
 
 . Create Your First Archive
-** <<getting-started/your-first-cab#,Your First CAB>>
+** link:getting-started/your-first-cab[Create Your First CAB]
 
 . Learn Basic Operations
-** <<guides/basic-usage/extracting-files#,Extracting Files>>
-** <<guides/basic-usage/listing-contents#,Listing Contents>>
-** <<guides/basic-usage/creating-archives#,Creating Archives>>
+** link:guides/basic-usage/extracting-files[Extract files]
+** link:guides/basic-usage/creating-archives[Create archives]
+** link:guides/basic-usage/listing-contents[List contents]
 
 . Explore Advanced Features
-** <<guides/advanced-usage/index#,Advanced Usage Guide>>
+** link:guides/advanced-usage/multi-part-cabinets[Multi-part cabinets]
 
 ==== Looking for Something Specific?
 
 **Working with Files**
 
-* <<guides/basic-usage/extracting-files#,Extracting Files>> - Extract from archives
-* <<guides/basic-usage/creating-archives#,Creating Archives>> - Build new archives
-* <<guides/basic-usage/listing-contents#,Listing Contents>> - Browse archive contents
-* <<guides/basic-usage/testing-integrity#,Testing Integrity>> - Verify archives
+* link:guides/basic-usage/extracting-files[Extract from archives]
+* link:guides/basic-usage/creating-archives[Build new archives]
+* link:guides/basic-usage/listing-contents[Browse archive contents]
+* link:guides/basic-usage/testing-integrity[Verify archives]
 
 **File Formats**
 
-* <<guides/formats/cab-format#,CAB Format>> - Microsoft Cabinet files
-* <<guides/formats/chm-format#,CHM Format>> - Compiled HTML Help
-* <<guides/formats/szdd-format#,SZDD Format>> - Single-file compression
-* <<guides/formats/kwaj-format#,KWAJ Format>> - KWAJ archives
-* <<guides/formats/hlp-format#,HLP Format>> - Windows Help files
-* <<guides/formats/lit-format#,LIT Format>> - Microsoft Reader eBooks
-* <<guides/formats/oab-format#,OAB Format>> - Offline Address Book
+* link:guides/formats/cab-format[Microsoft Cabinet files]
+* link:guides/formats/chm-format[Compiled HTML Help]
+* link:guides/formats/szdd-format[Single-file compression]
+* link:guides/formats/kwaj-format[KWAJ archives]
+* link:guides/formats/hlp-format[Windows Help files]
+* link:guides/formats/lit-format[Microsoft Reader eBooks]
+* link:guides/formats/oab-format[Offline Address Book]
 
 **Compression Algorithms**
 
-* <<guides/compression/choosing-algorithm#,Choosing an Algorithm>> - Algorithm selection guide
-* <<guides/compression/none-compression#,None>> - Uncompressed storage
-* <<guides/compression/lzss-compression#,LZSS>> - Simple dictionary compression
-* <<guides/compression/mszip-compression#,MSZIP>> - ZIP-compatible compression
-* <<guides/compression/lzx-compression#,LZX>> - High compression ratio
-* <<guides/compression/quantum-compression#,Quantum>> - Memory-efficient compression
+* link:guides/compression/choosing-algorithm[Algorithm selection guide]
+* link:guides/compression/none-compression[Uncompressed storage]
+* link:guides/compression/lzss-compression[Simple dictionary compression]
+* link:guides/compression/mszip-compression[ZIP-compatible compression]
+* link:guides/compression/lzx-compression[High compression ratio]
+* link:guides/compression/quantum-compression[Memory-efficient compression]
 
 **Advanced Topics**
 
-* <<guides/advanced-usage/multi-part-cabinets#,Multi-part Cabinets>> - Split archives
-* <<guides/advanced-usage/embedded-cabinets#,Embedded Cabinets>> - Extract from executables
-* <<guides/advanced-usage/custom-io-handlers#,Custom I/O Handlers>> - Advanced I/O
-* <<guides/advanced-usage/memory-operations#,Memory Operations>> - In-memory processing
-* <<guides/advanced-usage/salvage-mode#,Salvage Mode>> - Recover damaged archives
-* <<guides/advanced-usage/performance-tuning#,Performance Tuning>> - Optimization tips
+* link:guides/advanced-usage/multi-part-cabinets[Split archives]
+* link:examples/extract-installer[Extract from executables]
+* link:guides/advanced-usage/custom-io-handlers[Advanced I/O]
+* link:guides/advanced-usage/memory-operations[In-memory processing]
+* link:guides/advanced-usage/salvage-mode[Recover damaged archives]
+* link:guides/advanced-usage/performance-tuning[Optimization tips]
 
 **Reference Materials**
 
-* <<quick-reference#,Quick Reference>> - Cheat sheet for common operations
-* <<reference/cli/index#,CLI Reference>> - Command-line interface documentation
-* <<reference/api/index#,API Reference>> - Ruby API documentation
-* <<concepts/index#,Concepts>> - Core concepts explained
-* <<architecture/index#,Architecture>> - Design and implementation details
+* link:resources/quick-reference[Cheat sheet for common operations]
+* link:reference/cli[Command-line interface documentation]
+* link:reference/api[Ruby API documentation]
+* link:concepts[Core concepts explained]
+* link:developer/architecture[Design and implementation details]
 
 **For Developers**
 
-* <<developer/contributing#,Contributing Guide>> - How to contribute
-* <<developer/code-style#,Code Style>> - Coding standards
-* <<developer/testing#,Testing>> - Running and writing tests
-* <<developer/debugging#,Debugging>> - Debugging techniques
-* <<developer/release-process#,Release Process>> - How releases work
+* link:developer/contributing[How to contribute]
+* link:developer/code-style[Coding standards]
+* link:developer/testing[Running and writing tests]
+* link:developer/debugging[Debugging techniques]
+* link:developer/release-process[How releases work]
 
 **Help & Resources**
 
-* <<appendix/faq#,FAQ>> - Frequently asked questions
-* <<appendix/glossary#,Glossary>> - Technical terms explained
-* <<appendix/performance#,Performance>> - Benchmarks and optimization
-* <<appendix/compatibility#,Compatibility>> - Platform and format compatibility
-* <<appendix/bibliography#,Bibliography>> - Additional resources and references
+* link:resources/faq[Frequently asked questions]
+* link:resources/glossary[Technical terms explained]
+* link:resources/performance[Benchmarks and optimization]
+* link:resources/compatibility[Platform and format compatibility]
+* link:resources/bibliography[Additional resources and references]
 
 ==== Most Used Pages
 
 Based on common tasks:
 
-1. <<quick-reference#,Quick Reference>> - Fast lookup for common operations
-2. <<getting-started/quick-start#,Quick Start>> - Get running in 5 minutes
-3. <<guides/basic-usage/extracting-files#,Extracting Files>> - Most common operation
-4. <<guides/compression/choosing-algorithm#,Choosing Algorithm>> - Algorithm selection
-5. <<reference/cli/index#,CLI Reference>> - Command-line tools
-6. <<reference/api/cab-api#,CAB API>> - Most used API
-7. <<guides/advanced-usage/error-handling#,Error Handling>> - Handle errors properly
-8. <<appendix/faq#,FAQ>> - Common questions answered
+1. link:resources/quick-reference[Fast lookup for common operations]
+2. link:getting-started/quick-start[Get running in 5 minutes]
+3. link:guides/basic-usage/extracting-files[Most common operation]
+4. link:guides/compression/choosing-algorithm[Algorithm selection]
+5. link:reference/cli[Command-line tools]
+6. link:reference/api[Most used API]
+7. link:guides/advanced-usage/error-handling[Handle errors properly]
+8. link:resources/faq[Common questions answered]
 
 === Documentation Sections
 
@@ -122,28 +122,28 @@ Based on common tasks:
 
 New to Cabriolet? Start here for installation and basic usage:
 
-* <<getting-started/installation#,Installation Guide>>
-* <<getting-started/quick-start#,5-Minute Quick Start>>
-* <<getting-started/your-first-cab#,Creating Your First CAB File>>
+* link:getting-started/installation[Installation]
+* link:getting-started/quick-start[Quick Start]
+* link:getting-started/your-first-cab[Your First CAB]
 
 ==== Guides
 
 Comprehensive guides for all features and formats:
 
-* <<guides/basic-usage/index#,Basic Usage>> - Common operations explained
-* <<guides/formats/index#,Format Guides>> - CAB, CHM, SZDD, KWAJ, HLP, LIT, OAB
-* <<guides/compression/index#,Compression Algorithms>> - None, LZSS, MSZIP, LZX, Quantum
-* <<guides/advanced-usage/index#,Advanced Usage>> - Multi-part cabinets, custom I/O, performance tuning
+* link:guides/basic-usage[Common operations explained]
+* link:guides/formats[CAB, CHM, SZDD, KWAJ, HLP, LIT, OAB]
+* link:guides/compression[None, LZSS, MSZIP, LZX, Quantum]
+* link:guides/advanced-usage[Multi-part cabinets, custom I/O, performance tuning]
 
 ==== Reference
 
 Complete technical reference for CLI and API:
 
-* <<reference/cli/index#,CLI Reference>> - All command-line tools documented
-* <<reference/api/index#,API Reference>> - Ruby API documentation
-* <<reference/formats/index#,Format Specifications>> - Technical format details
+* link:reference/cli[All command-line tools documented]
+* link:reference/api[Ruby API documentation]
+* link:reference/formats[Technical format details]
 
-=== Supported Formats
+=== Supported formats
 
 Cabriolet supports 7 Microsoft compression formats:
 
@@ -217,24 +217,46 @@ Cabriolet::CAB::Decompressor.new('archive.cab').each_file do |file|
 end
 ----
 
-.Command-line extraction
+.Command-line interface
+
+For extraction and listing, formats are auto-detected from the file. For creation,
+the format is determined by the output file extension or `--format` option:
+
 [source,bash]
 ----
-# Extract CAB file
-cabriolet extract archive.cab
+# Extract/list - auto-detects format from input file
+cabriolet extract archive.cab output/
+cabriolet list help.chm
 
-# List contents
-cabriolet list archive.cab
+# Create - format determined by output extension
+cabriolet create archive.cab file1.txt file2.txt
+cabriolet create help.chm index.html style.css
+cabriolet create compressed.ex_ program.exe    # SZDD format
 
-# Get archive info
-cabriolet info archive.cab
+# Create with explicit format (overrides extension)
+cabriolet create --format szdd output.tx_ input.txt
+cabriolet create --format chm output.chm *.html
+
+# Test archive integrity
+cabriolet test archive.cab
+
+# Force format for extraction (rarely needed)
+cabriolet extract --format szdd file.dat output.txt
 ----
 
-=== Getting Help
+=== Getting help
 
 * **Documentation**: Browse the guides and reference sections
 * **Issues**: Report bugs at https://github.com/omnizip/cabriolet/issues
 * **Source**: View the code at https://github.com/omnizip/cabriolet
+
+=== Related sections
+
+* link:getting-started[Installation and quick start]
+* link:guides[Comprehensive usage guides]
+* link:reference[API and CLI documentation]
+* link:concepts[Core concepts and architecture]
+* link:troubleshooting[Common problems and solutions]
 
 === Bibliography
 

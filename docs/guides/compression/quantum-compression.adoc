@@ -13,7 +13,7 @@ This guide explains Quantum compression, a legacy statistical compression algori
 
 === References
 
-* <<choosing-algorithm#,Choosing a Compression Algorithm>>
+* <<../../getting-started/index,Getting Started Guide>>
 * <<../formats/cab-format#compression-support,CAB Format>>
 
 === Concepts
@@ -33,7 +33,7 @@ Quantum is a statistical compression algorithm developed by David Stafford for M
 
 WARNING: Quantum is considered **experimental** in Cabriolet. It's supported for compatibility with legacy CAB files but not recommended for new applications.
 
-=== Performance Characteristics
+=== Performance characteristics
 
 [cols="1,2"]
 |===
@@ -298,7 +298,7 @@ To migrate from Quantum:
    cabriolet test new-archive.cab
    ```
 
-=== Best Practices
+=== Best practices
 
 1. **Avoid for new files** - Use MSZIP or LZX instead
 2. **Extract only** - Don't create new Quantum CABs
@@ -322,12 +322,11 @@ To migrate from Quantum:
 * **Method**: Statistical/arithmetic coding
 * **Developed by**: David Stafford
 
-=== See Also
+=== See also
 
-* <<choosing-algorithm#,Choosing a Compression Algorithm>>
-* <<mszip-compression#,MSZIP Compression>> - Recommended alternative
-* <<lzx-compression#,LZX Compression>> - For maximum compression
-* <<../formats/cab-format#,CAB Format Guide>>
+* <<lzx-compression,LZX Compression>> for recommended alternative
+* <<../advanced-usage/performance-tuning,Performance Tuning>> for maximum compression
+* <<choosing-algorithm,Choosing a Compression Algorithm>>
 
 === Bibliography
 

@@ -6,7 +6,7 @@ grand_parent: Guides
 nav_order: 2
 ---
 
-== Embedded Cabinets
+== Embedded cabinets
 :toc:
 
 === Purpose
@@ -457,7 +457,7 @@ results.each_with_index do |result, index|
 end
 ----
 
-=== Best Practices
+=== Best practices
 
 ==== Search Optimization
 
@@ -475,13 +475,20 @@ end
 4. **Check disk space**: Ensure sufficient space before extraction
 5. **Verify checksums**: Validate extracted files
 
-==== Error Handling
+==== Error handling
 
 1. **Handle corrupted cabinets**: Use salvage mode when needed
 2. **Check offsets**: Verify offset validity before extraction
 3. **Handle partial data**: Some embedded cabinets may be incomplete
 4. **Log failures**: Track which cabinets failed to extract
 5. **Provide context**: Include offset and size in error messages
+
+=== See also
+
+* <<multi-part-cabinets,Multi-part Cabinets>>
+* <<salvage-mode,Salvage Mode>>
+* <<memory-operations,Memory Operations>>
+* <<error-handling,Error Handling>>
 
 ==== Bibliography
 

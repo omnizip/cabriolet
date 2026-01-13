@@ -13,10 +13,10 @@ This guide provides comprehensive documentation for working with Microsoft Windo
 
 === References
 
-* <<../../getting-started/quick-start#,Quick Start Guide>>
-* <<../../reference/cli/hlp-commands#,HLP Commands Reference>>
-* <<../../reference/api/hlp-api#,HLP API Reference>>
-* <<../compression/lzss-compression#,LZSS Compression>>
+* <<../../getting-started/index,Getting Started Guide>>
+* <<../../reference/cli/hlp-commands,HLP CLI Commands>>
+* <<../compression/lzss-compression,LZSS Compression Guide>>
+* <<../../reference/api/index,Ruby API Reference>>
 
 === Concepts
 
@@ -130,7 +130,10 @@ View internal files without extracting:
 .Command-line
 [source,bash]
 ----
-cabriolet hlp-list help.hlp
+cabriolet list help.hlp
+
+# For explicit format specification:
+cabriolet list --format hlp help.hlp
 ----
 
 .Ruby API
@@ -185,10 +188,13 @@ Extract all internal files:
 [source,bash]
 ----
 # Extract to current directory
-cabriolet hlp-extract help.hlp
+cabriolet extract help.hlp
 
 # Extract to specific directory
-cabriolet hlp-extract help.hlp output/
+cabriolet extract help.hlp output/
+
+# For explicit format specification:
+cabriolet extract --format hlp help.hlp output/
 ----
 
 .Ruby API
@@ -215,7 +221,10 @@ Display detailed HLP information:
 .Command-line
 [source,bash]
 ----
-cabriolet hlp-info help.hlp
+cabriolet info help.hlp
+
+# For explicit format specification:
+cabriolet info --format hlp help.hlp
 ----
 
 .Ruby API
@@ -247,10 +256,13 @@ Build new HLP files from source files:
 [source,bash]
 ----
 # Create with compression (default)
-cabriolet hlp-create help.hlp system.dat topic.dat
+cabriolet create help.hlp system.dat topic.dat
 
 # Create without compression
-cabriolet hlp-create --no-compress help.hlp file1.dat file2.dat
+cabriolet create --no-compress help.hlp file1.dat file2.dat
+
+# For explicit format specification:
+cabriolet create --format hlp --no-compress help.hlp file1.dat file2.dat
 ----
 
 .Ruby API
@@ -524,7 +536,7 @@ The HLP version is not supported:
 
 [source,bash]
 ----
-cabriolet hlp-info help.hlp  # Shows version
+cabriolet info help.hlp  # Shows version
 ----
 
 **"Decompression failed"**
@@ -534,7 +546,7 @@ Internal file is corrupted:
 [source,bash]
 ----
 # Try extracting uncompressed files only
-cabriolet hlp-extract help.hlp output/
+cabriolet extract help.hlp output/
 # Check which files failed
 ----
 
@@ -544,7 +556,7 @@ Specified internal file doesn't exist. List files first:
 
 [source,bash]
 ----
-cabriolet hlp-info help.hlp
+cabriolet info help.hlp
 ----
 
 ==== Validation
@@ -578,7 +590,7 @@ rescue Cabriolet::CorruptionError => e
 end
 ----
 
-=== Best Practices
+=== Best practices
 
 1. **Preserve system files**: Keep all `|` files for proper help functionality
 
@@ -622,18 +634,22 @@ Each internal file has:
 * **Window size**: 4096 bytes
 * **Specialized**: Optimized for help file text
 
-For complete format specifications, see <<../../reference/formats/hlp-specification#,HLP Specification>>.
+For complete format specifications, see <<../../reference/formats/index,Format Specifications>>.
 
-=== Next Steps
+=== Next steps
 
 * Learn about <<../compression/lzss-compression#mode-mshelp,LZSS MODE_MSHELP compression>>
-* Review <<../../reference/cli/hlp-commands#,complete HLP command reference>>
-* Study <<../../reference/api/hlp-api#,HLP API documentation>>
+* Review <<../basic-usage/extracting-files,extracting files>>
+* Study <<../../reference/api/index,Ruby API>>
+
+=== See also
+
+* <<chm-format,CHM Format>>
+* <<cab-format,CAB Format>>
+* <<index,All Format Guides>>
 
 === Bibliography
 
-* <<../../reference/cli/hlp-commands#,HLP Commands Reference>>
-* <<../../reference/api/hlp-api#,HLP API Reference>>
-* <<../../reference/formats/hlp-specification#,HLP Format Specification>>
+* https://github.com/omnizip/cabriolet[Cabriolet on GitHub]
 * http://www.helpmaster.info/hlp-developmentkit/[HLP Development Kit Documentation]
 * https://en.wikipedia.org/wiki/WinHelp[Wikipedia: WinHelp]

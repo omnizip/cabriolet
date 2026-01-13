@@ -13,9 +13,9 @@ Complete command-line reference for all CHM (Microsoft Compiled HTML Help) forma
 
 === References
 
-* <<../../guides/formats/chm-format#,CHM Format Guide>>
-* <<../api/chm-api#,CHM API Reference>>
-* <<global-options#,Global Options>>
+* <<../../getting-started/index,Getting Started Guide>>
+* <<../../guides/formats/chm-format,CHM Format Guide>>
+* <<../api/index,Ruby API Reference>>
 
 === Concepts
 
@@ -512,7 +512,7 @@ cabriolet chm-create help.chm html/*.html images/*.png
 ==== See Also
 
 * <<../../guides/formats/chm-format#creating-chm-files,CHM Format Guide - Creating>>
-* <<../../guides/compression/lzx-compression#,LZX Compression>>
+* <<../../guides/basic-usage/creating-archives,Creating Archives Guide>>
 
 '''
 
@@ -526,9 +526,9 @@ All CHM commands support these global options:
 
 `--version`:: Show Cabriolet version
 
-See <<global-options#,Global Options>> for complete details.
+See link: for complete details.
 
-=== Exit Codes
+=== Exit codes
 
 [cols="1,3"]
 |===
@@ -556,14 +556,13 @@ See <<global-options#,Global Options>> for complete details.
 |Unsupported format
 |===
 
-=== Next Steps
+=== Next steps
 
-* Review <<../../guides/formats/chm-format#,CHM Format Guide>> for usage examples
-* Study <<../api/chm-api#,CHM API Reference>> for Ruby integration
-* Learn about <<../../guides/compression/lzx-compression#,LZX compression>>
+* Review <<../../guides/basic-usage/index,Basic Usage Guide>> for usage examples
+* Study <<../api/index,Ruby API Reference>> for Ruby integration
+* Learn about <<../../guides/compression/index,compression algorithms>>
 
 === Bibliography
 
-* <<../../guides/formats/chm-format#,CHM Format Guide>>
-* <<../api/chm-api#,CHM API Reference>>
+* https://github.com/omnizip/cabriolet[Cabriolet on GitHub]
 * https://www.nongnu.org/chmspec/latest/[Unofficial CHM Format Specification]

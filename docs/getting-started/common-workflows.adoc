@@ -5,7 +5,7 @@ parent: Getting Started
 nav_order: 4
 ---
 
-== Common Workflows
+== Common workflows
 
 === Purpose
 
@@ -399,7 +399,7 @@ Cabriolet::Streaming::StreamParser.new(path).each_file { |f| ... }
 Cabriolet::Parallel.extract(archive, dir, workers: 8)
 ----
 
-=== See Also
+=== See also
 
 * xref:getting-started/quick-start.adoc[Quick Start Guide]
 * xref:guides/basic-usage/index.adoc[Basic Usage]

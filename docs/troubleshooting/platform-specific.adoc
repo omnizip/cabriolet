@@ -62,7 +62,7 @@ FileUtils.chmod(mode, output_path)
 
 **Solution**: Ensure UTF-8 encoding throughout
 
-=== See Also
+=== See also
 
-* link:encoding-issues.html[Encoding Issues]
-* link:common-errors.html[Common Errors]
+* xref:encoding-issues.adoc[Encoding Issues]
+* xref:common-errors.adoc[Common Errors]

@@ -69,7 +69,7 @@ cab.files.each do |file|
 end
 ----
 
-=== See Also
+=== See also
 
 * xref:guides/basic-usage/creating-archives.adoc[Creating Archives]
 * xref:guides/advanced-usage/multi-part-cabinets.adoc[Multi-Part Cabinets]

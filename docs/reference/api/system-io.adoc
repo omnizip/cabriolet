@@ -6,7 +6,7 @@ grand_parent: Reference
 nav_order: 9
 ---
 
-== System I/O Reference
+== System I/O reference
 :toc:
 
 === Purpose
@@ -425,7 +425,7 @@ memory_handle = io_system.open('network_archive.cab', 'rb')
 end
 ----
 
-== Thread Safety
+== Thread safety
 
 * **IOSystem**: Thread-safe for concurrent `open` calls
 * **FileHandle**: Not thread-safe, use one per thread
@@ -451,7 +451,7 @@ threads.each(&:join)
 handle.close
 ----
 
-== Performance Considerations
+== Performance considerations
 
 1. **Buffer sizes**: Larger buffers = fewer syscalls
 2. **Sequential access**: Much faster than random seeking

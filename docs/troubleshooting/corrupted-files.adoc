@@ -106,8 +106,8 @@ File.write('archive.cab.sha256', checksum)
 3. **Store redundant copies**
 4. **Use error-correcting storage** (RAID, cloud with redundancy)
 
-=== See Also
+=== See also
 
 * xref:examples/recover-corrupted-archive.adoc[Recovery Example]
 * xref:guides/advanced-usage/salvage-mode.adoc[Salvage Mode Guide]
-* link:common-errors.html[Common Errors]
+* xref:common-errors.adoc[Common Errors]

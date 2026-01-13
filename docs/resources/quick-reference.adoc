@@ -3,7 +3,7 @@ title: Quick Reference
 nav_order: 2
 ---
 
-== Quick Reference
+== Quick reference
 
 === Purpose
 
@@ -11,7 +11,7 @@ This page provides a quick reference for common Cabriolet operations, CLI comman
 
 === Common CLI Commands
 
-==== CAB Files
+==== CAB files
 
 [source,bash]
 ----
@@ -37,7 +37,7 @@ cabriolet create output.cab file1.txt file2.txt
 cabriolet create --compression mszip output.cab *.txt
 ----
 
-==== CHM Files
+==== CHM files
 
 [source,bash]
 ----
@@ -51,7 +51,7 @@ cabriolet chm list help.chm
 cabriolet chm extract help.chm index.html
 ----
 
-==== SZDD Files
+==== SZDD files
 
 [source,bash]
 ----
@@ -107,7 +107,7 @@ decompressor.extract('output/')
 decompressor.extract_file('readme.txt', 'output/readme.txt')
 ----
 
-==== Listing Contents
+==== Listing contents
 
 [source,ruby]
 ----
@@ -137,7 +137,7 @@ puts "Total folders: #{cabinet.folders.size}"
 puts "Total files: #{cabinet.files.size}"
 ----
 
-==== Creating Archives
+==== Creating archives
 
 [source,ruby]
 ----
@@ -189,7 +189,7 @@ compressor.compress
 File.binwrite('output.cab', output.string)
 ----
 
-==== Error Handling
+==== Error handling
 
 [source,ruby]
 ----
@@ -525,15 +525,15 @@ bundle install
 
 === Related Documentation
 
-* Full installation guide: <<getting-started/installation#,Installation>>
-* Detailed API reference: <<reference/api/index#,API Reference>>
-* CLI command reference: <<reference/cli/index#,CLI Reference>>
-* Compression algorithms: <<guides/compression/index#,Compression Guide>>
-* Advanced usage: <<guides/advanced-usage/index#,Advanced Usage>>
-* Error handling: <<guides/advanced-usage/error-handling#,Error Handling>>
-* Performance tuning: <<guides/advanced-usage/performance-tuning#,Performance>>
+* Full installation guide: xref:../getting-started/index.adoc[Getting Started]
+* Detailed API reference: xref:../reference/api/index.adoc[API Reference]
+* CLI command reference: xref:../reference/cli/index.adoc[CLI Reference]
+* Compression algorithms: xref:../guides/compression/index.adoc[Compression Algorithms]
+* Advanced usage: xref:../guides/advanced-usage/index.adoc[Advanced Usage]
+* Error handling: xref:../guides/advanced-usage/error-handling.adoc[Error Handling]
+* Performance tuning: xref:../guides/advanced-usage/performance-tuning.adoc[Performance Tuning]
 
-=== Getting Help
+=== Getting help
 
 **Documentation**
 

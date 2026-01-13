@@ -4,7 +4,7 @@ title: Extracting from Windows Installer
 parent: Examples
 ---
 
-== Extracting from Windows Installer
+== Extracting from Windows installer
 
 === Overview
 
@@ -646,7 +646,7 @@ extractor.extract_all(output_dir)
 2. **Process in parallel** - Handle multiple installers concurrently
 3. **Stream large files** - Don't load entire installer into memory
 
-==== Error Handling
+==== Error handling
 
 1. **Validate CAB headers** - Check magic bytes and size
 2. **Handle partial extraction** - Continue on individual file errors
@@ -658,7 +658,7 @@ extractor.extract_all(output_dir)
 2. **Handle different CAB versions** - Version 1.1 through 1.3
 3. **Preserve file metadata** - Attributes, timestamps when possible
 
-=== See Also
+=== See also
 
 * xref:guides/basic-usage/extracting-files.adoc[Extracting Files Guide]
 * xref:guides/advanced-usage/embedded-cabinets.adoc[Embedded Cabinets]

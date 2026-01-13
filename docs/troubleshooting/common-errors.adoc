@@ -67,8 +67,8 @@ cab = Cabriolet::CAB::Parser.new(skip_checksum: true).parse('file.cab')
 
 **Solution**: Use absolute paths or verify working directory
 
-=== See Also
+=== See also
 
-* link:performance-issues.html[Performance Issues]
-* link:corrupted-files.html[Corrupted Files]
+* xref:performance-issues.adoc[Performance Issues]
+* xref:corrupted-files.adoc[Corrupted Files]
 * xref:reference/api/error-classes.adoc[Error Classes]

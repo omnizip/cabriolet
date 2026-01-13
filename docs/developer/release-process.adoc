@@ -5,7 +5,7 @@ parent: Developer
 nav_order: 5
 ---
 
-== Release Process
+== Release process
 
 === Version Bumping
 

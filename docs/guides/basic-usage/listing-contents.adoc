@@ -13,9 +13,9 @@ Learn how to list and inspect archive contents without extracting files.
 
 === References
 
-* <<../../getting-started/quick-start#,Quick Start Guide>>
-* <<../formats/index#,Format Guides>>
-* <<../../reference/cli/index#,CLI Reference>>
+* <<../../getting-started/index,Getting Started Guide>>
+* <<../formats/index,Format Guides>>
+* <<../../reference/cli/index,CLI Reference>>
 
 === Concepts
 
@@ -23,7 +23,7 @@ Listing shows archive contents, file sizes, and metadata without extraction. Use
 
 === By Format
 
-==== CAB Files
+==== CAB files
 
 [source,bash]
 ----
@@ -48,7 +48,7 @@ cabinet.files.each do |file|
 end
 ----
 
-==== CHM Files
+==== CHM files
 
 [source,bash]
 ----
@@ -68,7 +68,7 @@ chm.all_files.each do |file|
 end
 ----
 
-==== SZDD Files
+==== SZDD files
 
 [source,bash]
 ----
@@ -166,7 +166,7 @@ if full_header.valid?
 end
 ----
 
-=== Common Patterns
+=== Common patterns
 
 ==== Batch Inspection
 
@@ -202,7 +202,7 @@ total = cabinet.files.sum { |f| f.length }
 puts "Total uncompressed: #{total} bytes"
 ----
 
-=== Best Practices
+=== Best practices
 
 1. **Check before extracting** - Verify contents first
 2. **Use info commands** - Get detailed metadata
@@ -210,7 +210,8 @@ puts "Total uncompressed: #{total} bytes"
 4. **Verify file counts** - Ensure completeness
 5. **Check for DRM** - Especially for LIT files
 
-=== See Also
+=== See also
 
-* <<extracting-files#,Extracting Files>>
-* <<testing-integrity#,Testing Integrity>>
+* <<creating-archives,Creating Archives>>
+* <<extracting-files,Extracting Files>>
+* <<testing-integrity,Testing Integrity>>

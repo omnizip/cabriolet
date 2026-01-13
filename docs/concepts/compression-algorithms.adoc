@@ -452,7 +452,7 @@ LZX       27.3       3.66x   12.4       1.5
 ----------------------------------------------------------
 ----
 
-=== Use Case Recommendations
+=== Use case recommendations
 
 * **NONE**: Already compressed data (video, images)
 * **LZSS**: Fast compression needed, moderate ratio acceptable

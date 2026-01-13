@@ -27,7 +27,7 @@ To add a new algorithm:
 4. Add tests
 5. Register in format's compression type mapping
 
-=== Best Practices
+=== Best practices
 
 * Follow existing patterns
 * Maintain MECE principles

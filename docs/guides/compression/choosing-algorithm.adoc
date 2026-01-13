@@ -13,11 +13,11 @@ This guide helps you select the appropriate compression algorithm for your use c
 
 === References
 
-* <<none-compression#,None (Uncompressed)>>
-* <<lzss-compression#,LZSS Compression>>
-* <<mszip-compression#,MSZIP Compression>>
-* <<lzx-compression#,LZX Compression>>
-* <<quantum-compression#,Quantum Compression>>
+* <<../../getting-started/index,Getting Started Guide>>
+* <<../formats/index,Format Guides>>
+* <<../../reference/cli/index,CLI Reference>>
+* <<../../reference/api/index,Ruby API Reference>>
+* <<index,Compression Algorithms Overview>>
 
 === Concepts
 
@@ -39,7 +39,7 @@ Cabriolet's compression algorithms fall into three categories:
 * **Dictionary-based** - LZSS, MSZIP, LZX (use sliding window)
 * **Statistical** - Quantum (uses probability encoding)
 
-=== Available Algorithms
+=== Available algorithms
 
 [cols="1,2,1,1,1"]
 |===
@@ -76,7 +76,7 @@ Cabriolet's compression algorithms fall into three categories:
 |CAB (legacy)
 |===
 
-=== Decision Tree
+=== Decision tree
 
 Use this decision tree to select the best algorithm:
 
@@ -107,7 +107,7 @@ Start
       └─ OAB → LZX
 ----
 
-=== Algorithm Comparison
+=== Algorithm comparison
 
 ==== Compression Ratio
 
@@ -178,7 +178,7 @@ How much each algorithm typically compresses different file types:
 |Medium (64 KB - 2 MB)
 |===
 
-=== Use Case Recommendations
+=== Use case recommendations
 
 ==== Software Distribution
 
@@ -280,7 +280,7 @@ Why:
 * Block-based allows updates
 * Bandwidth optimization
 
-=== Format-Specific Constraints
+=== Format-specific constraints
 
 Some formats limit which algorithms can be used:
 
@@ -317,7 +317,7 @@ Some formats limit which algorithms can be used:
 |Block-based LZX only
 |===
 
-=== Advanced Considerations
+=== Advanced considerations
 
 ==== Window Size (LZX, Quantum)
 
@@ -447,7 +447,7 @@ compressor = Cabriolet::CHM::Compressor.new
 compressor.generate('tiny.chm', window_bits: 15)  # Appropriate
 ----
 
-=== Best Practices
+=== Best practices
 
 1. **Profile your data**: Test different algorithms on representative data
 
@@ -461,7 +461,7 @@ compressor.generate('tiny.chm', window_bits: 15)  # Appropriate
 
 6. **Test before deploying**: Verify compression works as expected
 
-=== Quick Reference
+=== Quick reference
 
 Choose algorithm based on priority:
 
@@ -473,19 +473,25 @@ Choose algorithm based on priority:
 * **Executables** → MSZIP or LZX
 * **Legacy support** → Quantum (if required)
 
-=== Next Steps
+=== Next steps
 
 * Learn about specific algorithms:
-  * <<none-compression#,None (Uncompressed)>>
-  * <<lzss-compression#,LZSS Compression>>
-  * <<mszip-compression#,MSZIP Compression>>
-  * <<lzx-compression#,LZX Compression>>
-  * <<quantum-compression#,Quantum Compression>>
+  * <<none-compression,None Compression>>
+  * <<lzss-compression,LZSS Compression>>
+  * <<mszip-compression,MSZIP Compression>>
+  * <<lzx-compression,LZX Compression>>
+  * <<quantum-compression,Quantum Compression>>
 
 * Review format-specific guides:
   * <<../formats/cab-format#compression-support,CAB Format>>
   * <<../formats/chm-format#compression-support,CHM Format>>
   * <<../formats/szdd-format#compression-support,SZDD Format>>
+
+=== See also
+
+* <<../basic-usage/index,Basic Usage Guide>>
+* <<../advanced-usage/performance-tuning,Performance Tuning>>
+* <<../../concepts/compression-algorithms,Compression Algorithm Concepts>>
 
 === Bibliography
 

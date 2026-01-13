@@ -312,7 +312,7 @@ class OABHeader < Lutaml::Model::Serializable
 end
 ----
 
-== Usage Examples
+== Usage examples
 
 === Accessing Cabinet Metadata
 
@@ -362,7 +362,7 @@ decompressor.folders.each_with_index do |folder, idx|
 end
 ----
 
-== Thread Safety
+== Thread safety
 
 All model classes are immutable after creation and thread-safe for read operations.
 

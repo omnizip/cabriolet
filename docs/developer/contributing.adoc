@@ -29,5 +29,5 @@ Be respectful and professional in all interactions.
 
 === Bibliography
 
-* xref:../architecture/extending.adoc[Extending Cabriolet]
+* xref:../developer/architecture/extending.adoc[Extending Cabriolet]
 * xref:code-style.adoc[Code Style Guide]

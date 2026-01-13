@@ -6,7 +6,7 @@ grand_parent: Guides
 nav_order: 1
 ---
 
-== Streaming Large Files
+== Streaming large files
 
 === Purpose
 
@@ -27,7 +27,7 @@ Use this guide when working with large archives or optimizing memory usage.
 
 * xref:concepts/streaming-model.adoc[Streaming Model Concepts]
 * xref:reference/api/streaming-api.adoc[Streaming API Reference]
-* xref:appendix/benchmarks/memory-benchmarks.adoc[Memory Benchmarks]
+* xref:resources/benchmarks/memory-benchmarks.adoc[Memory Benchmarks]
 
 === Concepts
 
@@ -242,7 +242,7 @@ Memory
        File1 File2 File3 ...  FileN
 ----
 
-=== Best Practices
+=== Best practices
 
 1. **Use streaming for archives >500MB**
 2. **Adjust chunk size** based on available memory
@@ -256,13 +256,13 @@ Memory
 * Cannot random-access files (sequential only)
 * Some metadata requires full parsing
 
-=== See Also
+=== See also
 
 * xref:concepts/streaming-model.adoc[Streaming Model]
 * xref:guides/advanced-usage/parallel-extraction.adoc[Parallel Extraction]
 * xref:guides/advanced-usage/memory-operations.adoc[Memory Operations]
 * xref:guides/advanced-usage/performance-tuning.adoc[Performance Tuning]
-* xref:appendix/benchmarks/memory-benchmarks.adoc[Memory Benchmarks]
+* xref:resources/benchmarks/memory-benchmarks.adoc[Memory Benchmarks]
 
 === Bibliography
 

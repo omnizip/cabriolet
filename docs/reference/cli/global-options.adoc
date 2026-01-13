@@ -13,19 +13,72 @@ Complete reference for command-line options that are available across all Cabrio
 
 === References
 
-* <<cab-commands#,CAB Commands>>
-* <<chm-commands#,CHM Commands>>
-* <<szdd-commands#,SZDD Commands>>
-* <<kwaj-commands#,KWAJ Commands>>
-* <<hlp-commands#,HLP Commands>>
-* <<lit-commands#,LIT Commands>>
-* <<oab-commands#,OAB Commands>>
+* <<index,CLI Reference>>
+* <<cab-commands,CAB Commands>>
+* <<../../guides/basic-usage/extracting-files,Extracting Files>>
+* <<../../guides/advanced-usage/error-handling,Error Handling>>
+* <<../../getting-started/quick-start,Quick Start Guide>>
+* <<../api/index,Ruby API Reference>>
+* https://www.gnu.org/prep/standards/html_node/Command_002dLine-Interfaces.html[GNU Coding Standards - Command-Line Interfaces]
 
 === Concepts
 
 Global options are available for every Cabriolet command and can be used in combination with command-specific options. They follow standard Unix conventions and can be specified using either short (`-v`) or long (`--verbose`) forms.
 
 === Available Global Options
+
+==== --format FORMAT
+
+Force a specific format for the command, overriding automatic format detection.
+
+===== Description
+
+The format flag specifies which archive format to use for the operation. This is useful when:
+
+* Auto-detection fails or is ambiguous
+* Working with files that have incorrect or missing extensions
+* Processing data from stdin or non-standard sources
+* Explicitly specifying the desired format for clarity
+
+Supported formats: `cab`, `chm`, `szdd`, `kwaj`, `hlp`, `lit`, `oab`
+
+===== Usage
+
+[source,bash]
+----
+cabriolet --format FORMAT COMMAND FILE [ARGS]
+cabriolet COMMAND --format FORMAT FILE [ARGS]
+-----
+
+===== Examples
+
+.Force CHM format
+[source,bash]
+----
+cabriolet --format chm extract help.chm output/
+----
+
+.Force SZDD format for unknown file
+[source,bash]
+----
+cabriolet extract --format szdd compressed.dat output.txt
+----
+
+.List with format override
+[source,bash]
+----
+cabriolet --format cab list archive.unknown
+----
+
+===== Use Cases
+
+Use format override when:
+
+* **Ambiguous files**: File has multiple possible format signatures
+* **Missing extensions**: File extension doesn't match actual format
+* **Data streams**: Processing from stdin or pipe (no filename available)
+* **Testing**: Explicitly testing specific format handlers
+* **Migration**: Converting from format-specific commands
 
 ==== --verbose, -v
 
@@ -189,15 +242,16 @@ Cabriolet - Microsoft compression format library
 
 Usage: cabriolet COMMAND [OPTIONS] [ARGS]
 
-Available Commands:
-  CAB Format:
-    list        List contents of CAB file
-    extract     Extract files from CAB
-    info        Show detailed CAB information
-    test        Test CAB file integrity
-    search      Find embedded CAB files
-    create      Create new CAB archive
+Unified Commands (auto-detects format):
+  list        List contents of archive file
+  extract     Extract files from archive
+  create      Create new archive
+  info        Show detailed archive information
+  test        Test archive file integrity
+  search      Find embedded CAB files
+  version     Show version information
 
+Legacy Commands (backward compatibility):
   CHM Format:
     chm-list    List contents of CHM file
     chm-extract Extract files from CHM
@@ -229,12 +283,9 @@ Available Commands:
     oab-create  Create compressed OAB file
     oab-info    Show OAB file information
 
-  General:
-    version     Show version information
-    help        Show this help message
-
 Global Options:
   --verbose, -v   Enable verbose output
+  --format FORMAT Force specific format (cab, chm, szdd, kwaj, hlp, lit, oab)
   --help, -h      Show help message
   --version       Show version
 
@@ -245,6 +296,8 @@ Examples:
   cabriolet list archive.cab
   cabriolet extract archive.cab output/
   cabriolet create archive.cab file1.txt file2.txt
+  cabriolet list help.chm (auto-detects CHM)
+  cabriolet extract --format szdd file.ex_ output.txt
 
 For more information, visit:
   https://github.com/omnizip/cabriolet
@@ -338,7 +391,7 @@ cabriolet create --verbose --compression=lzx archive.cab files/
 cabriolet extract -v archive.cab
 ----
 
-=== Environment Variables
+=== Environment variables
 
 Cabriolet respects the following environment variables:
 
@@ -395,7 +448,7 @@ cabriolet extract corrupt.cab > /dev/null 2>&1
 # Suppress all output
 ----
 
-==== Verbose Output
+==== Verbose output
 
 Verbose output goes to standard error to allow separation:
 
@@ -408,7 +461,7 @@ cabriolet extract --verbose archive.cab 2> progress.log
 # Capture verbose output
 ----
 
-=== Exit Codes
+=== Exit codes
 
 All Cabriolet commands use standard exit codes:
 
@@ -470,7 +523,7 @@ case $? in
 esac
 ----
 
-=== Best Practices
+=== Best practices
 
 1. **Use verbose for troubleshooting**: Always enable verbose mode when diagnosing issues
 
@@ -484,7 +537,7 @@ esac
 
 6. **Set environment defaults**: Use environment variables for consistent behavior
 
-=== Common Patterns
+=== Common patterns
 
 ==== Silent Operation
 
@@ -521,11 +574,11 @@ cabriolet extract --verbose archive.cab 2> errors.log
 cabriolet extract --verbose archive.cab 1> output.log 2> errors.log
 ----
 
-=== See Also
+=== See also
 
-* <<cab-commands#,CAB Commands Reference>>
-* <<../../guides/getting-started/quick-start#,Quick Start Guide>>
-* <<../../guides/basic-usage/index#,Basic Usage Guides>>
+* <<index,CLI Reference Index>>
+* <<cab-commands,CAB Commands>>
+* <<../api/index,Ruby API Reference>>
 
 === Bibliography
 

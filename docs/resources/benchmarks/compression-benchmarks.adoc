@@ -175,7 +175,7 @@ grand_parent: Appendix
 
 **Memory Winner**: LZSS uses minimal memory (22MB compression) with decent 57% ratio.
 
-=== See Also
+=== See also
 
 * xref:guides/compression/choosing-algorithm.adoc[Choosing Algorithm]
-* link:format-benchmarks.html[Format Benchmarks]
+* xref:format-benchmarks.adoc[Format Benchmarks]

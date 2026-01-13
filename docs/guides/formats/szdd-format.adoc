@@ -13,10 +13,10 @@ This guide provides comprehensive documentation for working with Microsoft SZDD 
 
 === References
 
-* <<../../getting-started/quick-start#,Quick Start Guide>>
-* <<../../reference/cli/szdd-commands#,SZDD Commands Reference>>
-* <<../../reference/api/szdd-api#,SZDD API Reference>>
-* <<../compression/lzss-compression#,LZSS Compression>>
+* <<../../getting-started/index,Getting Started Guide>>
+* <<../../reference/cli/szdd-commands,SZDD CLI Commands>>
+* <<../compression/lzss-compression,LZSS Compression Guide>>
+* <<../../reference/api/index,Ruby API Reference>>
 
 === Concepts
 
@@ -64,7 +64,7 @@ SZDD files use LZSS compression exclusively:
 * Fixed 4096-byte sliding window
 * Simple and fast decompression
 
-For detailed algorithm information, see <<../compression/lzss-compression#,LZSS Compression>>.
+For detailed algorithm information, see link:.
 
 ==== Format Variants
 
@@ -95,11 +95,16 @@ Decompress SZDD files (like MS-DOS EXPAND.EXE):
 [source,bash]
 ----
 # Auto-detect output filename
-cabriolet expand file.tx_
+cabriolet extract file.tx_
 
 # Specify output filename
-cabriolet expand file.tx_ file.txt
+cabriolet extract file.tx_ file.txt
+
+# For explicit format specification:
+cabriolet extract --format szdd file.tx_ file.txt
 ----
+
+NOTE: The `expand` command is a legacy alias for `extract` and is still supported for backward compatibility with MS-DOS EXPAND.EXE.
 
 .Ruby API
 [source,ruby]
@@ -132,7 +137,10 @@ Display SZDD file metadata:
 .Command-line
 [source,bash]
 ----
-cabriolet szdd-info file.tx_
+cabriolet info file.tx_
+
+# For explicit format specification:
+cabriolet info --format szdd file.tx_
 ----
 
 .Ruby API
@@ -171,17 +179,22 @@ Create SZDD compressed files (like MS-DOS COMPRESS.EXE):
 [source,bash]
 ----
 # Auto-generate output name: file.txt → file.tx_
-cabriolet compress file.txt
+cabriolet create file.tx_ file.txt
 
 # Specify output filename
-cabriolet compress file.txt file.tx_
+cabriolet create file.tx_ file.txt
 
 # Specify missing character explicitly
-cabriolet compress --missing-char=t file.txt file.tx_
+cabriolet create --missing-char=t file.tx_ file.txt
 
 # Use QBasic format
-cabriolet compress --format=qbasic file.bas file.ba_
+cabriolet create --format=qbasic file.ba_ file.bas
+
+# For explicit format specification:
+cabriolet create --format szdd file.tx_ file.txt
 ----
+
+NOTE: The `compress` command is a legacy alias for `create` and is still supported for backward compatibility with MS-DOS COMPRESS.EXE.
 
 .Ruby API
 [source,ruby]
@@ -219,7 +232,7 @@ puts "Original filename: #{original}"  # => "program.exe"
 decompressor.close(header)
 ----
 
-==== Format Detection
+==== Format detection
 
 Detect SZDD format variant:
 
@@ -431,7 +444,7 @@ The header doesn't contain a missing character. Specify output filename explicit
 
 [source,bash]
 ----
-cabriolet expand file.tx_ file.txt
+cabriolet extract file.tx_ file.txt
 ----
 
 **"Decompression failed"**
@@ -441,7 +454,7 @@ The compressed data is corrupted. Try salvage extraction:
 [source,bash]
 ----
 # Extract partial data (planned feature)
-cabriolet expand --salvage file.tx_ file.txt
+cabriolet extract --salvage file.tx_ file.txt
 ----
 
 **"Unknown format variant"**
@@ -450,7 +463,7 @@ Unsupported SZDD variant. Check format with:
 
 [source,bash]
 ----
-cabriolet szdd-info file.tx_
+cabriolet info file.tx_
 ----
 
 ==== Validation
@@ -477,7 +490,7 @@ rescue Cabriolet::CorruptionError => e
 end
 ----
 
-=== Best Practices
+=== Best practices
 
 1. **Use missing character**: Store the missing character for proper filename reconstruction
 
@@ -526,20 +539,25 @@ Offset  Bytes  Description
 * **Algorithm**: LZSS MODE_EXPAND
 * **Window size**: 4096 bytes
 * **Match length**: 3-18 bytes
-* **Format**: See <<../compression/lzss-compression#,LZSS Compression>>
+* **Format**: See <<../compression/lzss-compression,LZSS Compression Guide>>
 
-For complete format specifications, see <<../../reference/formats/szdd-specification#,SZDD Specification>>.
+For complete format specifications, see <<../../reference/formats/index,Format Specifications>>.
 
-=== Next Steps
+=== Next steps
 
-* Learn about <<../compression/lzss-compression#,LZSS compression algorithm>>
-* Review <<../../reference/cli/szdd-commands#,complete SZDD command reference>>
-* Study <<../../reference/api/szdd-api#,SZDD API documentation>>
+* Learn about <<../compression/lzss-compression,LZSS compression>>
+* Review <<../basic-usage/extracting-files,extracting files>>
+* Study <<../../reference/api/index,Ruby API>>
+
+=== See also
+
+* <<kwaj-format,KWAJ Format>>
+* <<cab-format,CAB Format>>
+* <<index,All Format Guides>>
 
 === Bibliography
 
-* <<../../reference/cli/szdd-commands#,SZDD Commands Reference>>
-* <<../../reference/api/szdd-api#,SZDD API Reference>>
-* <<../../reference/formats/szdd-specification#,SZDD Format Specification>>
+* https://github.com/omnizip/cabriolet[Cabriolet on GitHub]
+* https://docs.microsoft.com/en-us/previous-versions/ms909672(v=msdn.10)[MS-DOS EXPAND.EXE Documentation]
 * https://en.wikipedia.org/wiki/SZDD[Wikipedia: SZDD]
 * https://www.cabextract.org.uk/[cabextract Documentation]

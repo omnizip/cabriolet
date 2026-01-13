@@ -4,7 +4,7 @@ title: Creating Software Distribution Bundle
 parent: Examples
 ---
 
-== Creating Software Distribution Bundle
+== Creating software distribution bundle
 
 === Basic Software Bundle
 
@@ -52,7 +52,7 @@ cab.compress
 puts "Created #{cab.volume_count} volumes"
 ----
 
-=== See Also
+=== See also
 
 * xref:guides/basic-usage/creating-archives.adoc[Creating Archives]
 * xref:guides/compression/choosing-algorithm.adoc[Choosing Algorithms]
