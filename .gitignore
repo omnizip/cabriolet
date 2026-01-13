@@ -24,6 +24,9 @@ Gemfile.lock
 .kilocode
 old-docs/
 
+# Git worktrees
+.worktrees/
+
 # Cached rubocop configs
 .rubocop-https---*
 
