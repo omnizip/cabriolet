@@ -4,7 +4,7 @@ title: Format Comparison
 nav_order: 3
 ---
 
-== Format Comparison
+== Format comparison
 :toc:
 :toclevels: 3
 
@@ -557,7 +557,7 @@ SZDD is one of Microsoft's earliest compression formats, using LZSS compression.
 
 Legend: ✓ = Full support, ~ = Partial support, (blank) = Not supported
 
-== Use Case Recommendations
+== Use case recommendations
 
 === Software Distribution
 
@@ -756,7 +756,7 @@ The progression shows Microsoft's changing priorities:
 
 == Format Selection Guide
 
-=== Decision Tree
+=== Decision tree
 
 [source]
 ----
@@ -775,7 +775,7 @@ Need to compress files?
 └── Archive or read existing files? → Use appropriate format
 ----
 
-=== Best Practices
+=== Best practices
 
 1. **For new projects**: Use standard formats (ZIP, 7z) unless Windows-specific features required
 2. **For Windows installers**: Use CAB with LZX compression
@@ -783,7 +783,7 @@ Need to compress files?
 4. **For legacy support**: Maintain tools for reading old formats
 5. **For archival**: Convert to modern formats when possible
 
-== Further Reading
+== Further reading
 
 * xref:guides/formats/cab-format.adoc[CAB Format Guide]
 * xref:guides/formats/chm-format.adoc[CHM Format Guide]
@@ -793,4 +793,10 @@ Need to compress files?
 * xref:guides/formats/oab-format.adoc[OAB Format Guide]
 * xref:guides/formats/szdd-format.adoc[SZDD Format Guide]
 * xref:guides/compression/choosing-algorithm.adoc[Choosing Compression Algorithm]
-* xref:appendix/benchmarks/index.adoc[Performance Benchmarks]
+* xref:resources/benchmarks/index.adoc[Performance Benchmarks]
+
+=== See also
+
+* <<index,Format Guides>>
+* <<../compression/index,Compression Algorithms>>
+* <<../basic-usage/index,Basic Usage>>

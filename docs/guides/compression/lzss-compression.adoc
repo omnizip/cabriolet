@@ -13,7 +13,7 @@ This guide explains LZSS (Lempel-Ziv-Storer-Szymanski) compression used in SZDD,
 
 === References
 
-* <<choosing-algorithm#,Choosing a Compression Algorithm>>
+* <<../../getting-started/index,Getting Started Guide>>
 * <<../formats/szdd-format#compression-support,SZDD Format>>
 * <<../formats/hlp-format#compression-support,HLP Format>>
 * <<../formats/kwaj-format#compression-support,KWAJ Format>>
@@ -58,7 +58,7 @@ Cabriolet implements three LZSS variants:
 |SZDD QBasic variant
 |===
 
-=== Performance Characteristics
+=== Performance characteristics
 
 [cols="1,2"]
 |===
@@ -202,7 +202,7 @@ Reference: 12 bits offset + 4 bits length
 |Variable
 |===
 
-=== Best Practices
+=== Best practices
 
 1. **Use for text** - LZSS excels on text files
 2. **Fast operations** - Choose when speed matters
@@ -299,12 +299,11 @@ LZSS is already fast, but optimize by:
 * Processing large chunks
 * Avoiding frequent small writes
 
-=== See Also
+=== See also
 
-* <<choosing-algorithm#,Choosing a Compression Algorithm>>
-* <<mszip-compression#,MSZIP Compression>> - Better ratio
-* <<../formats/szdd-format#,SZDD Format Guide>>
-* <<../formats/hlp-format#,HLP Format Guide>>
+* <<mszip-compression,MSZIP Compression>> for better ratio
+* <<lzx-compression,LZX Compression>> for maximum compression
+* <<choosing-algorithm,Choosing a Compression Algorithm>>
 
 === Bibliography
 

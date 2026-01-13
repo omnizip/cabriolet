@@ -70,7 +70,7 @@ CAB spanning across 3 volumes (650MB each):
 * **Multi-volume extraction**: 86.7 MB/s
 * **Overhead**: 2.8%
 
-=== See Also
+=== See also
 
-* xref:format-comparison.adoc[Format Comparison]
-* link:compression-benchmarks.html[Compression Benchmarks]
+* xref:../../guides/formats/format-comparison.adoc[Format Comparison]
+* xref:compression-benchmarks.adoc[Compression Benchmarks]

@@ -5,7 +5,7 @@ has_children: true
 nav_order: 1
 ---
 
-== Basic Usage
+== Basic usage
 
 === Purpose
 
@@ -13,9 +13,9 @@ This section covers fundamental operations for working with archives using Cabri
 
 === References
 
-* <<../../getting-started/quick-start#,Quick Start Guide>>
-* <<../formats/index#,Format-Specific Guides>>
-* <<../../reference/cli/index#,CLI Reference>>
+* <<../../getting-started/index,Getting Started Guide>>
+* <<../formats/index,Format Guides>>
+* <<../../reference/cli/index,CLI Reference>>
 
 === Concepts
 
@@ -28,9 +28,9 @@ All archive operations in Cabriolet follow a consistent pattern, whether you're 
 
 === Basic Operations
 
-==== Extracting Files
+==== Extracting files
 
-<<extracting-files#,Extracting Files>> covers:
+<<extracting-files,Extracting Files>> covers:
 
 * Extracting all files from an archive
 * Specifying output directories
@@ -38,9 +38,9 @@ All archive operations in Cabriolet follow a consistent pattern, whether you're 
 * Preserving file attributes
 * Recursive extraction
 
-==== Creating Archives
+==== Creating archives
 
-<<creating-archives#,Creating Archives>> explains:
+<<creating-archives,Creating Archives>> explains:
 
 * Adding files to new archives
 * Choosing compression algorithms
@@ -48,9 +48,9 @@ All archive operations in Cabriolet follow a consistent pattern, whether you're 
 * Adding directories recursively
 * Managing file attributes
 
-==== Listing Contents
+==== Listing contents
 
-<<listing-contents#,Listing Archive Contents>> demonstrates:
+<<listing-contents,Listing Contents>> demonstrates:
 
 * Viewing file lists
 * Displaying file details
@@ -58,9 +58,9 @@ All archive operations in Cabriolet follow a consistent pattern, whether you're 
 * Sorting output
 * Formatting options
 
-==== Testing Integrity
+==== Testing integrity
 
-<<testing-integrity#,Testing Archive Integrity>> covers:
+<<testing-integrity,Testing Integrity>> covers:
 
 * Verifying archive structure
 * Checking file checksums
@@ -70,7 +70,7 @@ All archive operations in Cabriolet follow a consistent pattern, whether you're 
 
 === Common Workflows
 
-==== Quick Extraction
+==== Quick extraction
 
 [source,bash]
 ----
@@ -81,7 +81,7 @@ cabriolet extract archive.cab
 cabriolet extract archive.cab output/
 ----
 
-==== Quick Archive Creation
+==== Quick archive creation
 
 [source,bash]
 ----
@@ -92,7 +92,7 @@ cabriolet create my-archive.cab file1.txt file2.txt
 cabriolet create backup.cab data/
 ----
 
-==== Inspection Workflow
+==== Inspection workflow
 
 [source,bash]
 ----
@@ -136,18 +136,25 @@ These basic operations work across all supported formats:
 |Use `oab-` prefixed commands
 |===
 
-For format-specific details, see <<../formats/index#,Format Guides>>.
+For format-specific details, see <<../formats/index,Format Guides>>.
 
-=== Next Steps
+=== Next steps
 
 After mastering basic operations:
 
-* Learn about <<../formats/index#,specific formats>> you'll be working with
-* Understand <<../compression/index#,compression algorithms>> for optimal performance
-* Explore <<../advanced-usage/index#,advanced techniques>> for complex scenarios
+* Learn about <<../formats/index,formats>> you'll be working with
+* Understand <<../compression/index,compression algorithms>> for optimal performance
+* Explore <<../advanced-usage/index,advanced usage>> for complex scenarios
 
 === Bibliography
 
-* <<../../reference/cli/index#,CLI Command Reference>>
-* <<../../reference/api/index#,API Documentation>>
-* <<../formats/index#,Format-Specific Guides>>
+* https://github.com/omnizip/cabriolet[Cabriolet on GitHub]
+* https://docs.microsoft.com/en-us/previous-versions/bb417343(v=msdn.10)[Microsoft Cabinet SDK]
+* https://en.wikipedia.org/wiki/Data_compression[Wikipedia: Data Compression]
+
+=== Related sections
+
+* <<../compression/choosing-algorithm,Choose optimal compression>>
+* <<../advanced-usage/index,Complex scenarios and techniques>>
+* <<../../concepts/,Understand how archives work>>
+* <<../../troubleshooting/,Solve common problems>>

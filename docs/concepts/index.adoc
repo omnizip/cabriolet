@@ -84,8 +84,8 @@ Basic understanding of:
 * Data structures (arrays, trees)
 * Basic information theory (optional but helpful)
 
-=== Related Sections
+=== Related sections
 
 * xref:../guides/index.adoc[Guides] - Practical usage
 * xref:../reference/api/index.adoc[API Reference] - Implementation details
-* xref:../architecture/index.adoc[Architecture] - System design
+* xref:../developer/architecture/index.adoc[Architecture] - System design

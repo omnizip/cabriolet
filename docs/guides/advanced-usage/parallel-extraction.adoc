@@ -6,7 +6,7 @@ grand_parent: Guides
 nav_order: 2
 ---
 
-== Parallel Extraction
+== Parallel extraction
 
 === Purpose
 
@@ -107,8 +107,8 @@ puts "Total: #{stats[:total]}, Success: #{stats[:successful]}"
 | 5-10x
 |===
 
-=== See Also
+=== See also
 
 * xref:guides/advanced-usage/streaming-large-files.adoc[Streaming Large Files]
 * xref:guides/advanced-usage/performance-tuning.adoc[Performance Tuning]
-* xref:appendix/benchmarks/index.adoc[Benchmarks]
+* xref:resources/benchmarks/index.adoc[Benchmarks]

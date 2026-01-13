@@ -13,9 +13,9 @@ Complete command-line reference for all KWAJ (Installation File) format operatio
 
 === References
 
-* <<../../guides/formats/kwaj-format#,KWAJ Format Guide>>
-* <<../api/kwaj-api#,KWAJ API Reference>>
-* <<global-options#,Global Options>>
+* <<../../getting-started/index,Getting Started Guide>>
+* <<../../guides/formats/kwaj-format,KWAJ Format Guide>>
+* <<../api/index,Ruby API Reference>>
 
 === Concepts
 
@@ -412,9 +412,9 @@ All KWAJ commands support these global options:
 
 `--version`:: Show Cabriolet version
 
-See <<global-options#,Global Options>> for complete details.
+See <<global-options,Global Options>> for complete details.
 
-=== Exit Codes
+=== Exit codes
 
 [cols="1,3"]
 |===
@@ -532,14 +532,13 @@ for file in *.kwj; do
 done
 ----
 
-=== Next Steps
+=== Next steps
 
-* Review <<../../guides/formats/kwaj-format#,KWAJ Format Guide>> for usage examples
-* Study <<../api/kwaj-api#,KWAJ API Reference>> for Ruby integration
-* Learn about <<../../guides/compression/index#,compression algorithms>>
+* Review <<../../guides/basic-usage/index,Basic Usage Guide>> for usage examples
+* Study <<../api/index,Ruby API Reference>> for Ruby integration
+* Learn about <<../../guides/compression/index,compression algorithms>>
 
 === Bibliography
 
-* <<../../guides/formats/kwaj-format#,KWAJ Format Guide>>
-* <<../api/kwaj-api#,KWAJ API Reference>>
+* https://github.com/omnizip/cabriolet[Cabriolet on GitHub]
 * https://www.cabextract.org.uk/[cabextract Documentation]

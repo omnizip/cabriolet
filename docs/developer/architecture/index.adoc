@@ -44,7 +44,7 @@ Understanding Cabriolet's architecture helps with:
 * Optimizing performance
 * Debugging issues
 
-=== Related Sections
+=== Related sections
 
-* xref:../concepts/index.adoc[Concepts] - Theoretical foundations
-* xref:../developer/index.adoc[Developer] - Contributing guide
+* xref:../../concepts/index.adoc[Concepts] - Theoretical foundations
+* xref:../index.adoc[Developer] - Contributing guide

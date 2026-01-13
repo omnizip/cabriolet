@@ -3,11 +3,11 @@ layout: default
 title: Format Specifications
 parent: Formats
 grand_parent: Guides
-nav_order: 10
+nav_order: 3
 has_children: true
 ---
 
-== Format Specifications
+== Format specifications
 
 === Overview
 
@@ -23,7 +23,7 @@ Format specifications are essential for:
 * **Archivists** understanding format preservation requirements
 * **Advanced users** troubleshooting format-specific issues
 
-=== Available Specifications
+=== Available specifications
 
 ==== link:cab-specification.html[CAB File Format Specification]
 
@@ -44,6 +44,16 @@ Comprehensive reference for compression algorithm identifiers:
 * Legacy and deprecated compression types
 * Vendor extensions and custom types
 
+==== link:hlp-specification.html[Windows Help File Format Specification]
+
+Technical specification of the Windows Help (WinHelp) format, including:
+
+* WinHelp 3.x and 4.x file structures
+* Internal file system (|SYSTEM, |TOPIC)
+* Zeck LZ77 compression algorithm
+* B-tree index structures
+* Phrase replacement compression
+
 ==== link:file-attributes.html[File Attributes Reference]
 
 Detailed documentation of file attribute flags:
@@ -53,9 +63,9 @@ Detailed documentation of file attribute flags:
 * Special attribute combinations
 * Platform-specific attributes
 
-=== Reading These Specifications
+=== Reading these specifications
 
-==== Structure Notation
+==== Structure notation
 
 Binary structures use the following conventions:
 
@@ -76,7 +86,7 @@ STRUCTURE_NAME {
 * `byte[n]` - Fixed-length byte array
 * `STRUCTURE` - Nested structure reference
 
-==== Byte Order
+==== Byte order
 
 Unless otherwise specified:
 
@@ -84,7 +94,7 @@ Unless otherwise specified:
 * Multi-byte integers have least significant byte first
 * Example: `0x12345678` stored as `78 56 34 12`
 
-==== Bit Order
+==== Bit order
 
 Bitfields are numbered from least significant bit (LSB = bit 0) to most significant bit (MSB = bit 7/15/31 depending on field size).
 
@@ -94,7 +104,7 @@ Bitfields are numbered from least significant bit (LSB = bit 0) to most signific
 * Specific alignment requirements noted in structure definitions
 * Unaligned access may be required in some formats
 
-=== Validation and Testing
+=== Validation and testing
 
 When implementing based on these specifications:
 
@@ -104,7 +114,7 @@ When implementing based on these specifications:
 4. **Verify checksums** when specified in the format
 5. **Check version compatibility** for format variants
 
-=== Format Version History
+=== Format version history
 
 ==== CAB Format Versions
 
@@ -112,53 +122,53 @@ When implementing based on these specifications:
 * **Version 1.2** (1997): Added reserve areas
 * **Version 1.3** (1997): Enhanced cabinet sets
 
-==== Compression Algorithm Evolution
+==== Compression algorithm evolution
 
 * **MSZIP** (Type 1): Deflate variant, introduced 1996
 * **Quantum** (Type 2): Microsoft proprietary, introduced 1996
 * **LZX** (Type 3): Advanced compression, introduced 1997
 
-=== Common Implementation Pitfalls
+=== Common implementation pitfalls
 
-==== Off-by-One Errors
+==== Off-by-one errors
 
 * Array indices vs. counts (zero-based vs. one-based)
 * Inclusive vs. exclusive range boundaries
 * String null terminators in size calculations
 
-==== Integer Overflow
+==== Integer overflow
 
 * Size field multiplication (e.g., count × item_size)
 * Offset calculations exceeding 32-bit limits
 * Compressed vs. uncompressed size comparisons
 
-==== Endianness Issues
+==== Endianness issues
 
 * Mixing native and format byte order
 * Bitfield extraction on big-endian systems
 * Network vs. host byte order confusion
 
-==== Resource Limits
+==== Resource limits
 
 * Memory allocation based on untrusted size fields
 * Excessive nesting or recursion
 * Decompression bombs (small compressed, huge uncompressed)
 
-=== Standards and References
+=== Standards and references
 
-==== Official Documentation
+==== Official documentation
 
 * Microsoft Cabinet SDK documentation (1997)
 * Microsoft Compression API documentation
 * Windows Platform SDK specifications
 
-==== Reverse Engineering Sources
+==== Reverse engineering sources
 
 * libmspack project (https://www.cabextract.org.uk/libmspack/)
 * 7-Zip format documentation
 * Wine project cabinet implementation
 
-==== Academic Research
+==== Academic research
 
 * Compression algorithm papers and patents
 * File format security analysis
@@ -175,7 +185,7 @@ If you find errors or omissions in these specifications:
 
 See xref:developer/contributing.adoc[Contributing Guide] for details.
 
-=== Format Support Matrix
+=== Format support matrix
 
 [cols="1,1,1,1", options="header"]
 |===
@@ -217,9 +227,15 @@ See xref:developer/contributing.adoc[Contributing Guide] for details.
 | Simple header
 |===
 
-=== Further Reading
+=== Related sections
 
-* xref:format-comparison.adoc[Format Comparison]
-* xref:guides/compression/index.adoc[Compression Algorithms]
-* xref:concepts/cabinet-structure.adoc[Cabinet Structure Concepts]
-* xref:architecture/format-layer.adoc[Format Layer Architecture]
+* link:../api[Ruby API documentation]
+* link:../../guides[Usage guides]
+* link:../../guides/compression[Algorithm details]
+
+=== Further reading
+
+* link:../../guides/formats/format-comparison[Format Comparison]
+* link:../../guides/compression[Compression Algorithms]
+* link:../../concepts/cabinet-structure[Cabinet Structure Concepts]
+* link:../../developer/architecture/format-layer[Format Layer Architecture]

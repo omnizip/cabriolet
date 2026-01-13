@@ -4,7 +4,7 @@ title: Batch Processing Multiple Archives
 parent: Examples
 ---
 
-== Batch Processing Multiple Archives
+== Batch processing multiple archives
 
 === Overview
 
@@ -273,7 +273,7 @@ processor = RobustBatchProcessor.new('cabs', 'extracted', log_file: 'extraction.
 processor.process_all
 ----
 
-=== See Also
+=== See also
 
 * xref:guides/basic-usage/extracting-files.adoc[Extracting Files]
 * xref:guides/advanced-usage/error-handling.adoc[Error Handling]

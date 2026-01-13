@@ -51,7 +51,7 @@ cab.compress
 puts "Package created: #{output}"
 ----
 
-=== See Also
+=== See also
 
 * xref:examples/batch-processing.adoc[Batch Processing]
 * xref:guides/advanced-usage/error-handling.adoc[Error Handling]

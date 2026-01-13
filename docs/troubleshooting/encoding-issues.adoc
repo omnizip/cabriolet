@@ -93,7 +93,7 @@ if existing && existing != path
 end
 ----
 
-=== Best Practices
+=== Best practices
 
 1. **Always use UTF-8**::
 +
@@ -116,7 +116,7 @@ safe_name = filename.gsub(/[^\w\s\-.]/, '_')
 
 3. **Test with international content**
 
-=== See Also
+=== See also
 
-* link:platform-specific.html[Platform-Specific Issues]
-* link:common-errors.html[Common Errors]
+* xref:platform-specific.adoc[Platform-Specific Issues]
+* xref:common-errors.adoc[Common Errors]

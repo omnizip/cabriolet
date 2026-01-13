@@ -1,10 +1,10 @@
 ---
 title: Reference
 has_children: true
-nav_order: 3
+nav_order: 5
 ---
 
-== Reference Documentation
+== Reference documentation
 
 === Purpose
 
@@ -12,8 +12,8 @@ This section provides complete technical reference for all Cabriolet commands an
 
 === References
 
-* <<../guides/index#,Guides>> - Usage guides and tutorials
-* <<../getting-started/index#,Getting Started>> - Quick introduction
+* link:../guides[Usage guides and tutorials]
+* link:../getting-started[Quick introduction]
 
 === Concepts
 
@@ -23,49 +23,49 @@ Reference documentation is organized for quick lookup of specific commands, meth
 
 ==== CLI Reference
 
-<<cli/index#,Command-Line Interface Reference>>
+<<cli/index,CLI Reference>>
 
 Complete documentation for all CLI commands:
 
-* <<cli/cab-commands#,CAB Commands>> - list, extract, info, test, search, create
-* <<cli/chm-commands#,CHM Commands>> - chm-list, chm-extract, chm-info, chm-create
-* <<cli/szdd-commands#,SZDD Commands>> - expand, compress, szdd-info
-* <<cli/kwaj-commands#,KWAJ Commands>> - kwaj-extract, kwaj-compress, kwaj-info
-* <<cli/hlp-commands#,HLP Commands>> - hlp-extract, hlp-create, hlp-info
-* <<cli/lit-commands#,LIT Commands>> - lit-extract, lit-create, lit-info
-* <<cli/oab-commands#,OAB Commands>> - oab-extract, oab-create, oab-info
-* <<cli/global-options#,Global Options>> - --verbose, --help, common flags
+* link:cli/cab-commands[list, extract, info, test, search, create]
+* link:cli/chm-commands[chm-list, chm-extract, chm-info, chm-create]
+* link:cli/szdd-commands[expand, compress, szdd-info]
+* link:cli/kwaj-commands[kwaj-extract, kwaj-compress, kwaj-info]
+* link:cli/hlp-commands[hlp-extract, hlp-create, hlp-info]
+* link:cli/lit-commands[lit-extract, lit-create, lit-info]
+* link:cli/oab-commands[oab-extract, oab-create, oab-info]
+* link:cli/global-options[--verbose, --help, common flags]
 
 ==== API Reference
 
-<<api/index#,Ruby API Reference>>
+<<api/index,API Reference>>
 
 Complete Ruby API documentation:
 
-* <<api/cab-api#,CAB API>> - Cabriolet::CAB module
-* <<api/chm-api#,CHM API>> - Cabriolet::CHM module
-* <<api/szdd-api#,SZDD API>> - Cabriolet::SZDD module
-* <<api/kwaj-api#,KWAJ API>> - Cabriolet::KWAJ module
-* <<api/hlp-api#,HLP API>> - Cabriolet::HLP module
-* <<api/lit-api#,LIT API>> - Cabriolet::LIT module
-* <<api/oab-api#,OAB API>> - Cabriolet::OAB module
-* <<api/models#,Models>> - Cabinet, Folder, File classes
-* <<api/system-io#,System I/O>> - IOSystem, FileHandle, MemoryHandle
-* <<api/error-classes#,Error Classes>> - Exception hierarchy
+* link:api/cab-api[Cabriolet::CAB module]
+* link:api/chm-api[Cabriolet::CHM module]
+* link:api/szdd-api[Cabriolet::SZDD module]
+* link:api/kwaj-api[Cabriolet::KWAJ module]
+* link:api/hlp-api[Cabriolet::HLP module]
+* link:api/lit-api[Cabriolet::LIT module]
+* link:api/oab-api[Cabriolet::OAB module]
+* link:api/models[Cabinet, Folder, File classes]
+* link:api/system-io[IOSystem, FileHandle, MemoryHandle]
+* link:api/error-classes[Exception hierarchy]
 
 ==== Format Specifications
 
-<<formats/index#,Format Specifications>>
+<<formats/index,Format Specifications>>
 
 Technical format details:
 
-* <<formats/cab-specification#,CAB Specification>> - Cabinet file format
-* <<formats/compression-types#,Compression Types>> - Algorithm codes
-* <<formats/file-attributes#,File Attributes>> - Attribute flags
+* link:formats/cab-specification[Cabinet file format]
+* link:formats/compression-type-codes[Algorithm codes]
+* link:formats/file-attributes[Attribute flags]
 
-=== Quick Reference
+=== Quick reference
 
-==== Most Common Commands
+==== Most common commands
 
 [cols="2,3,1"]
 |===
@@ -92,7 +92,7 @@ Technical format details:
 |<<cli/chm-commands#chm-extract,CHM>>
 |===
 
-==== Most Common API Methods
+==== Most common API methods
 
 [cols="2,3,1"]
 |===
@@ -119,7 +119,7 @@ Technical format details:
 |<<api/cab-api#add-file,CAB>>
 |===
 
-=== Navigation Tips
+=== Navigation tips
 
 **By task:**
 
@@ -129,12 +129,12 @@ Technical format details:
 
 **By format:**
 
-* CAB → <<cli/cab-commands#,CLI>> | <<api/cab-api#,API>>
-* CHM → <<cli/chm-commands#,CLI>> | <<api/chm-api#,API>>
-* SZDD → <<cli/szdd-commands#,CLI>> | <<api/szdd-api#,API>>
+* CAB → link:cli/[CLI] | link:api/[API]
+* CHM → link:cli/[CLI] | link:api/[API]
+* SZDD → link:cli/[CLI] | link:api/[API]
 * Others → See respective sections
 
-=== Reference Conventions
+=== Reference conventions
 
 ==== Command Syntax
 
@@ -172,18 +172,24 @@ All reference entries include:
 * **Examples**: Working code examples
 * **Errors**: Possible error conditions
 
-=== Version Information
+=== Version information
 
 This reference documents Cabriolet version 0.1.0. Features may vary in different versions.
 
-=== Next Steps
+=== Next steps
 
-* Browse <<cli/index#,CLI Reference>> for command-line tools
-* Explore <<api/index#,API Reference>> for Ruby integration
-* Review <<formats/index#,Format Specifications>> for technical details
+* Browse link:cli/[CLI] for command-line tools
+* Explore link:api/[API] for Ruby integration
+* Review link:formats/[Formats] for technical details
+
+=== Related sections
+
+* link:../guides[Usage guides and tutorials]
+* link:../getting-started[Quick introduction]
+* link:../concepts[Core concepts and architecture]
+* link:../developer[Contributing and internals]
 
 === Bibliography
 
-* <<../guides/index#,Usage Guides>>
 * https://github.com/omnizip/cabriolet[Cabriolet Source Code]
 * https://docs.microsoft.com/en-us/previous-versions/bb417343(v=msdn.10)[Microsoft Cabinet SDK]

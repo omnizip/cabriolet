@@ -25,9 +25,9 @@ Use this guide when building applications that need to handle various archive fo
 
 === References
 
-* xref:concepts/format-detection.adoc[Format Detection Concepts]
-* xref:reference/api/auto-api.adoc[Auto API Reference]
-* xref:format-comparison.adoc[Format Comparison]
+* xref:../../concepts/index.adoc[Concepts]
+* xref:../../reference/api/index.adoc[API Reference]
+* xref:../formats/format-comparison.adoc[Format Comparison]
 
 === Concepts
 
@@ -260,7 +260,7 @@ end
 * Working with edge cases
 * Debugging format issues
 
-=== Performance Considerations
+=== Performance considerations
 
 ==== Detection Overhead
 
@@ -314,13 +314,12 @@ end
 +
 +
 
-=== See Also
+=== See also
 
-* xref:concepts/format-detection.adoc[Format Detection Concepts]
-* xref:reference/api/auto-api.adoc[Auto API Reference]
-* xref:reference/api/format-detector-api.adoc[FormatDetector API]
-* xref:guides/basic-usage/extracting-files.adoc[Extracting Files]
-* xref:examples/batch-processing.adoc[Batch Processing Example]
+* xref:../../concepts/index.adoc[Concepts]
+* xref:../../reference/api/index.adoc[API Reference]
+* xref:extracting-files.adoc[Extracting Files]
+* xref:../../examples/batch-processing.adoc[Batch Processing Example]
 
 === Bibliography
 

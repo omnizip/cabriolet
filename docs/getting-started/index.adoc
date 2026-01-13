@@ -4,7 +4,7 @@ has_children: true
 nav_order: 1
 ---
 
-== Getting Started
+== Getting started
 
 === Purpose
 
@@ -12,35 +12,42 @@ This section helps you get Cabriolet installed and working within minutes. Follo
 
 === References
 
-* <<installation#,Installation>>
-* <<quick-start#,Quick Start Guide>>
-* <<your-first-cab#,Your First CAB File>>
+* https://rubygems.org/gems/cabriolet[Cabriolet on RubyGems]
+* https://github.com/omnizip/cabriolet[Cabriolet on GitHub]
+* <<../reference/api/index,API Reference>>
 
 === Concepts
 
-Cabriolet provides both a command-line interface (CLI) and a Ruby API for working with Microsoft compression formats. The getting started guides focus on the CLI for simplicity, but each operation has an equivalent API method documented in the <<../reference/api/index#,API Reference>>.
+Cabriolet provides both a command-line interface (CLI) and a Ruby API for working with Microsoft compression formats. The getting started guides focus on the CLI for simplicity, but each operation has an equivalent API method documented in the <<../reference/api/index,API Reference>>.
 
 === Quick Navigation
 
 ==== 1. Installation
 
-<<installation#,Install Cabriolet>> using RubyGems. Takes less than a minute.
+<<installation,Install Cabriolet>> using RubyGems. Takes less than a minute.
 
 ==== 2. Quick Start
 
-<<quick-start#,Extract your first CAB file>> in 5 minutes with step-by-step instructions.
+<<quick-start,Extract CAB files>> in 5 minutes with step-by-step instructions.
 
 ==== 3. Your First CAB
 
-<<your-first-cab#,Create a CAB archive>> from your own files.
+<<your-first-cab,Create your own archive>> from your own files.
 
-=== Next Steps
+=== Next steps
 
 After completing the getting started guides:
 
-* Explore <<../guides/formats/index#,Format-Specific Guides>> for the format you need
-* Learn about <<../guides/compression/index#,Compression Algorithms>> to choose the right one
-* Review the <<../reference/cli/index#,CLI Reference>> for all available commands
+* Explore <<../guides/formats/index,Format Guides>> for the format you need
+* Learn about <<../guides/compression/index,compression algorithms>> to choose the right one
+* Review the <<../reference/cli/index,CLI Reference>> for all available commands
+
+=== Related sections
+
+* link:../guides/basic-usage/[Common operations]
+* link:../guides/formats/[Format-specific documentation]
+* link:../concepts/[Understanding how things work]
+* link:../examples/[Sample code and workflows]
 
 === Bibliography
 

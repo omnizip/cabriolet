@@ -543,7 +543,7 @@ Reserve areas allow embedding application-specific data without breaking compati
 * ISO/IEC 9899:1999 (C99 Standard for data types)
 * RFC 1951 (Deflate specification, basis for MSZIP)
 
-=== See Also
+=== See also
 
 * link:compression-type-codes.html[Compression Type Codes]
 * link:file-attributes.html[File Attributes Reference]

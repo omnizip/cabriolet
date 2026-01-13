@@ -1,0 +1,6 @@
+# Problematic external links that return errors or timeout
+# These are excluded from link checking
+
+https://compression.ca/
+https://www.cabextract.org.uk/libmspack/
+https://www.gnu.org/prep/standards/html_node/Command_002dLine-Interfaces.html

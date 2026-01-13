@@ -13,9 +13,9 @@ Complete command-line reference for all OAB (Offline Address Book) format operat
 
 === References
 
-* <<../../guides/formats/oab-format#,OAB Format Guide>>
-* <<../api/oab-api#,OAB API Reference>>
-* <<global-options#,Global Options>>
+* <<../../getting-started/index,Getting Started Guide>>
+* <<../../guides/formats/oab-format,OAB Format Guide>>
+* <<../api/index,Ruby API Reference>>
 
 === Concepts
 
@@ -455,9 +455,9 @@ All OAB commands support these global options:
 
 `--version`:: Show Cabriolet version
 
-See <<global-options#,Global Options>> for complete details.
+See <<global-options,Global Options>> for complete details.
 
-=== Exit Codes
+=== Exit codes
 
 [cols="1,3"]
 |===
@@ -631,15 +631,14 @@ echo "Verification: Patch file is valid"
 # computing CRC of the base file
 ----
 
-=== Next Steps
+=== Next steps
 
-* Review <<../../guides/formats/oab-format#,OAB Format Guide>> for usage examples
-* Study <<../api/oab-api#,OAB API Reference>> for Ruby integration
-* Learn about <<../../guides/compression/lzx-compression#,LZX compression>>
+* Review <<../../guides/basic-usage/index,Basic Usage Guide>> for usage examples
+* Study <<../api/index,Ruby API Reference>> for Ruby integration
+* Learn about <<../../guides/compression/lzx-compression,LZX compression>>
 * Understand <<../../guides/formats/oab-format#incremental-patches,incremental patching>>
 
 === Bibliography
 
-* <<../../guides/formats/oab-format#,OAB Format Guide>>
-* <<../api/oab-api#,OAB API Reference>>
+* https://github.com/omnizip/cabriolet[Cabriolet on GitHub]
 * https://docs.microsoft.com/en-us/previous-versions/office/developer/exchange-server-2010/aa580288(v=exchg.140)[Microsoft Exchange OAB Documentation]

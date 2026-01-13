@@ -6,7 +6,7 @@ grand_parent: Guides
 nav_order: 3
 ---
 
-== Custom I/O Handlers
+== Custom I/O handlers
 :toc:
 
 === Purpose
@@ -754,7 +754,7 @@ RSpec.describe NetworkHandle do
 end
 ----
 
-=== Best Practices
+=== Best practices
 
 ==== Performance
 
@@ -764,7 +764,7 @@ end
 4. **Use async I/O**: For network and slow storage
 5. **Profile performance**: Measure actual bottlenecks
 
-==== Error Handling
+==== Error handling
 
 1. **Validate inputs**: Check parameters before operations
 2. **Handle network errors**: Retry with exponential backoff
@@ -779,6 +779,13 @@ end
 3. **Support standard modes**: 'r', 'rb', 'w', 'wb'
 4. **Document limitations**: Explain constraints clearly
 5. **Test thoroughly**: Cover all code paths
+
+=== See also
+
+* <<memory-operations,Memory Operations>>
+* <<multi-part-cabinets,Multi-part Cabinets>>
+* <<performance-tuning,Performance Tuning>>
+* <<error-handling,Error Handling>>
 
 ==== Bibliography
 

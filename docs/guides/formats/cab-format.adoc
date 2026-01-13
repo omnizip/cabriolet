@@ -13,11 +13,11 @@ This guide provides comprehensive documentation for working with Microsoft Cabin
 
 === References
 
-* <<../../getting-started/quick-start#,Quick Start Guide>>
-* <<../../reference/cli/cab-commands#,CAB Commands Reference>>
-* <<../../reference/api/cab-api#,CAB API Reference>>
-* <<../compression/index#,Compression Algorithms>>
-* <<../advanced-usage/multi-part-cabinets#,Multi-part Cabinets>>
+* <<../../getting-started/index,Getting Started Guide>>
+* <<../../reference/cli/cab-commands,CAB CLI Commands>>
+* <<../compression/index,Compression Algorithms Guide>>
+* <<../basic-usage/index,Basic Usage Guide>>
+* <<../../reference/api/index,Ruby API Reference>>
 
 === Concepts
 
@@ -64,7 +64,7 @@ CAB files support multiple compression algorithms:
 * **Quantum** (Type 2) - Configurable window size
 * **LZX** (Type 3) - High compression ratio
 
-For detailed algorithm information, see <<../compression/index#,Compression Algorithms>>.
+For detailed algorithm information, see link:.
 
 ==== Multi-part Archives
 
@@ -77,7 +77,7 @@ large-archive.ca2  (part 2)
 large-archive.ca3  (part 3)
 ----
 
-Each part references the next, enabling extraction across volumes. See <<../advanced-usage/multi-part-cabinets#,Multi-part Cabinets>> for details.
+Each part references the next, enabling extraction across volumes. See <<../compression/index,Compression Algorithms Guide>> for details.
 
 === Basic Operations
 
@@ -114,7 +114,7 @@ Total: 3 files, 526,045 bytes
 Compression: MSZIP
 ----
 
-==== Extracting Files
+==== Extracting files
 
 Extract all files to a directory:
 
@@ -168,7 +168,7 @@ cabinet.folders.each_with_index do |folder, i|
 end
 ----
 
-==== Testing Integrity
+==== Testing integrity
 
 Verify archive is not corrupted:
 
@@ -360,7 +360,7 @@ Select compression based on your needs:
 |Configurable window size
 |===
 
-See <<../compression/choosing-algorithm#,Choosing a Compression Algorithm>> for detailed guidance.
+See link: for detailed guidance.
 
 ==== Extraction Performance
 
@@ -381,7 +381,7 @@ decompressor.each_file do |file|
 end
 ----
 
-==== Memory Usage
+==== Memory usage
 
 For large CABs, use streaming:
 
@@ -534,7 +534,7 @@ rescue Cabriolet::CorruptionError => e
 end
 ----
 
-=== Best Practices
+=== Best practices
 
 1. **Test before distributing**: Always verify created CABs with `test` command
 
@@ -567,7 +567,7 @@ Offset  Bytes  Description
 0x0010  4      Files offset
 ----
 
-For complete format specifications, see <<../../reference/formats/cab-specification#,CAB Specification>>.
+For complete format specifications, see link:.
 
 ==== Compression Type Codes
 
@@ -576,20 +576,25 @@ For complete format specifications, see <<../../reference/formats/cab-specificat
 * `2` - Quantum
 * `3` - LZX
 
-See <<../../reference/formats/compression-types#,Compression Type Codes>> for details.
+See <<../compression/index,Compression Algorithms Guide>> for details.
 
-=== Next Steps
+=== Next steps
 
-* Learn about <<../compression/index#,compression algorithms>> in detail
-* Explore <<../advanced-usage/multi-part-cabinets#,multi-part cabinet handling>>
-* Review <<../../reference/cli/cab-commands#,complete CAB command reference>>
-* Study <<../../reference/api/cab-api#,CAB API documentation>>
+* Learn about <<../compression/index,compression algorithms>> in detail
+* Explore <<../advanced-usage/multi-part-cabinets,multi-part cabinets>>
+* Review <<../basic-usage/extracting-files,extracting files>>
+* Study <<../../reference/api/index,Ruby API>>
+
+=== See also
+
+* <<../formats/chm-format,CHM Format>>
+* <<../formats/szdd-format,SZDD Format>>
+* <<../formats/index,All Format Guides>>
 
 === Bibliography
 
-* <<../../reference/cli/cab-commands#,CAB Commands Reference>>
-* <<../../reference/api/cab-api#,CAB API Reference>>
-* <<../../reference/formats/cab-specification#,CAB Format Specification>>
+* https://github.com/omnizip/cabriolet[Cabriolet on GitHub]
+* https://www.cabextract.org.uk/[cabextract Homepage]
 * https://docs.microsoft.com/en-us/previous-versions/bb417343(v=msdn.10)[Microsoft Cabinet SDK Documentation]
 * https://www.cabextract.org.uk/[cabextract - CAB extraction tool]
 * https://en.wikipedia.org/wiki/Cabinet_(file_format)[Wikipedia: Cabinet (file format)]

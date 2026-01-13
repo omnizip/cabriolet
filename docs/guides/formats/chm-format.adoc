@@ -13,10 +13,10 @@ This guide provides comprehensive documentation for working with Microsoft Compi
 
 === References
 
-* <<../../getting-started/quick-start#,Quick Start Guide>>
-* <<../../reference/cli/chm-commands#,CHM Commands Reference>>
-* <<../../reference/api/chm-api#,CHM API Reference>>
-* <<../compression/lzx-compression#,LZX Compression>>
+* <<../../getting-started/index,Getting Started Guide>>
+* <<../../reference/cli/chm-commands,CHM CLI Commands>>
+* <<../compression/index,Compression Algorithms Guide>>
+* <<../../reference/api/index,Ruby API Reference>>
 
 === Concepts
 
@@ -67,7 +67,7 @@ CHM files use LZX compression exclusively for compressed sections:
 * **Section 0** - Uncompressed storage for control files
 * **Section 1** - LZX compression with configurable window size (15-21 bits)
 
-For detailed algorithm information, see <<../compression/lzx-compression#,LZX Compression>>.
+For detailed algorithm information, see link:.
 
 ==== Language Support
 
@@ -86,8 +86,10 @@ View files without extracting:
 .Command-line
 [source,bash]
 ----
-cabriolet chm-list help.chm
+cabriolet list help.chm
 ----
+
+Note: This unified command auto-detects the CHM format. For explicit format specification, use `cabriolet list --format chm help.chm`.
 
 .Ruby API
 [source,ruby]
@@ -123,7 +125,7 @@ Files:
 Total: 5 files
 ----
 
-==== Extracting Files
+==== Extracting files
 
 Extract all files from a CHM archive:
 
@@ -131,10 +133,13 @@ Extract all files from a CHM archive:
 [source,bash]
 ----
 # Extract to current directory
-cabriolet chm-extract help.chm
+cabriolet extract help.chm
 
 # Extract to specific directory
-cabriolet chm-extract help.chm output/
+cabriolet extract help.chm output/
+
+# For explicit format specification:
+cabriolet extract --format chm help.chm output/
 ----
 
 .Ruby API
@@ -167,7 +172,10 @@ Display detailed CHM information:
 .Command-line
 [source,bash]
 ----
-cabriolet chm-info help.chm
+cabriolet info help.chm
+
+# For explicit format specification:
+cabriolet info --format chm help.chm
 ----
 
 .Ruby API
@@ -195,10 +203,13 @@ Build new CHM files from HTML content:
 [source,bash]
 ----
 # Create with default window size (16 bits)
-cabriolet chm-create help.chm index.html style.css
+cabriolet create help.chm index.html style.css
 
 # Create with larger window for better compression
-cabriolet chm-create --window-bits=21 help.chm docs/*.html
+cabriolet create --window-bits=21 help.chm docs/*.html
+
+# For explicit format specification:
+cabriolet create --format chm --window-bits=21 help.chm docs/*.html
 ----
 
 .Ruby API
@@ -437,7 +448,7 @@ The CHM file uses an unsupported version. Check with:
 
 [source,bash]
 ----
-cabriolet chm-info help.chm  # Shows version
+cabriolet info help.chm  # Shows version
 ----
 
 **"LZX decompression failed"**
@@ -447,7 +458,7 @@ The compressed section is corrupted:
 [source,bash]
 ----
 # Try extracting uncompressed files only
-cabriolet chm-extract --uncompressed-only help.chm
+cabriolet extract --uncompressed-only help.chm
 ----
 
 **"Invalid directory chunk"**
@@ -477,7 +488,7 @@ rescue Cabriolet::CorruptionError => e
 end
 ----
 
-=== Best Practices
+=== Best practices
 
 1. **Use appropriate sections**:
    * Compressed section for HTML, CSS, JavaScript
@@ -519,18 +530,22 @@ Offset  Bytes  Description
 
 Uses PMGL (directory listing) and PMGI (index) chunks for hierarchical organization.
 
-For complete format specifications, see <<../../reference/formats/chm-specification#,CHM Specification>>.
+For complete format specifications, see <<../../reference/formats/index,Format Specifications>>.
 
-=== Next Steps
+=== Next steps
 
-* Learn about <<../compression/lzx-compression#,LZX compression algorithm>>
-* Review <<../../reference/cli/chm-commands#,complete CHM command reference>>
-* Study <<../../reference/api/chm-api#,CHM API documentation>>
+* Learn about <<../compression/lzx-compression,LZX compression>>
+* Review <<../basic-usage/extracting-files,extracting files>>
+* Study <<../../reference/api/index,Ruby API>>
+
+=== See also
+
+* <<cab-format,CAB Format>>
+* <<hlp-format,HLP Format>>
+* <<index,All Format Guides>>
 
 === Bibliography
 
-* <<../../reference/cli/chm-commands#,CHM Commands Reference>>
-* <<../../reference/api/chm-api#,CHM API Reference>>
-* <<../../reference/formats/chm-specification#,CHM Format Specification>>
+* https://github.com/omnizip/cabriolet[Cabriolet on GitHub]
 * https://www.nongnu.org/chmspec/latest/[Unofficial CHM Format Specification]
 * https://en.wikipedia.org/wiki/Microsoft_Compiled_HTML_Help[Wikipedia: Microsoft Compiled HTML Help]

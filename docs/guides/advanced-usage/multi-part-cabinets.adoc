@@ -6,7 +6,7 @@ grand_parent: Guides
 nav_order: 1
 ---
 
-== Multi-Part Cabinets
+== Multi-part cabinets
 :toc:
 
 === Purpose
@@ -429,7 +429,7 @@ decompressor = Cabriolet::CAB::Decompressor.new(handle)
 decompressor.extract_all('output')
 ----
 
-=== Best Practices
+=== Best practices
 
 ==== Creating Multi-Part Archives
 
@@ -447,12 +447,18 @@ decompressor.extract_all('output')
 4. **Validate checksums**: Verify file integrity after extraction
 5. **Keep parts together**: Store all parts in the same directory
 
-==== Error Handling
+==== Error handling
 
 1. **Implement retry logic**: For network-based parts
 2. **Log missing parts**: Track which parts failed to load
 3. **Provide clear errors**: Help users identify missing components
 4. **Support resume**: Allow partial extraction and continuation
+
+=== See also
+
+* <<embedded-cabinets,Embedded Cabinets>>
+* <<salvage-mode,Salvage Mode>>
+* <<error-handling,Error Handling>>
 
 ==== Bibliography
 

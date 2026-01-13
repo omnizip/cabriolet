@@ -6,7 +6,7 @@ grand_parent: Guides
 nav_order: 4
 ---
 
-== Error Handling
+== Error handling
 :toc:
 
 === Purpose
@@ -556,7 +556,7 @@ def recover_mszip_blocks(filename)
 end
 ----
 
-=== Best Practices
+=== Best practices
 
 ==== Error Handling Strategy
 
@@ -581,6 +581,12 @@ end
 3. **Validate checksums**: Detect tampering
 4. **Handle untrusted input**: Treat all archives as potentially malicious
 5. **Use salvage mode carefully**: Only for trusted sources
+
+=== See also
+
+* <<salvage-mode,Salvage Mode>>
+* <<custom-io-handlers,Custom I/O Handlers>>
+* <<performance-tuning,Performance Tuning>>
 
 ==== Bibliography
 

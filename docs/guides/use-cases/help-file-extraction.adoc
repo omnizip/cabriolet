@@ -57,7 +57,7 @@ Dir.glob('help/*.chm').each do |chm_file|
 end
 ----
 
-=== See Also
+=== See also
 
 * xref:guides/formats/chm-format.adoc[CHM Format]
 * xref:guides/formats/hlp-format.adoc[HLP Format]

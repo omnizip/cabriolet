@@ -593,7 +593,7 @@ For full CAB support, implement:
 * **libmspack**: LZX, Quantum, full CAB support
 * **7-Zip**: All CAB types via external library
 
-=== See Also
+=== See also
 
 * link:cab-specification.html[CAB File Format Specification]
 * xref:guides/compression/choosing-algorithm.adoc[Choosing Compression Algorithm]
