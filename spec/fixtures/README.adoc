@@ -1,0 +1,216 @@
+// Test Fixtures
+//
+// This directory contains test fixture files for testing various archive and
+// help file formats supported by Cabriolet.
+
+[[fixtures-overview]]
+== Fixtures Overview
+
+The test fixtures are organized by source project and format type. Each directory
+contains specific file formats used to verify correct parsing, extraction, and
+compression behavior.
+
+*Total fixture files by format:*
+* **CAB:** ~75 files (libmspack + cabextract)
+* **CHM:** 18 files (2 real docs + 16 security test files)
+* **KWAJ:** 51 test files
+* **SZDD:** ~55 real compressed executables
+* **LIT:** 3 eBook files
+* **OAB:** 2 test files
+* **HLP:** 5 files (3 WinHelp 4.x + 2 QuickHelp)
+
+* link:#cab-fixtures[CAB Cabinet Files]
+* link:#chm-fixtures[CHM Compiled HTML Help Files]
+* link:#szdd-fixtures[SZDD Compressed Files]
+* link:#kwaj-fixtures[KWAJ Compressed Files]
+* link:#lit-fixtures[LIT eBook Files]
+* link:#oab-fixtures[OAB Offline Address Book Files]
+* link:#hlp-fixtures[HLP Help Files]
+
+[[cab-fixtures]]
+=== CAB Cabinet Files
+
+Located in:
+* `libmspack/cabd/` - https://github.com/kyz/libmspack[test files]
+* `cabextract/` - https://www.cabextract.org/test files
+
+The CAB fixtures are organized into two subdirectories:
+
+==== libmspack/cabd/
+
+Comprehensive test suite from the libmspack project. These fixtures are
+used primarily for:
+
+* *Security testing* - Files with CVE identifiers test for known vulnerabilities
+* *Fuzzing tests* - `bad_*`, `partial_*`, `filename-read-violation-*` files test edge cases
+* *Compression testing* - Files testing MSZIP, LZX, and Quantum compression algorithms
+* *Multi-part cabinets* - `multi_basic_pt*.cab` for testing split archives
+
+Notable files:
+* `normal_2files_1folder.cab` - Standard cabinet with 2 files in 1 folder
+* `mszip_lzx_qtm.cab` - Contains all three compression types (MSZIP, LZX, Quantum)
+* CVE-prefixed files - Test cases for specific security vulnerabilities
+
+==== cabextract/
+
+Test files from the cabextract project focusing on:
+* *Encoding support* - `encoding-*.cab` files test various character encodings
+* *Special features* - Directory extraction, large files, split cabinets
+* *Edge cases* - `case-ascii.cab`, `case-utf8.cab` for case sensitivity
+
+[[chm-fixtures]]
+=== CHM Compiled HTML Help Files
+
+Located in two directories:
+
+==== chm/
+
+Real-world CHM files from openly licensed documentation:
+
+* `imlib2_doc_v1x1x1_r1x0_20171019.chm` - Imlib 2 reference manual
+* `lua_5x2_reference_manual_r0x1_20141013.chm` - Lua 5.2 reference manual
+
+These files were sourced from the https://github.com/ike9000e/Offline-Doc-Collection[Offline-Doc-Collection]
+and are used for testing actual CHM file extraction with real content.
+
+==== libmspack/chmd/
+
+Security and edge case test suite from libmspack for CHM (Compiled HTML Help) files:
+
+* *Security testing* - CVE-prefixed files for vulnerability testing
+* *Encoding tests* - `encints-*` files test different integer encodings (32-bit vs 64-bit)
+* *Edge cases* - Boundary conditions, name length limits, blank filenames
+
+[[szdd-fixtures]]
+=== SZDD Compressed Files
+
+SZDD (Microsoft Compress) format files are located in:
+
+* `MUANGL20/` - M.U.A.N.G.E.L.O game installation files
+* `TBWNT807/` - TurboBrowser Watch installation files
+* `dpasswd/` - Password Manager installer (MSI format, not SZDD)
+
+The `.EX_` files are SZDD-compressed executables where the original filename
+ends with `E` (e.g., `MAUNINST.EX_` expands to `MAUNINST.EXE`).
+
+These are real-world SZDD-compressed files from Windows 95/98 era software.
+
+[[kwaj-fixtures]]
+=== KWAJ Compressed Files
+
+Located in: `libmspack/kwajd/`
+
+Large collection of KWAJ format test files from libmspack:
+* `cve-2018-14681.kwj` - Security test case
+* `f00.kwj` through `f94.kwj` - Systematic test files for different scenarios
+
+KWAJ is a lesser-known Microsoft compression format used in some older products.
+
+[[lit-fixtures]]
+=== LIT eBook Files
+
+Located in: `atudl_lit/`
+
+Microsoft Reader LIT format eBook files:
+* `A History of Greek Art.lit`
+* `A Journey To The Center Of The Earth.lit`
+* `bill.lit`
+
+LIT files are compiled eBook formats that can contain HTML, images, and CSS
+with LZX compression and optional DRM encryption.
+
+[[oab-fixtures]]
+=== OAB Offline Address Book Files
+
+Located in: `oab/`
+
+OAB (Offline Address Book) format files used by Microsoft Exchange:
+* `test_simple.oab` - Basic OAB test file
+* `test_large.oab` - Large OAB test file
+
+OAB files contain address book data with multiple sections and compression.
+
+[[hlp-fixtures]]
+=== HLP Help Files
+
+The HLP format has two different subtypes:
+
+==== QuickHelp Format (.HLP with "LN" signature)
+
+Located in: `LiunuxOS/`
+
+* `ALANG.HLP` - MS Advisor help file
+* `CV.HLP` - MS Advisor help file
+
+These are QuickHelp format files from Microsoft Advisor, using the "LN"
+signature (0x4C 0x4E) and Huffman compression for topics.
+
+==== WinHelp Format (.HLP with 0x35F3 or 0x3F5F signature)
+
+Located in: `masm32_hlp/`
+
+* `MASMLIB.HLP` - MASM32 library reference
+* `QEDITOR.HLP` - Quick Editor help
+* `SE.HLP` - SoftICE reference
+
+These are Windows Help files (WinHelp 4.x format) using B+ tree directory
+structure with internal files like `|SYSTEM`, `|TOPIC`, `|CONTEXT`, etc.
+
+[[fixture-usage]]
+=== Fixture Usage in Tests
+
+Fixtures are referenced in test files using the `fixture` helper from
+`spec/spec_helper.rb`:
+
+[source,ruby]
+----
+# Using the fixture helper
+cab_path = fixture("libmspack/cabd/normal_2files_1folder.cab")
+
+# Direct path construction
+oab_path = File.join(__dir__, "..", "fixtures", "oab", "test_simple.oab")
+----
+
+[[missing-fixtures]]
+=== Missing Fixtures
+
+The following fixtures are referenced in tests but do not exist:
+
+* `fixtures/chm/simple.chm` - Referenced in CLI spec but not available
+
+Note: Real SZDD files exist in `MUANGL20/` and `TBWNT807/` directories for testing
+SZDD extraction, so `fixtures/szdd/basic.szdd` is not needed.
+
+[[external-sources]]
+=== External Sources
+
+Most fixtures are from external projects:
+
+* **libmspack** - https://github.com/kyz/libmspack
+  Copyright (C) 2003-2017 Stuart Caie
+  License: LGPL/GPL (dual license)
+
+* **cabextract** - https://www.cabextract.org
+  Copyright (C) 2000-2007 Stuart Caie
+  License: GPL
+
+* **atudl_lit** - Project Gutenberg eBooks (public domain)
+* **masm32_hlp** - MASM32 package (Microsoft assembler documentation)
+* **LiunuxOS** - MS Advisor (Microsoft help files)
+* **MUANGL20, TBWNT807** - Abandonware software
+
+[[adding-fixtures]]
+=== Adding New Fixtures
+
+When adding new test fixtures:
+
+1. Place them in the appropriate subdirectory by format
+2. Include a README.adoc in that subdirectory if the source is non-obvious
+3. Ensure the fixture does not contain:
+   * Proprietary code that cannot be shared
+   * Personal information
+   * Malware (though vulnerability test files are acceptable for security testing)
+4. Document the source of the fixture in the subdirectory README
+
+For complex fixtures, consider using `generate_format_fixtures.rb` to generate
+test files programmatically rather than committing binary blobs.

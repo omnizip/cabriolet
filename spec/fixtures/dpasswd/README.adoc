@@ -1,0 +1,9 @@
+= Example ism (InstallShield) file
+
+The `PwdManagerInstallerV2.ism` file in this directory are obtained from the dpasswd project:
+https://github.com/dpasswd/client-windows-installshield
+
+The file here is from:
+
+* https://github.com/dpasswd/client-windows-installshield/blob/main/PwdManagerInstallerV2.ism
+

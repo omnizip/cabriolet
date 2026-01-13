@@ -1,0 +1,10 @@
+= Microsoft DOS QuickHelp HLP files
+
+The `.HLP` files in this directory are obtained from LiunuxOS:
+https://github.com/satadriver/LiunuxOS
+
+The files here are from:
+
+* https://github.com/satadriver/LiunuxOS/blob/main/ALANG.HLP
+* https://github.com/satadriver/LiunuxOS/blob/main/CV.HLP
+

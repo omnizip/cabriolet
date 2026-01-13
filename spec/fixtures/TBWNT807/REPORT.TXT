@@ -1,0 +1,171 @@
+ESaSS B.V.                                    Phone: +31 (0)24 64 88 555
+Thunderbyte PC Immunizer Division
+P.O. Box 1380                                 Fax:   +31 (0)24 64 50 899
+6501 BJ Nijmegen
+The Netherlands                               Email: support@thunderbyte.nl
+
+
+                     ESaSS VIRUS REPORT FORM
+
+This file can be used to report a virus attack.
+
+Why should you report a virus attack to us? Because if you do so it
+helps us and the authorities to estimate the size of the virus problem.
+It is still not really possible to perform realistic statistics on the
+reproduction of viruses, and therefore it is difficult to defend against
+them. If we know which virus occurs where, and how often it causes
+troubles, we can really improve our work and supply the authorities our
+statistics.
+
+Of course we realize that a virus attack is a quite sensitive matter.
+Therefore we will never use your name of the name of your company in
+any publication or statistics. We will never supply your name to anyone.
+We need your name only to be able to get confirmation on the virus attack.
+Although we hope you will answer all questions, you may skip questions
+if you don't want to answer them.
+
+If you or your company has had a problem with a virus, please fill in this
+form and return it to us by mail or via fax. In case of multiple viruses
+use multiple report forms.
+
+-> DO NOT UPLOAD OR TRANSMIT THIS FILE TO ANY THUNDERBYTE SUPPORT BBS!
+
+
+Name: ________________________________________________________________
+
+(Company): ___________________________________________________________
+
+(Title): _____________________________________________________________
+
+Address: _____________________________________________________________
+
+ZIP/District Code: ___________________________________________________
+
+City: ________________________________________________________________
+
+Country: _____________________________________________________________
+
+Phone Number: ________________________________________________________
+
+Today's Date: ________________________________________________________
+
+
+
+        Which virus attacked your system(s)?
+
+                 _____________________________________________________
+
+        How many PC's were infected by the virus?
+            [  ] 1
+            [  ] 2
+            [  ] 2-5
+            [  ] 5-10
+            [  ] 10-25
+            [  ] 25-100
+            [  ] 100-500
+            [  ] >500
+
+        How many PC's do you (or your company) have?
+            [  ] 1
+            [  ] 2
+            [  ] 2-5
+            [  ] 5-10
+            [  ] 10-25
+            [  ] 25-100
+            [  ] 100-500
+            [  ] >500
+
+        How did you discover the virus?
+            [  ] By using a scanner.
+            [  ] By using a memory resident scanner.
+            [  ] By using a checksummer.
+            [  ] By using a software monitoring device.
+            [  ] By using a hardware monitoring device.
+            [  ] By experiencing the resulting damage.
+            [  ] Other:
+                 _____________________________________________________
+
+        If you used an anti-virus package, why did you use it?
+            [  ] It is used frequently and the virus was found unexpected.
+            [  ] The package was used because the system behaved suspicious.
+
+        Did you use another scanner to get confirmation?
+            [  ] No
+            [  ] Yes
+
+        Where did the virus come from?
+            [  ] It was on an original software disk.
+            [  ] It was brought in the system via a modem.
+            [  ] It was on a program I got from a friend.
+            [  ] I restored it from an infected backup.
+            [  ] I don't know how it came into our system(s).
+            [  ] Other:
+                 _____________________________________________________
+
+        Has the system ever had a virus in the past?
+            [  ] No, it has never had a virus.
+            [  ] Yes, it was infected before but with a different virus.
+            [  ] Yes, it was infected before with the same virus.
+
+        Did the virus cause damage to data?
+            [  ] No, it only infected some files or bootsectors.
+            [  ] Yes, but we had a recent backup so finally there was no damage.
+            [  ] Yes, we have lost some data.
+
+        How many financial damage was caused by the virus in total?
+            [  ] < $100
+            [  ] $100 - $1,000
+            [  ] $1,000 - $10,000
+            [  ] $10,000 - $100,000
+            [  ] $100,000 - $1,000,000
+            [  ] > $1,000,000
+
+        How did you get rid of the virus?
+            [  ] We used a backup to restore everything.
+            [  ] We re-installed our software.
+            [  ] We used a virus remover.
+            [  ] We didn't succeed in removing it. We are still searching for
+                 a solution.
+
+        Did you remove the virus on your own?
+            [  ] Yes, but with the help of some software.
+            [  ] No, I got help from inside the company.
+            [  ] No, I got help from a third party for free.
+            [  ] No, I had to consult an expert.
+
+        Did the virus attack change your policy with regard to viruses?
+            [  ] No, we still don't defend ourself against viruses at all.
+            [  ] No, the current measures suit our needs.
+            [  ] Yes, but we are still searching for an anti-virus package.
+            [  ] Yes, we have found a solution against viruses.
+
+        How do you currently defend against viruses?
+            [  ] Not at all.
+            [  ] By using a scanner.
+            [  ] By using a memory resident scanner.
+            [  ] By using a checksummer.
+            [  ] By using monitoring software.
+            [  ] By using a hardware immunizer.
+            [  ] Other:
+                 _____________________________________________________
+
+        If you use a program against viruses, how often do you use it?
+            [  ] Multiple times a day.
+            [  ] Once a day.
+            [  ] Every 1 to 7 days.
+            [  ] Every 7 to 31 days.
+            [  ] A few times a year.
+            [  ] Only when we think a system is infected.
+
+        If you use a scanner, how often do you update it?
+            [  ] Every week.
+            [  ] Every month.
+            [  ] Every year.
+            [  ] As soon as a new one is available.
+            [  ] I did not realize I had to update it.
+
+        Did you report the virus attack to the authorities?
+            [  ] No, we prefer to keep it secret.
+            [  ] No, but we are willing to confirm it.
+            [  ] Yes
+

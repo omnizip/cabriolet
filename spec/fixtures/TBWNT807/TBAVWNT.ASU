@@ -1,0 +1,7 @@
+[TBND]
+Name=ThunderByte Anti-Virus for Windows NT
+Platform=WinNT
+Version=8.07.00.50
+SetupExe=setup.exe /INF=setupnt.inf
+InstLib=tbinfo32.dll
+Disks=disk1~_setupnt.ex_
