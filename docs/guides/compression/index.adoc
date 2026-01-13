@@ -13,9 +13,9 @@ This section explains the 5 compression algorithms supported by Cabriolet, helpi
 
 === References
 
-* <<choosing-algorithm#,Choosing a Compression Algorithm>>
-* <<../formats/index#,Format Guides>>
-* <<../../reference/formats/compression-types#,Compression Type Codes>>
+* <<../../getting-started/index,Getting Started Guide>>
+* <<../formats/index,Format Guides>>
+* <<../../reference/cli/index,CLI Reference>>
 
 === Concepts
 
@@ -23,52 +23,52 @@ Compression algorithms trade off between compression ratio, speed, and memory us
 
 === Supported Algorithms
 
-==== None - Uncompressed Storage
+==== None - Uncompressed storage
 
-<<none-compression#,None Compression Guide>>
+<<none-compression,None Compression Guide>>
 
 * **Compression**: 0% (stores uncompressed)
 * **Speed**: Fastest extraction
 * **Memory**: Minimal
 * **Use Cases**: Pre-compressed files, fast access, testing
 
-==== LZSS - Dictionary Compression
+==== LZSS - Dictionary compression
 
-<<lzss-compression#,LZSS Algorithm Guide>>
+<<lzss-compression,LZSS Compression Guide>>
 
 * **Compression**: Moderate (40-60%)
 * **Speed**: Fast compression and extraction
 * **Memory**: Low (small window)
 * **Use Cases**: Legacy compatibility, simple compression
 
-==== MSZIP - Deflate-based Compression
+==== MSZIP - DEFLATE-based compression
 
-<<mszip-compression#,MSZIP Algorithm Guide>>
+<<mszip-compression,MSZIP Compression Guide>>
 
 * **Compression**: Good (50-70%)
 * **Speed**: Balanced
 * **Memory**: Moderate
 * **Use Cases**: General purpose, ZIP compatibility, default choice
 
-==== LZX - High Compression
+==== LZX - High compression
 
-<<lzx-compression#,LZX Algorithm Guide>>
+<<lzx-compression,LZX Compression Guide>>
 
 * **Compression**: Excellent (60-80%)
 * **Speed**: Slower compression, fast extraction
 * **Memory**: High (large window)
 * **Use Cases**: Software distribution, maximum compression, archival
 
-==== Quantum - Memory-efficient Compression
+==== Quantum - Memory-efficient compression
 
-<<quantum-compression#,Quantum Algorithm Guide>>
+<<quantum-compression,Quantum Compression Guide>>
 
 * **Compression**: Good (55-75%)
 * **Speed**: Moderate
 * **Memory**: Configurable window
 * **Use Cases**: Memory-constrained environments, variable compression
 
-=== Algorithm Comparison
+=== Algorithm comparison
 
 [cols="1,1,1,1,2"]
 |===
@@ -105,7 +105,7 @@ Compression algorithms trade off between compression ratio, speed, and memory us
 |Variable requirements
 |===
 
-=== Quick Selection Guide
+=== Quick selection guide
 
 **Choose None when:**
 
@@ -137,9 +137,9 @@ Compression algorithms trade off between compression ratio, speed, and memory us
 * Configurable compression needed
 * Moderate compression acceptable
 
-=== Usage Examples
+=== Usage examples
 
-==== Specifying Compression Algorithm
+==== Specifying compression algorithm
 
 [source,bash]
 ----
@@ -169,9 +169,9 @@ decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
 puts "Compression: #{decompressor.cabinet.folders.first.compression}"
 ----
 
-=== Performance Considerations
+=== Performance considerations
 
-==== Compression Time vs. Ratio
+==== Compression time vs. ratio
 
 Higher compression ratios require more processing time:
 
@@ -186,7 +186,7 @@ LZX:     8.0s →  2.5MB  (75% compression)
 Quantum: 4.0s →  3MB    (70% compression)
 ----
 
-==== Memory Usage
+==== Memory usage
 
 Different algorithms have different memory requirements:
 
@@ -226,14 +226,19 @@ Not all formats support all compression algorithms:
 |LZX only
 |===
 
-=== Next Steps
+=== Next steps
 
-* Read <<choosing-algorithm#,Choosing a Compression Algorithm>> for detailed selection criteria
+* Read <<choosing-algorithm,Choosing the Right Algorithm>> for detailed selection criteria
 * Study individual algorithm guides for technical details
-* Explore <<../advanced-usage/performance-tuning#,performance tuning>> techniques
+* Explore <<../../concepts/compression-algorithms/,Compression Algorithm Concepts>>
 
 === Bibliography
 
-* <<choosing-algorithm#,Algorithm Selection Guide>>
-* <<../../reference/formats/compression-types#,Compression Type Codes>>
 * https://docs.microsoft.com/en-us/previous-versions/bb417343(v=msdn.10)[Microsoft Cabinet SDK]
+
+=== Related sections
+
+* <<../formats/index,See which formats support each algorithm>>
+* <<../basic-usage/index,Apply compression to common operations>>
+* <<../../concepts/compression-algorithms/,Understand how algorithms work>>
+* <<../advanced-usage/performance-tuning,Optimize compression settings>>

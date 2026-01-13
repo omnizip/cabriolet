@@ -6,7 +6,7 @@ grand_parent: Guides
 nav_order: 4
 ---
 
-== Validation and Repair
+== Validation and repair
 
 === Purpose
 
@@ -132,7 +132,7 @@ deploy_archive('release.cab')
 ----
 ====
 
-=== See Also
+=== See also
 
 * xref:examples/recover-corrupted-archive.adoc[Recovery Example]
 * xref:troubleshooting/corrupted-files.adoc[Corrupted Files]

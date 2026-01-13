@@ -113,7 +113,7 @@ handle = Cabriolet::System::MemoryHandle.new(data)
 
 Network, database, cloud storage, etc.
 
-== Performance Considerations
+== Performance considerations
 
 * **Buffering**: Critical for performance
 * **Sequential access**: Much faster than random
@@ -122,4 +122,4 @@ Network, database, cloud storage, etc.
 == Bibliography
 
 * xref:../reference/api/system-io.adoc[System I/O Reference]
-* xref:../architecture/system-layer.adoc[System Layer Architecture]
+* xref:../developer/architecture/system-layer.adoc[System Layer Architecture]

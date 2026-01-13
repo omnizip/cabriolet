@@ -96,8 +96,8 @@ end
 puts "Extraction took #{time.real} seconds"
 ----
 
-=== See Also
+=== See also
 
-* link:common-errors.html[Common Errors]
+* xref:common-errors.adoc[Common Errors]
 * xref:guides/advanced-usage/performance-tuning.adoc[Performance Tuning]
-* xref:appendix/benchmarks/index.adoc[Benchmarks]
+* xref:resources/benchmarks/index.adoc[Benchmarks]

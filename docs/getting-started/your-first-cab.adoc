@@ -4,7 +4,7 @@ parent: Getting Started
 nav_order: 3
 ---
 
-== Creating Your First CAB File
+== Creating your first CAB file
 
 === Purpose
 
@@ -12,10 +12,9 @@ This guide walks you through creating a CAB archive from scratch. You'll learn h
 
 === References
 
-* <<installation#,Installation Guide>>
-* <<quick-start#,Quick Start Guide>>
 * <<../reference/cli/cab-commands#create,Create Command Reference>>
-* <<../guides/compression/index#,Compression Algorithms>>
+* <<../guides/compression/index,Compression Algorithms Guide>>
+* https://docs.microsoft.com/en-us/previous-versions/bb417343(v=msdn.10)[Microsoft Cabinet SDK Documentation]
 
 === Concepts
 
@@ -28,7 +27,7 @@ Creating a CAB archive involves:
 
 === Prerequisites
 
-* Cabriolet installed (see <<installation#,Installation>>)
+* Cabriolet installed (see <<installation,Installation>>)
 * Some files to archive (text, images, executables, etc.)
 
 === Step 1: Prepare Your Files
@@ -239,7 +238,7 @@ end
 compressor.write('project.cab')
 ----
 
-For complete API documentation, see <<../reference/api/cab-api#,CAB API Reference>>.
+For complete API documentation, see <<../reference/api/index,API Reference>>.
 
 === Advanced Options
 
@@ -311,7 +310,7 @@ ls -lh *.cab
 |68.3%
 |===
 
-For detailed comparison, see <<../guides/compression/choosing-algorithm#,Choosing a Compression Algorithm>>.
+For detailed comparison, see <<../guides/formats/format-comparison,Format Comparison>>.
 
 === Troubleshooting
 
@@ -340,7 +339,7 @@ This is expected for LZX compression. Consider:
 * Using `--verbose` to see progress
 * Splitting into multiple CABs
 
-=== Best Practices
+=== Best practices
 
 1. **Choose appropriate compression**:
    * MSZIP for general use
@@ -365,17 +364,16 @@ cabriolet test my-archive.cab
 cabriolet create myapp-v1.0.cab src/
 ----
 
-=== Next Steps
+=== Next steps
 
 Now that you can create CAB files:
 
-* Learn about <<../guides/compression/index#,compression algorithms in detail>>
-* Explore <<../guides/formats/index#,other formats>> (CHM, SZDD, etc.)
-* Read about <<../guides/advanced-usage/multi-part-cabinets#,multi-part cabinets>>
-* Review <<../reference/cli/cab-commands#,complete CAB command reference>>
+* Learn about <<../guides/compression/index,compression algorithms>>
+* Explore <<../guides/formats/index,other formats>> (CHM, SZDD, etc.)
+* Read about <<../guides/advanced-usage/multi-part-cabinets,multi-part cabinets>>
+* Review <<../guides/advanced-usage/performance-tuning,performance tuning>>
 
 === Bibliography
 
 * <<../reference/cli/cab-commands#create,Create Command Reference>>
-* <<../guides/compression/choosing-algorithm#,Choosing a Compression Algorithm>>
 * https://docs.microsoft.com/en-us/previous-versions/bb417343(v=msdn.10)[Microsoft Cabinet SDK]

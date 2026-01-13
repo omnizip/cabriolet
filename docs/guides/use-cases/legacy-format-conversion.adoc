@@ -5,7 +5,7 @@ parent: Use Cases
 grand_parent: Guides
 ---
 
-== Legacy Format Conversion
+== Legacy format conversion
 
 === Converting Old CAB Archives
 
@@ -43,7 +43,7 @@ Dir.glob('old_archives/*.cab').each do |cab_file|
 end
 ----
 
-=== See Also
+=== See also
 
 * xref:examples/batch-processing.adoc[Batch Processing]
-* xref:format-comparison.adoc[Format Comparison]
+* xref:../formats/format-comparison.adoc[Format Comparison]

@@ -1,0 +1,192 @@
+---
+layout: default
+title: Migration Guide
+parent: Appendix
+nav_order: 6
+---
+
+== Migration Guide
+
+This guide helps you migrate from other tools and from previous versions of Cabriolet.
+
+=== From Legacy Cabriolet Commands
+
+Cabriolet now provides unified commands that work with all formats through automatic format detection. The legacy format-specific commands are maintained for backward compatibility.
+
+==== Unified vs Legacy Commands
+
+[options="header"]
+|===
+| Legacy Command | Unified Command | Notes
+
+|`list FILE` (CAB only)
+|`list FILE`|Now works with all formats
+
+|`chm-list FILE`
+|`list FILE` or `list --format chm FILE`|Auto-detects CHM
+
+|`expand FILE [OUTPUT]`
+|`extract FILE [OUTPUT]`|Auto-detects SZDD
+
+|`compress FILE [OUTPUT]`
+|`create OUTPUT FILE`|Auto-detects SZDD from extension
+
+|`chm-extract FILE [OUTPUT]`
+|`extract FILE [OUTPUT]`|Auto-detects CHM
+
+|`chm-info FILE`
+|`info FILE`|Auto-detects CHM
+
+|`chm-create OUTPUT FILES...`
+|`create OUTPUT FILES...`|Auto-detects from extension
+
+|`kwaj-extract FILE [OUTPUT]`
+|`extract FILE [OUTPUT]`|Auto-detects KWAJ
+
+|`kwaj-compress FILE [OUTPUT]`
+|`create OUTPUT FILE`|Auto-detects KWAJ
+
+|`kwaj-info FILE`
+|`info FILE`|Auto-detects KWAJ
+
+|`hlp-extract FILE [OUTPUT]`
+|`extract FILE [OUTPUT]`|Auto-detects HLP
+
+|`hlp-create OUTPUT FILES...`
+|`create OUTPUT FILES...`|Auto-detects HLP
+
+|`hlp-info FILE`
+|`info FILE`|Auto-detects HLP
+
+|`lit-extract FILE [OUTPUT]`
+|`extract FILE [OUTPUT]`|Auto-detects LIT
+
+|`lit-create OUTPUT FILES...`
+|`create OUTPUT FILES...`|Auto-detects LIT
+
+|`lit-info FILE`
+|`info FILE`|Auto-detects LIT
+
+|`oab-extract INPUT OUTPUT`
+|`extract INPUT --output OUTPUT`|Auto-detects OAB
+
+|`oab-create INPUT OUTPUT`
+|`create OUTPUT INPUT`|Auto-detects OAB
+
+|`oab-info FILE`
+|`info FILE`|Auto-detects OAB
+|===
+
+==== Migration Examples
+
+===== CHM Files
+
+Before:
+[source,bash]
+----
+cabriolet chm-list help.chm
+cabriolet chm-extract help.chm output/
+cabriolet chm-info help.chm
+----
+
+After:
+[source,bash]
+----
+cabriolet list help.chm
+cabriolet extract help.chm output/
+cabriolet info help.chm
+----
+
+===== SZDD Files
+
+Before:
+[source,bash]
+----
+cabriolet expand compressed_ output.txt
+cabriolet compress input.txt compressed_
+cabriolet szdd-info compressed_
+----
+
+After:
+[source,bash]
+----
+cabriolet extract compressed_ output.txt
+cabriolet create compressed_ input.txt
+cabriolet info compressed_
+----
+
+===== Format Override
+
+When auto-detection is uncertain, use `--format`:
+
+[source,bash]
+----
+cabriolet --format chm extract unknown.chm output/
+cabriolet extract --format szdd file.bin output.txt
+----
+
+==== Why the Change?
+
+The unified command interface provides several benefits:
+
+* **MECE Compliance**: Commands are now mutually exclusive and collectively exhaustive - one command per operation, regardless of format
+* **Simplicity**: No need to remember format-specific commands
+* **Discoverability**: Users can learn one set of commands that work everywhere
+* **Future-Proof**: New formats are added to the registry without requiring new commands
+* **Consistency**: All formats use the same command structure
+
+==== Backward Compatibility
+
+All legacy commands continue to work. They are implemented as aliases to the unified commands with explicit format specification. Existing scripts and workflows will continue to function without modification.
+
+=== From cabextract
+
+==== Command Line
+
+[options="header"]
+|===
+| cabextract | Cabriolet
+| `cabextract archive.cab` | `cabriolet extract archive.cab`
+| `cabextract -d output archive.cab` | `cabriolet extract archive.cab output/`
+| `cabextract -l archive.cab` | `cabriolet list archive.cab`
+| `cabextract -t archive.cab` | `cabriolet test archive.cab`
+|===
+
+==== Ruby API
+
+Cabextract doesn't provide Ruby API. Cabriolet offers full programmatic access.
+
+=== From libmspack
+
+==== C to Ruby
+
+libmspack (C):
+[source,c]
+----
+mscab_decompressor *cabd = mspack_create_cab_decompressor(NULL);
+mscabd_cabinet *cab = cabd->open(cabd, "archive.cab");
+----
+
+Cabriolet (Ruby):
+[source,ruby]
+----
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+----
+
+=== From 7-Zip
+
+[options="header"]
+|===
+| 7-Zip | Cabriolet
+| `7z x archive.cab` | `cabriolet extract archive.cab`
+| `7z l archive.cab` | `cabriolet list archive.cab`
+| `7z a archive.cab files/*` | `cabriolet create archive.cab files/*`
+|===
+
+=== Key Differences
+
+* **Ruby-native**: No external dependencies
+* **Model-based**: Type-safe data structures
+* **Modern API**: Object-oriented design
+* **Extensible**: Easy to add custom handlers
+* **Unified Interface**: Same commands work for all formats

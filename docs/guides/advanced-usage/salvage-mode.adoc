@@ -6,7 +6,7 @@ grand_parent: Guides
 nav_order: 5
 ---
 
-== Salvage Mode
+== Salvage mode
 :toc:
 
 === Purpose
@@ -585,7 +585,7 @@ def compare_recoveries(dir1, dir2)
 end
 ----
 
-=== Best Practices
+=== Best practices
 
 ==== When to Use Salvage Mode
 
@@ -618,6 +618,12 @@ end
 3. **Keep originals**: Retain original files for future tools
 4. **Document everything**: Record all recovery attempts
 5. **Verify checksums**: When available, check against known values
+
+=== See also
+
+* <<error-handling,Error Handling>>
+* <<multi-part-cabinets,Multi-Part Cabinets>>
+* <<embedded-cabinets,Embedded Cabinets>>
 
 ==== Bibliography
 

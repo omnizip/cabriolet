@@ -13,9 +13,9 @@ Complete command-line reference for all SZDD (Single-file LZSS) format operation
 
 === References
 
-* <<../../guides/formats/szdd-format#,SZDD Format Guide>>
-* <<../api/szdd-api#,SZDD API Reference>>
-* <<global-options#,Global Options>>
+* <<../../getting-started/index,Getting Started Guide>>
+* <<../../guides/formats/szdd-format,SZDD Format Guide>>
+* <<../api/index,Ruby API Reference>>
 
 === Concepts
 
@@ -404,9 +404,9 @@ All SZDD commands support these global options:
 
 `--version`:: Show Cabriolet version
 
-See <<global-options#,Global Options>> for complete details.
+See link: for complete details.
 
-=== Exit Codes
+=== Exit codes
 
 [cols="1,3"]
 |===
@@ -517,15 +517,15 @@ for file in *.tx_; do
 done
 ----
 
-=== Next Steps
+=== Next steps
 
-* Review <<../../guides/formats/szdd-format#,SZDD Format Guide>> for usage examples
-* Study <<../api/szdd-api#,SZDD API Reference>> for Ruby integration
-* Learn about <<../../guides/compression/lzss-compression#,LZSS compression>>
+* Review <<../../guides/basic-usage/index,Basic Usage Guide>> for usage examples
+* Study <<../api/index,Ruby API Reference>> for Ruby integration
+* Learn about <<../../guides/compression/lzss-compression,LZSS compression>>
 
 === Bibliography
 
-* <<../../guides/formats/szdd-format#,SZDD Format Guide>>
-* <<../api/szdd-api#,SZDD API Reference>>
+* https://github.com/omnizip/cabriolet[Cabriolet on GitHub]
+* https://docs.microsoft.com/en-us/previous-versions/ms909672(v=msdn.10)[MS-DOS EXPAND.EXE Documentation]
 * https://en.wikipedia.org/wiki/SZDD[Wikipedia: SZDD]
 * https://www.cabextract.org.uk/[cabextract Documentation]

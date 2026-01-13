@@ -13,9 +13,9 @@ Complete command-line reference for all CAB (Microsoft Cabinet) format operation
 
 === References
 
-* <<../../guides/formats/cab-format#,CAB Format Guide>>
-* <<../api/cab-api#,CAB API Reference>>
-* <<global-options#,Global Options>>
+* <<../../getting-started/index,Getting Started Guide>>
+* <<../../guides/formats/cab-format,CAB Format Guide>>
+* <<../api/index,Ruby API Reference>>
 
 === Concepts
 
@@ -259,7 +259,7 @@ cabriolet extract large-archive.cab output/
 
 * <<test,test>> - Verify archive integrity before extraction
 * <<../../guides/formats/cab-format#extracting-files,CAB Format Guide - Extracting>>
-* <<../../guides/advanced-usage/salvage-mode#,Salvage Mode Guide>>
+* <<../../guides/basic-usage/extracting-files,Extracting Files Guide>>
 
 '''
 
@@ -601,7 +601,7 @@ cabriolet search installer.exe
 
 ==== See Also
 
-* <<../../guides/advanced-usage/embedded-cabinets#,Embedded Cabinets Guide>>
+* <<../../guides/advanced-usage/embedded-cabinets,Embedded Cabinets Guide>>
 * <<extract,extract>> - Extract found CAB files
 
 '''
@@ -742,9 +742,9 @@ Total: 15 files
 
 ==== See Also
 
-* <<../../guides/getting-started/your-first-cab#,Your First CAB Guide>>
+* <<../../guides/compression/index,Compression Algorithms Guide>>
 * <<../../guides/formats/cab-format#creating-cab-archives,CAB Format Guide - Creating>>
-* <<../../guides/compression/choosing-algorithm#,Choosing Compression Algorithm>>
+* <<../../guides/basic-usage/creating-archives,Creating Archives Guide>>
 
 '''
 
@@ -758,9 +758,9 @@ All CAB commands support these global options:
 
 `--version`:: Show Cabriolet version
 
-See <<global-options#,Global Options>> for complete details.
+See link: for complete details.
 
-=== Exit Codes
+=== Exit codes
 
 [cols="1,3"]
 |===
@@ -788,15 +788,15 @@ See <<global-options#,Global Options>> for complete details.
 |Unsupported format
 |===
 
-=== Next Steps
+=== Next steps
 
-* Review <<../../guides/formats/cab-format#,CAB Format Guide>> for usage examples
-* Study <<../api/cab-api#,CAB API Reference>> for Ruby integration
-* Learn about <<../../guides/compression/index#,compression algorithms>>
+* Review <<../../guides/basic-usage/index,Basic Usage Guide>> for usage examples
+* Study <<../api/index,Ruby API Reference>> for Ruby integration
+* Learn about <<../../guides/compression/index,compression algorithms>>
 
 === Bibliography
 
-* <<../../guides/formats/cab-format#,CAB Format Guide>>
-* <<../api/cab-api#,CAB API Reference>>
+* https://github.com/omnizip/cabriolet[Cabriolet on GitHub]
+* https://www.cabextract.org.uk/[cabextract - Open Source CAB Extractor]
 * https://docs.microsoft.com/en-us/previous-versions/bb417343(v=msdn.10)[Microsoft Cabinet SDK Documentation]
 * https://www.cabextract.org.uk/[cabextract Manual Pages]

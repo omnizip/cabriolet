@@ -1,11 +1,11 @@
 ---
 layout: default
-title: Appendix
+title: Resources
 nav_order: 7
 has_children: true
 ---
 
-== Appendix
+== Resources
 
 Additional reference materials and resources.
 
@@ -18,3 +18,10 @@ Additional reference materials and resources.
 * xref:performance.adoc[Performance] - Benchmarks and comparisons
 * xref:migration.adoc[Migration] - Migrating from other tools
 * xref:bibliography.adoc[Bibliography] - External references
+
+=== Related sections
+
+* link:../guides[Usage guides and tutorials]
+* link:../reference[API and CLI documentation]
+* link:../concepts[Core concepts and architecture]
+* link:../getting-started[Quick introduction]

@@ -6,7 +6,7 @@ grand_parent: Reference
 nav_order: 10
 ---
 
-== Error Classes Reference
+== Error classes reference
 :toc:
 
 === Purpose
@@ -527,7 +527,7 @@ rescue Cabriolet::Error => e
 end
 ----
 
-== Thread Safety
+== Thread safety
 
 All error classes are thread-safe. Error instances are immutable after creation.
 

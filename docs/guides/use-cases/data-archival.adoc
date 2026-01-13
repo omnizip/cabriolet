@@ -46,7 +46,7 @@ cab.files.each do |file|
 end
 ----
 
-=== See Also
+=== See also
 
-* xref:format-comparison.adoc[Format Comparison]
+* xref:../formats/format-comparison.adoc[Format Comparison]
 * xref:guides/compression/choosing-algorithm.adoc[Choosing Algorithm]

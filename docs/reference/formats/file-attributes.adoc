@@ -5,7 +5,7 @@ parent: Format Specifications
 grand_parent: Formats
 ---
 
-== File Attributes Reference
+== File attributes reference
 
 === Overview
 
@@ -422,7 +422,7 @@ Windows Executable → Unix: chmod +x (add execute bit)
 * Some mapping to Finder flags
 * Hidden → Finder hidden flag or dot-prefix
 
-=== Best Practices
+=== Best practices
 
 ==== When Creating CAB Files
 
@@ -547,7 +547,7 @@ end
 | Via Finder flags
 |===
 
-=== See Also
+=== See also
 
 * link:cab-specification.html[CAB File Format Specification]
 * xref:guides/formats/cab-format.adoc[CAB Format Usage Guide]

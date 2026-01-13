@@ -13,9 +13,9 @@ Complete command-line reference for all LIT (eBook) format operations. This docu
 
 === References
 
-* <<../../guides/formats/lit-format#,LIT Format Guide>>
-* <<../api/lit-api#,LIT API Reference>>
-* <<global-options#,Global Options>>
+* <<../../getting-started/index,Getting Started Guide>>
+* <<../../guides/formats/lit-format,LIT Format Guide>>
+* <<../api/index,Ruby API Reference>>
 
 === Concepts
 
@@ -269,7 +269,7 @@ cabriolet lit-create mybook.lit chapters/*.html images/*.png
 
 * <<lit-extract,lit-extract>> - Extract LIT files
 * <<../../guides/formats/lit-format#creating-lit-files,LIT Format Guide - Creating>>
-* <<../../guides/compression/lzx-compression#,LZX Compression>>
+* <<../../guides/basic-usage/creating-archives,Creating Archives Guide>>
 
 '''
 
@@ -449,9 +449,9 @@ All LIT commands support these global options:
 
 `--version`:: Show Cabriolet version
 
-See <<global-options#,Global Options>> for complete details.
+See <<global-options,Global Options>> for complete details.
 
-=== Exit Codes
+=== Exit codes
 
 [cols="1,3"]
 |===
@@ -589,16 +589,15 @@ echo "  Valid unencrypted: $((total - encrypted - corrupted))" >> report.txt
 cat report.txt
 ----
 
-=== Next Steps
+=== Next steps
 
-* Review <<../../guides/formats/lit-format#,LIT Format Guide>> for usage examples
-* Study <<../api/lit-api#,LIT API Reference>> for Ruby integration
-* Learn about <<../../guides/compression/lzx-compression#,LZX compression>>
+* Review <<../../guides/basic-usage/index,Basic Usage Guide>> for usage examples
+* Study <<../api/index,Ruby API Reference>> for Ruby integration
+* Learn about <<../../guides/compression/lzx-compression,LZX compression>>
 * Understand <<../../guides/formats/lit-format#drm-encryption,DRM limitations>>
 
 === Bibliography
 
-* <<../../guides/formats/lit-format#,LIT Format Guide>>
-* <<../api/lit-api#,LIT API Reference>>
+* https://github.com/omnizip/cabriolet[Cabriolet on GitHub]
 * https://en.wikipedia.org/wiki/Microsoft_Reader[Wikipedia: Microsoft Reader]
 * http://www.convertlit.com/[ConvertLIT - LIT Conversion Tool]

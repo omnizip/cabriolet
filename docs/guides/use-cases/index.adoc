@@ -86,7 +86,7 @@ Working with CHM and HLP documentation:
 | Structure preservation, conversion
 |===
 
-=== Common Patterns
+=== Common patterns
 
 ==== Pattern 1: Extract-Transform-Archive
 
@@ -162,9 +162,17 @@ ARGV.each do |file|
 end
 ----
 
-=== See Also
+=== See also
 
-* xref:guides/basic-usage/index.adoc[Basic Usage]
-* xref:guides/advanced-usage/index.adoc[Advanced Usage]
-* xref:examples/index.adoc[Examples]
-* xref:reference/index.adoc[API Reference]
+* xref:../basic-usage/index.adoc[Basic Usage]
+* xref:../advanced-usage/index.adoc[Advanced Usage]
+* xref:../formats/index.adoc[Format Guides]
+* xref:../../reference/index.adoc[API Reference]
+
+=== Related sections
+
+* xref:../basic-usage/index.adoc[Basic Usage] - Learn the fundamentals
+* xref:../formats/index.adoc[Format Guides] - Understand your format
+* xref:../compression/index.adoc[Compression] - Choose the right algorithm
+* xref:../advanced-usage/index.adoc[Advanced Usage] - Complex scenarios
+* xref:../../troubleshooting/index.adoc[Troubleshooting] - Solve problems

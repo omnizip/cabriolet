@@ -6,7 +6,7 @@ grand_parent: Guides
 nav_order: 6
 ---
 
-== Performance Tuning
+== Performance tuning
 :toc:
 
 === Purpose
@@ -650,6 +650,13 @@ end
 # Usage
 PerformanceMonitor.monitor_extraction('archive.cab', 'output')
 ----
+
+=== See also
+
+* <<memory-operations,Memory Operations>>
+* <<custom-io-handlers,Custom I/O Handlers>>
+* <<error-handling,Error Handling>>
+* <<multi-part-cabinets,Multi-Part Cabinets>>
 
 === Bibliography
 

@@ -4,7 +4,7 @@ title: Custom Compression Pipeline
 parent: Examples
 ---
 
-== Custom Compression Pipeline
+== Custom compression pipeline
 
 === Memory-Based Compression
 
@@ -83,7 +83,7 @@ end
 puts "Converted CAB to ZIP"
 ----
 
-=== See Also
+=== See also
 
 * xref:guides/advanced-usage/custom-io-handlers.adoc[Custom I/O Handlers]
 * xref:guides/advanced-usage/memory-operations.adoc[Memory Operations]

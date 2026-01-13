@@ -4,21 +4,21 @@ parent: Getting Started
 nav_order: 2
 ---
 
-== Quick Start Guide
+== Quick start guide
 
 === Purpose
 
-This 5-minute guide gets you extracting CAB files immediately. You'll learn the essential commands to work with Microsoft Cabinet archives.
+This 5-minute guide gets you extracting archive files immediately. You'll learn the essential commands to work with Microsoft Cabinet and other compression formats.
 
 === References
 
-* <<installation#,Installation Guide>>
-* <<your-first-cab#,Creating Your First CAB>>
-* <<../reference/cli/cab-commands#,CAB Commands Reference>>
+* https://docs.microsoft.com/en-us/previous-versions/bb417343(v=msdn.10)[Microsoft Cabinet Format Documentation]
 
 === Concepts
 
-CAB (Cabinet) files are Microsoft's archive format for distributing software. They can contain multiple files compressed with various algorithms. Cabriolet makes working with them simple through both CLI commands and a Ruby API.
+Cabriolet provides unified commands that work with all supported archive formats through automatic format detection. The same commands work for CAB, CHM, SZDD, KWAJ, HLP, LIT, and OAB files without needing to specify the format manually.
+
+Cabriolet makes working with these formats simple through both CLI commands and a Ruby API.
 
 === Prerequisites
 
@@ -29,7 +29,7 @@ Ensure Cabriolet is installed:
 cabriolet --version
 ----
 
-If not installed, see <<installation#,Installation>>.
+If not installed, see <<installation,Installation Guide>>.
 
 === Step 1: Get a Sample CAB File
 
@@ -190,7 +190,7 @@ Found embedded CAB at offset 1,269,760 (size: 512,000 bytes)
 Total: 2 embedded CAB files found
 ----
 
-==== Verbose Output
+==== Verbose output
 
 Get detailed progress information:
 
@@ -243,7 +243,7 @@ cabinet.files.each do |file|
 end
 ----
 
-For complete API documentation, see <<../reference/api/cab-api#,CAB API Reference>>.
+For complete API documentation, see <<../../reference/api/index,API Reference>>.
 
 === Troubleshooting
 
@@ -282,17 +282,15 @@ Check for:
 * Write permissions in output directory
 * Corrupted archive (test with `cabriolet test`)
 
-=== Next Steps
+=== Next steps
 
 Now that you can extract CAB files:
 
-* Learn to <<your-first-cab#,create your own CAB archives>>
-* Explore <<../guides/formats/index#,other formats>> (CHM, SZDD, etc.)
-* Review <<../guides/compression/index#,compression algorithms>> to understand MSZIP, LZX, and more
-* Check the <<../reference/cli/cab-commands#,complete CAB command reference>>
+* Learn to <<your-first-cab,create your own CAB files>>
+* Explore <<../../guides/formats/index,other formats>> (CHM, SZDD, etc.)
+* Review <<../../guides/compression/index,compression algorithms>> to understand MSZIP, LZX, and more
+* Check the <<../../reference/cli/index,CLI reference>>
 
 === Bibliography
 
-* <<../reference/cli/cab-commands#,CAB Commands Reference>>
-* <<../guides/formats/cab-format#,CAB Format Guide>>
 * https://docs.microsoft.com/en-us/previous-versions/bb417343(v=msdn.10)[Microsoft Cabinet SDK Documentation]

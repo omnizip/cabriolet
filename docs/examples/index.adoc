@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Examples
-nav_order: 2.5
+nav_order: 3
 has_children: true
 ---
 
@@ -11,7 +11,7 @@ has_children: true
 
 This section provides complete, runnable examples demonstrating common Cabriolet use cases. Each example includes full code, expected output, and explanations.
 
-=== Available Examples
+=== Available examples
 
 ==== link:extract-installer.html[Extracting from Windows Installer]
 
@@ -63,9 +63,9 @@ Build advanced compression workflows with custom I/O handlers and streaming.
 * Streaming compression
 * Format conversion pipelines
 
-=== Using These Examples
+=== Using these examples
 
-==== Prerequisites
+=== Prerequisites
 
 All examples assume you have Cabriolet installed:
 
@@ -97,7 +97,7 @@ Each example provides:
 * **Comments**: Explain key concepts
 * **Style**: Follow Cabriolet conventions
 
-=== Example Categories
+=== Example categories
 
 ==== Basic Operations
 
@@ -126,7 +126,7 @@ See: xref:guides/advanced-usage/index.adoc[Advanced Usage Guide]
 
 See: xref:guides/use-cases/index.adoc[Use Cases Guide]
 
-=== Getting Help
+=== Getting help
 
 If you encounter issues with these examples:
 
@@ -146,7 +146,14 @@ Have a useful example to share? We'd love to include it!
 
 See: xref:developer/contributing.adoc[Contributing Guide]
 
-=== Further Reading
+=== Related sections
+
+* link:../getting-started/[Get started quickly]
+* link:../guides/[Comprehensive guides]
+* link:../reference/api/[Ruby API documentation]
+* link:../developer/architecture/[Understanding the architecture]
+
+=== Further reading
 
 * xref:getting-started/quick-start.adoc[Quick Start Guide]
 * xref:guides/index.adoc[Usage Guides]

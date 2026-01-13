@@ -12,8 +12,8 @@ This section provides comprehensive guides for using Cabriolet effectively. From
 
 === References
 
-* <<../getting-started/index#,Getting Started>>
-* <<../reference/index#,Reference Documentation>>
+* <<../getting-started/index,Getting Started Guide>>
+* <<../reference/cli/index,CLI Reference>>
 
 === Concepts
 
@@ -23,7 +23,7 @@ Cabriolet supports multiple compression formats and algorithms, each with specif
 
 ==== Basic Usage
 
-<<basic-usage/index#,Basic Usage Guides>> cover fundamental operations:
+<<basic-usage/index,Basic Usage Guides>> cover fundamental operations:
 
 * Extracting files from archives
 * Creating new archives
@@ -32,81 +32,87 @@ Cabriolet supports multiple compression formats and algorithms, each with specif
 
 ==== Format Guides
 
-<<formats/index#,Format-Specific Guides>> document each of the 7 supported formats:
+<<formats/index,Format Guides>> document each of the 7 supported formats:
 
-* <<formats/cab-format#,CAB>> - Microsoft Cabinet files
-* <<formats/chm-format#,CHM>> - Compiled HTML Help
-* <<formats/szdd-format#,SZDD>> - Single-file LZSS compression
-* <<formats/kwaj-format#,KWAJ>> - KWAJ compression format
-* <<formats/hlp-format#,HLP>> - Windows Help files
-* <<formats/lit-format#,LIT>> - Microsoft Reader eBooks
-* <<formats/oab-format#,OAB>> - Offline Address Book
+* link:../formats/cab-format[Microsoft Cabinet files]
+* link:../formats/chm-format[Compiled HTML Help]
+* link:../formats/szdd-format[Single-file LZSS compression]
+* link:../formats/kwaj-format[KWAJ compression format]
+* link:../formats/hlp-format[Windows Help files]
+* link:../formats/lit-format[Microsoft Reader eBooks]
+* link:../formats/oab-format[Offline Address Book]
 
 ==== Compression Algorithms
 
-<<compression/index#,Compression Guides>> explain the 5 supported algorithms:
+<<compression/index,Compression Algorithm Guides>> explain the 5 supported algorithms:
 
-* <<compression/choosing-algorithm#,Choosing an Algorithm>> - Selection guide
-* <<compression/none-compression#,None>> - Uncompressed storage
-* <<compression/lzss-compression#,LZSS>> - Dictionary compression
-* <<compression/mszip-compression#,MSZIP>> - ZIP/Deflate compatible
-* <<compression/lzx-compression#,LZX>> - High compression ratio
-* <<compression/quantum-compression#,Quantum>> - Memory-efficient
+* link:../compression/choosing-algorithm[Selection guide]
+* link:../compression/none-compression[Uncompressed storage]
+* link:../compression/lzss-compression[Dictionary compression]
+* link:../compression/mszip-compression[ZIP/Deflate compatible]
+* link:../compression/lzx-compression[High compression ratio]
+* link:../compression/quantum-compression[Memory-efficient]
 
 ==== Advanced Usage
 
-<<advanced-usage/index#,Advanced Guides>> cover specialized topics:
+<<advanced-usage/index,Advanced Usage Guides>> cover specialized topics:
 
-* <<advanced-usage/multi-part-cabinets#,Multi-part Cabinets>> - Split archives
-* <<advanced-usage/embedded-cabinets#,Embedded Cabinets>> - Extracting from executables
-* <<advanced-usage/custom-io-handlers#,Custom I/O Handlers>> - Memory and streaming
-* <<advanced-usage/error-handling#,Error Handling>> - Robust error management
-* <<advanced-usage/salvage-mode#,Salvage Mode>> - Recovering damaged archives
-* <<advanced-usage/performance-tuning#,Performance Tuning>> - Optimization techniques
-* <<advanced-usage/memory-operations#,Memory Operations>> - In-memory processing
+* link:../advanced-usage/multi-part-cabinets[Split archives]
+* link:../../examples/extract-installer[Extracting from executables]
+* link:../advanced-usage/memory-operations[Memory and streaming]
+* link:../advanced-usage/error-handling[Robust error management]
+* link:../advanced-usage/salvage-mode[Recovering damaged archives]
+* link:../advanced-usage/performance-tuning[Optimization techniques]
+* link:../advanced-usage/memory-operations[In-memory processing]
 
 === Learning Path
 
 Recommended progression through the guides:
 
-1. **Start with Basics**: Master <<basic-usage/index#,basic operations>>
-2. **Learn Your Format**: Study the <<formats/index#,format guide>> for your use case
-3. **Understand Compression**: Review <<compression/index#,compression algorithms>>
-4. **Advanced Techniques**: Explore <<advanced-usage/index#,advanced topics>> as needed
+1. **Start with Basics**: Master <<basic-usage/index,Basic Usage>>
+2. **Learn Your Format**: Study the <<formats/index,Format Guide>> for your use case
+3. **Understand Compression**: Review <<compression/index,Compression Algorithms>>
+4. **Advanced Techniques**: Explore <<advanced-usage/index,Advanced Usage>> as needed
 
-=== Quick Reference
+=== Quick reference
 
 [cols="2,3,1"]
 |===
 |Task |Guide |Level
 
 |Extract files
-|<<basic-usage/extracting-files#,Extracting Files>>
+|link:basic-usage/extracting-files[Extracting Files]
 |Basic
 
 |Create archives
-|<<basic-usage/creating-archives#,Creating Archives>>
+|link:basic-usage/creating-archives[Creating Archives]
 |Basic
 
 |Work with CAB files
-|<<formats/cab-format#,CAB Format>>
+|link:formats/cab-format[CAB Format Guide]
 |Intermediate
 
 |Choose compression
-|<<compression/choosing-algorithm#,Choosing Algorithm>>
+|link:compression/choosing-algorithm[Choosing Algorithm]
 |Intermediate
 
 |Handle split archives
-|<<advanced-usage/multi-part-cabinets#,Multi-part Cabinets>>
+|link:advanced-usage/multi-part-cabinets[Multi-part Cabinets]
 |Advanced
 
 |Recover damaged files
-|<<advanced-usage/salvage-mode#,Salvage Mode>>
+|link:advanced-usage/salvage-mode[Salvage Mode]
 |Advanced
 |===
 
 === Bibliography
 
-* <<../reference/cli/index#,CLI Reference>>
-* <<../reference/api/index#,API Reference>>
+* https://github.com/omnizip/cabriolet[Cabriolet on GitHub]
 * https://docs.microsoft.com/en-us/previous-versions/bb417343(v=msdn.10)[Microsoft Cabinet SDK]
+
+=== Related sections
+
+* link:../concepts[Understand how things work]
+* link:../reference/formats[Technical details and specifications]
+* link:../troubleshooting[Solve common problems]
+* link:../developer/contributing[Contribute to the project]

@@ -4,7 +4,7 @@ title: Recovering from Corrupted Archives
 parent: Examples
 ---
 
-== Recovering from Corrupted Archives
+== Recovering from corrupted archives
 
 === Using Salvage Mode
 
@@ -61,7 +61,7 @@ end
 puts "Recovered: #{recovered}, Failed: #{failed}"
 ----
 
-=== See Also
+=== See also
 
 * xref:guides/advanced-usage/salvage-mode.adoc[Salvage Mode]
 * xref:troubleshooting/corrupted-files.adoc[Handling Corrupted Files]

@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Troubleshooting
-nav_order: 3.5
+nav_order: 8
 has_children: true
 ---
 
@@ -19,28 +19,28 @@ This section provides solutions to common problems encountered when using Cabrio
 
 | "Invalid CAB signature"
 | Corrupted or wrong file type
-| link:common-errors.html[Common Errors]
+| xref:common-errors.adoc[Common Errors]
 
 | Slow extraction
 | Large LZX window or system resources
-| link:performance-issues.html[Performance Issues]
+| xref:performance-issues.adoc[Performance Issues]
 
 | Encoding errors
 | Character encoding mismatch
-| link:encoding-issues.html[Encoding Issues]
+| xref:encoding-issues.adoc[Encoding Issues]
 
 | Memory errors
 | Insufficient RAM for algorithm
-| link:performance-issues.html[Performance Issues]
+| xref:performance-issues.adoc[Performance Issues]
 
 | Platform-specific failures
 | OS compatibility issues
-| link:platform-specific.html[Platform-Specific]
+| xref:platform-specific.adoc[Platform-Specific]
 |===
 
 === Available Guides
 
-==== link:common-errors.html[Common Errors and Solutions]
+==== xref:common-errors.adoc[Common Errors and Solutions]
 
 Solutions for frequently encountered errors:
 
@@ -49,7 +49,7 @@ Solutions for frequently encountered errors:
 * Decompression errors
 * File not found issues
 
-==== link:platform-specific.html[Platform-Specific Issues]
+==== xref:platform-specific.adoc[Platform-Specific Issues]
 
 Operating system-specific problems:
 
@@ -58,7 +58,7 @@ Operating system-specific problems:
 * Linux permission problems
 * Character encoding differences
 
-==== link:performance-issues.html[Performance and Memory Problems]
+==== xref:performance-issues.adoc[Performance and Memory Problems]
 
 Resolving speed and resource issues:
 
@@ -67,7 +67,7 @@ Resolving speed and resource issues:
 * Memory allocation failures
 * Optimization strategies
 
-==== link:corrupted-files.html[Handling Corrupted Archives]
+==== xref:corrupted-files.adoc[Handling Corrupted Archives]
 
 Dealing with damaged archives:
 
@@ -76,7 +76,7 @@ Dealing with damaged archives:
 * Partial recovery
 * Prevention strategies
 
-==== link:encoding-issues.html[Character Encoding Problems]
+==== xref:encoding-issues.adoc[Character Encoding Problems]
 
 Resolving text encoding issues:
 
@@ -85,7 +85,7 @@ Resolving text encoding issues:
 * Cross-platform compatibility
 * UTF-8 vs. other encodings
 
-=== Getting Help
+=== Getting help
 
 If you can't find a solution here:
 
@@ -105,7 +105,7 @@ When reporting issues, include:
 * Error messages and stack traces
 * Sample files (if possible)
 
-=== See Also
+=== See also
 
 * xref:developer/debugging.adoc[Debugging Guide]
 * xref:guides/advanced-usage/error-handling.adoc[Error Handling]

@@ -13,9 +13,9 @@ Learn how to create archives in all supported formats using Cabriolet.
 
 === References
 
-* <<../../getting-started/your-first-cab#,Your First CAB>>
-* <<../compression/choosing-algorithm#,Choosing a Compression Algorithm>>
-* <<../../reference/cli/index#,CLI Reference>>
+* <<../../getting-started/index,Getting Started Guide>>
+* <<../formats/index,Format Guides>>
+* <<../compression/index,Compression Algorithms>>
 
 === Concepts
 
@@ -23,7 +23,7 @@ Archive creation compresses files into a single archive. Choose the appropriate 
 
 === By Format
 
-==== CAB Files
+==== CAB files
 
 [source,bash]
 ----
@@ -46,7 +46,7 @@ compressor.add_file('file2.txt')
 compressor.write('archive.cab')
 ----
 
-==== CHM Files
+==== CHM files
 
 [source,bash]
 ----
@@ -66,7 +66,7 @@ compressor.add_file('logo.png', '/logo.png', section: :uncompressed)
 compressor.generate('help.chm', window_bits: 16)
 ----
 
-==== SZDD Files
+==== SZDD files
 
 [source,bash]
 ----
@@ -184,7 +184,7 @@ Choose algorithm based on use case:
 |MSZIP or LZX
 |===
 
-=== Best Practices
+=== Best practices
 
 1. **Choose appropriate compression** - Match algorithm to content
 2. **Test before distributing** - Verify archives work correctly
@@ -192,7 +192,8 @@ Choose algorithm based on use case:
 4. **Don't compress media** - JPG, PNG, MP3 already compressed
 5. **Include metadata** - Store filenames, versions where supported
 
-=== See Also
+=== See also
 
-* <<extracting-files#,Extracting Files>>
-* <<../compression/choosing-algorithm#,Choosing a Compression Algorithm>>
+* <<extracting-files,Extracting Files>>
+* <<listing-contents,Listing Contents>>
+* <<testing-integrity,Testing Integrity>>

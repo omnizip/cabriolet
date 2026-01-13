@@ -13,10 +13,10 @@ This guide provides comprehensive documentation for working with Microsoft Reade
 
 === References
 
-* <<../../getting-started/quick-start#,Quick Start Guide>>
-* <<../../reference/cli/lit-commands#,LIT Commands Reference>>
-* <<../../reference/api/lit-api#,LIT API Reference>>
-* <<../compression/lzx-compression#,LZX Compression>>
+* <<../../getting-started/index,Getting Started Guide>>
+* <<../../reference/cli/lit-commands,LIT CLI Commands>>
+* <<../compression/lzx-compression,LZX Compression Guide>>
+* <<../../reference/api/index,Ruby API Reference>>
 
 === Concepts
 
@@ -72,7 +72,7 @@ LIT files use LZX compression for content:
 * Configurable window size
 * Optimized for HTML and text content
 
-For detailed algorithm information, see <<../compression/lzx-compression#,LZX Compression>>.
+For detailed algorithm information, see link:.
 
 ==== DRM Encryption
 
@@ -104,7 +104,10 @@ Check if a LIT file is encrypted:
 .Command-line
 [source,bash]
 ----
-cabriolet lit-info book.lit
+cabriolet info book.lit
+
+# For explicit format specification:
+cabriolet info --format lit book.lit
 ----
 
 .Ruby API
@@ -157,10 +160,13 @@ Extract content from unencrypted LIT files:
 [source,bash]
 ----
 # Extract to current directory
-cabriolet lit-extract book.lit
+cabriolet extract book.lit
 
 # Extract to specific directory
-cabriolet lit-extract book.lit output/
+cabriolet extract book.lit output/
+
+# For explicit format specification:
+cabriolet extract --format lit book.lit output/
 ----
 
 .Ruby API
@@ -194,7 +200,10 @@ Display detailed LIT file information:
 .Command-line
 [source,bash]
 ----
-cabriolet lit-info book.lit
+cabriolet info book.lit
+
+# For explicit format specification:
+cabriolet info --format lit book.lit
 ----
 
 .Ruby API
@@ -229,10 +238,13 @@ Build new LIT files from HTML and images:
 [source,bash]
 ----
 # Create with LZX compression (default)
-cabriolet lit-create book.lit content.html cover.jpg
+cabriolet create book.lit content.html cover.jpg
 
 # Create without compression
-cabriolet lit-create --no-compress book.lit content.html
+cabriolet create --no-compress book.lit content.html
+
+# For explicit format specification:
+cabriolet create --format lit --no-compress book.lit content.html
 ----
 
 .Ruby API
@@ -522,7 +534,7 @@ The file has DRM protection. Cabriolet cannot decrypt:
 
 [source,bash]
 ----
-cabriolet lit-info book.lit
+cabriolet info book.lit
 # Shows encryption status
 ----
 
@@ -545,7 +557,7 @@ LZX decompression error. File may be corrupted:
 [source,bash]
 ----
 # Try extracting specific files
-cabriolet lit-info book.lit  # List files
+cabriolet info book.lit  # List files
 # Extract uncompressed files only
 ----
 
@@ -556,7 +568,7 @@ Feature not yet implemented (e.g., DRM decryption):
 [source,bash]
 ----
 # Check what's supported
-cabriolet lit-info book.lit
+cabriolet info book.lit
 ----
 
 ==== Validation
@@ -590,7 +602,7 @@ rescue NotImplementedError => e
 end
 ----
 
-=== Best Practices
+=== Best practices
 
 1. **Check for DRM first**: Always verify encryption status before attempting extraction
 
@@ -631,7 +643,7 @@ Offset  Bytes  Description
 * **Window size**: Configurable
 * **Applied to**: HTML content, XML metadata, CSS
 
-For complete format specifications, see <<../../reference/formats/lit-specification#,LIT Specification>>.
+For complete format specifications, see <<../../reference/formats/index,Format Specifications>>.
 
 === Limitations
 
@@ -642,16 +654,20 @@ Cabriolet has the following limitations with LIT files:
 3. **Basic creation**: Creates simple LIT files without advanced features
 4. **No digital signatures**: Cannot add or verify signatures
 
-=== Next Steps
+=== Next steps
 
-* Learn about <<../compression/lzx-compression#,LZX compression algorithm>>
-* Review <<../../reference/cli/lit-commands#,complete LIT command reference>>
-* Study <<../../reference/api/lit-api#,LIT API documentation>>
+* Learn about <<../compression/lzx-compression,LZX compression>>
+* Review <<../basic-usage/extracting-files,extracting files>>
+* Study <<../../reference/api/index,Ruby API>>
+
+=== See also
+
+* <<chm-format,CHM Format>>
+* <<hlp-format,HLP Format>>
+* <<index,All Format Guides>>
 
 === Bibliography
 
-* <<../../reference/cli/lit-commands#,LIT Commands Reference>>
-* <<../../reference/api/lit-api#,LIT API Reference>>
-* <<../../reference/formats/lit-specification#,LIT Format Specification>>
+* https://github.com/omnizip/cabriolet[Cabriolet on GitHub]
 * https://en.wikipedia.org/wiki/Microsoft_Reader[Wikipedia: Microsoft Reader]
 * http://www.convertlit.com/[ConvertLIT - LIT Conversion Tool]

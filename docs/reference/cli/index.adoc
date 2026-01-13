@@ -5,135 +5,212 @@ has_children: true
 nav_order: 1
 ---
 
-== Command-Line Interface Reference
+== Command-line interface reference
 
 === Purpose
 
-Complete reference for all Cabriolet command-line tools, organized by format. Use this section to look up command syntax, options, and examples.
+Complete reference for all Cabriolet command-line tools. Cabriolet provides unified commands that work with all supported formats through automatic format detection.
 
 === References
 
-* <<../../guides/basic-usage/index#,Basic Usage Guides>>
-* <<../api/index#,API Reference>>
-* <<global-options#,Global Options>>
+* <<../../getting-started/index,Getting Started Guide>>
+* <<../api/index,Ruby API Reference>>
+* <<../../guides/basic-usage/index,Basic Usage Guide>>
 
 === Concepts
 
-Cabriolet provides command-line tools for all supported formats. Commands follow a consistent pattern, with format-specific prefixes (e.g., `chm-`, `kwaj-`) for non-CAB formats.
+Cabriolet provides a unified command-line interface that automatically detects the archive format and dispatches to the appropriate handler. This eliminates the need to know the format before choosing a command.
 
-=== Quick Command Index
+The unified commands (`list`, `extract`, `create`, `info`, `test`) work with all supported formats. Format-specific legacy commands (e.g., `chm-list`, `expand`) are maintained for backward compatibility but are not recommended for new usage.
 
-[cols="2,3,1"]
+=== Quick command index
+
+[cols="2,3"]
 |===
-|Command |Purpose |Format
+|Command |Purpose
 
-|`list`
-|List CAB contents
-|<<cab-commands#list,CAB>>
+|=== Unified Commands (Recommended)
+|`list FILE`|List contents of any archive (auto-detects format)
 
-|`extract`
-|Extract CAB files
-|<<cab-commands#extract,CAB>>
+|`extract FILE [OUTPUT_DIR]`|Extract files from any archive (auto-detects format)
 
-|`info`
-|Show CAB details
-|<<cab-commands#info,CAB>>
+|`create OUTPUT FILES...`|Create archive file (auto-detects format from extension)
 
-|`test`
-|Test CAB integrity
-|<<cab-commands#test,CAB>>
+|`info FILE`|Show detailed archive information (auto-detects format)
 
-|`search`
-|Find embedded CABs
-|<<cab-commands#search,CAB>>
+|`test FILE`|Test archive file integrity (auto-detects format)
 
-|`create`
-|Create CAB archive
-|<<cab-commands#create,CAB>>
+|`search FILE`|Find embedded CAB files (CAB-only)
 
-|`chm-list`
-|List CHM contents
-|<<chm-commands#chm-list,CHM>>
+|=== Legacy Commands (Backward Compatibility)
+|`chm-list FILE`|List CHM contents (use: `list --format chm FILE`)
 
-|`chm-extract`
-|Extract CHM files
-|<<chm-commands#chm-extract,CHM>>
+|`chm-extract FILE [OUTPUT]`|Extract CHM files (use: `extract --format chm FILE`)
 
-|`chm-info`
-|Show CHM details
-|<<chm-commands#chm-info,CHM>>
+|`chm-info FILE`|Show CHM details (use: `info --format chm FILE`)
 
-|`chm-create`
-|Create CHM file
-|<<chm-commands#chm-create,CHM>>
+|`chm-create OUTPUT FILES...`|Create CHM file (use: `create --format chm OUTPUT FILES...`)
 
-|`expand`
-|Expand SZDD file
-|<<szdd-commands#expand,SZDD>>
+|`expand FILE [OUTPUT]`|Expand SZDD file (use: `extract --format szdd FILE`)
 
-|`compress`
-|Compress to SZDD
-|<<szdd-commands#compress,SZDD>>
+|`compress FILE [OUTPUT]`|Compress to SZDD (use: `create --format szdd OUTPUT FILE`)
 
-|`szdd-info`
-|Show SZDD details
-|<<szdd-commands#szdd-info,SZDD>>
+|`szdd-info FILE`|Show SZDD details (use: `info --format szdd FILE`)
 
-|`kwaj-extract`
-|Extract KWAJ file
-|<<kwaj-commands#kwaj-extract,KWAJ>>
+|`kwaj-extract FILE [OUTPUT]`|Extract KWAJ file (use: `extract --format kwaj FILE`)
 
-|`kwaj-compress`
-|Compress to KWAJ
-|<<kwaj-commands#kwaj-compress,KWAJ>>
+|`kwaj-compress FILE [OUTPUT]`|Compress to KWAJ (use: `create --format kwaj OUTPUT FILE`)
 
-|`kwaj-info`
-|Show KWAJ details
-|<<kwaj-commands#kwaj-info,KWAJ>>
+|`kwaj-info FILE`|Show KWAJ details (use: `info --format kwaj FILE`)
 
-|`hlp-extract`
-|Extract HLP file
-|<<hlp-commands#hlp-extract,HLP>>
+|`hlp-extract FILE [OUTPUT_DIR]`|Extract HLP file (use: `extract --format hlp FILE`)
 
-|`hlp-create`
-|Create HLP file
-|<<hlp-commands#hlp-create,HLP>>
+|`hlp-create OUTPUT FILES...`|Create HLP file (use: `create --format hlp OUTPUT FILES...`)
 
-|`hlp-info`
-|Show HLP details
-|<<hlp-commands#hlp-info,HLP>>
+|`hlp-info FILE`|Show HLP details (use: `info --format hlp FILE`)
 
-|`lit-extract`
-|Extract LIT file
-|<<lit-commands#lit-extract,LIT>>
+|`lit-extract FILE [OUTPUT_DIR]`|Extract LIT file (use: `extract --format lit FILE`)
 
-|`lit-create`
-|Create LIT file
-|<<lit-commands#lit-create,LIT>>
+|`lit-create OUTPUT FILES...`|Create LIT file (use: `create --format lit OUTPUT FILES...`)
 
-|`lit-info`
-|Show LIT details
-|<<lit-commands#lit-info,LIT>>
+|`lit-info FILE`|Show LIT details (use: `info --format lit FILE`)
 
-|`oab-extract`
-|Extract OAB file
-|<<oab-commands#oab-extract,OAB>>
+|`oab-extract INPUT OUTPUT`|Extract OAB file (use: `extract --format oab INPUT --output OUTPUT`)
 
-|`oab-create`
-|Create OAB file
-|<<oab-commands#oab-create,OAB>>
+|`oab-create INPUT OUTPUT`|Create OAB file (use: `create --format oab OUTPUT INPUT`)
 
-|`oab-info`
-|Show OAB details
-|<<oab-commands#oab-info,OAB>>
+|`oab-info FILE`|Show OAB details (use: `info --format oab FILE`)
+===
+
+=== Unified Commands
+
+==== list FILE
+
+List contents of any archive file. The format is automatically detected from the file signature.
+
+[source,bash]
+----
+cabriolet list archive.cab
+cabriolet list help.chm
+cabriolet list compressed_
+----
+
+See <<cab-commands#list,CAB list documentation>> for detailed output format.
+
+==== extract FILE [OUTPUT_DIR]
+
+Extract files from any archive. The format is automatically detected.
+
+[source,bash]
+----
+cabriolet extract archive.cab output/
+cabriolet extract help.chm
+cabriolet extract compressed_ output.txt
+----
+
+Options:
+
+* `--output, -o DIR` - Output directory or file path
+* `--salvage` - Enable salvage mode for corrupted files (CAB only)
+* `--base-file FILE` - Base file for incremental patches (OAB only)
+
+==== create OUTPUT FILES...
+
+Create an archive file. The format is detected from the output file extension.
+
+[source,bash]
+----
+cabriolet create archive.cab file1.txt file2.txt
+cabriolet create help.chm html_files/
+cabriolet create compressed_ input.txt
+----
+
+Options:
+
+* `--format FORMAT` - Override format detection
+* `--compression TYPE` - Compression type for CAB (none, mszip, lzx, quantum)
+* `--window-bits N` - LZX window size for CHM (15-21)
+* `--compress` - Enable compression for HLP/LIT (default: true)
+
+==== info FILE
+
+Show detailed information about any archive file.
+
+[source,bash]
+----
+cabriolet info archive.cab
+cabriolet info help.chm
+----
+
+==== test FILE
+
+Test the integrity of any archive file.
+
+[source,bash]
+----
+cabriolet test archive.cab
+cabriolet test help.chm
+----
+
+==== search FILE
+
+Search for embedded CAB files within another file. This command is specific to CAB format.
+
+[source,bash]
+----
+cabriolet search installer.exe
+----
+
+=== Format Auto-Detection
+
+Cabriolet automatically detects the format of input files by examining their file signatures:
+
+[cols="1,2"]
 |===
+|Format |Detection Method
+
+|CAB
+|MSCF signature (first 4 bytes)
+
+|CHM
+|ITSF signature (first 4 bytes)
+
+|SZDD
+|SZDD signature (first 4 bytes)
+
+|KWAJ
+|KWAJ signature (first 4 bytes)
+
+|HLP
+|Internal header structure
+
+|LIT
+|CHM signature with LIT-specific GUID
+
+|OAB
+|OAB header signature
+===
+
+=== Manual Format Override
+
+When auto-detection fails or you need to force a specific format, use the `--format` option:
+
+[source,bash]
+----
+cabriolet --format cab list archive.cab
+cabriolet --format chm extract help.chm output/
+cabriolet --format szdd extract compressed_
+----
+
+Supported format values: `cab`, `chm`, `szdd`, `kwaj`, `hlp`, `lit`, `oab`
 
 === Commands by Format
 
 ==== CAB (Cabinet Files)
 
-See <<cab-commands#,CAB Commands>> for complete documentation:
+See <<cab-commands,CAB Commands>> for complete documentation.
 
+Unified commands:
 * `list FILE` - List archive contents
 * `extract FILE [OUTPUT_DIR]` - Extract all files
 * `info FILE` - Show detailed information
@@ -143,66 +220,78 @@ See <<cab-commands#,CAB Commands>> for complete documentation:
 
 ==== CHM (Compiled HTML Help)
 
-See <<chm-commands#,CHM Commands>> for complete documentation:
+See <<chm-commands,CHM Commands>> for complete documentation.
 
-* `chm-list FILE` - List CHM contents
-* `chm-extract FILE [OUTPUT_DIR]` - Extract CHM files
-* `chm-info FILE` - Show CHM details
-* `chm-create OUTPUT FILES...` - Create CHM file
+Unified commands:
+* `list FILE` - List CHM contents
+* `extract FILE [OUTPUT_DIR]` - Extract CHM files
+* `info FILE` - Show CHM details
+* `create OUTPUT FILES...` - Create CHM file
 
 ==== SZDD (Single-file LZSS)
 
-See <<szdd-commands#,SZDD Commands>> for complete documentation:
+See <<szdd-commands,SZDD Commands>> for complete documentation.
 
-* `expand FILE [OUTPUT]` - Expand compressed file
-* `compress FILE [OUTPUT]` - Compress to SZDD
-* `szdd-info FILE` - Show file details
+Unified commands:
+* `list FILE` - Show file information
+* `extract FILE [OUTPUT]` - Expand compressed file
+* `info FILE` - Show file details
+* `create OUTPUT FILES...` - Compress to SZDD
 
 ==== KWAJ (KWAJ Compression)
 
-See <<kwaj-commands#,KWAJ Commands>> for complete documentation:
+See <<kwaj-commands,KWAJ Commands>> for complete documentation.
 
-* `kwaj-extract FILE [OUTPUT]` - Extract KWAJ file
-* `kwaj-compress FILE [OUTPUT]` - Compress to KWAJ
-* `kwaj-info FILE` - Show file details
+Unified commands:
+* `list FILE` - Show file information
+* `extract FILE [OUTPUT]` - Extract KWAJ file
+* `info FILE` - Show file details
+* `create OUTPUT FILES...` - Compress to KWAJ
 
 ==== HLP (Windows Help)
 
-See <<hlp-commands#,HLP Commands>> for complete documentation:
+See <<hlp-commands,HLP Commands>> for complete documentation.
 
-* `hlp-extract FILE [OUTPUT_DIR]` - Extract HLP file
-* `hlp-create OUTPUT FILES...` - Create HLP file
-* `hlp-info FILE` - Show file details
+Unified commands:
+* `list FILE` - Show file information
+* `extract FILE [OUTPUT_DIR]` - Extract HLP file
+* `info FILE` - Show file details
+* `create OUTPUT FILES...` - Create HLP file
 
 ==== LIT (Microsoft Reader)
 
-See <<lit-commands#,LIT Commands>> for complete documentation:
+See <<lit-commands,LIT Commands>> for complete documentation.
 
-* `lit-extract FILE [OUTPUT_DIR]` - Extract LIT file
-* `lit-create OUTPUT FILES...` - Create LIT file
-* `lit-info FILE` - Show file details
+Unified commands:
+* `list FILE` - Show file information
+* `extract FILE [OUTPUT_DIR]` - Extract LIT file
+* `info FILE` - Show file details
+* `create OUTPUT FILES...` - Create LIT file
 
 ==== OAB (Offline Address Book)
 
-See <<oab-commands#,OAB Commands>> for complete documentation:
+See <<oab-commands,OAB Commands>> for complete documentation.
 
-* `oab-extract FILE [OUTPUT_DIR]` - Extract OAB file
-* `oab-create OUTPUT FILES...` - Create OAB file
-* `oab-info FILE` - Show file details
+Unified commands:
+* `list FILE` - Show file information
+* `extract FILE --output OUTPUT` - Extract OAB file
+* `info FILE` - Show file details
+* `create OUTPUT FILES...` - Create OAB file
 
 === Global Options
 
 All commands support these options:
 
+* `--format FORMAT` - Force format (overrides auto-detection)
 * `--verbose, -v` - Enable verbose output with detailed progress
 * `--help, -h` - Display command help and usage information
 * `--version` - Show Cabriolet version
 
-See <<global-options#,Global Options>> for complete details.
+See <<global-options,Global Options>> for complete details.
 
-=== Common Patterns
+=== Common patterns
 
-==== Getting Help
+==== Getting help
 
 [source,bash]
 ----
@@ -211,10 +300,9 @@ cabriolet --help
 
 # Command-specific help
 cabriolet extract --help
-cabriolet chm-list --help
 ----
 
-==== Verbose Output
+==== Verbose output
 
 [source,bash]
 ----
@@ -223,7 +311,15 @@ cabriolet --verbose extract archive.cab
 cabriolet -v list archive.cab
 ----
 
-==== Output Redirection
+==== Manual format override
+
+[source,bash]
+----
+# Force specific format
+cabriolet --format chm extract archive.bin output/
+----
+
+==== Output redirection
 
 [source,bash]
 ----
@@ -234,7 +330,7 @@ cabriolet list archive.cab > contents.txt
 cabriolet --verbose extract archive.cab 2>&1 | tee extract.log
 ----
 
-=== Exit Codes
+=== Exit codes
 
 All commands use standard exit codes:
 
@@ -246,21 +342,27 @@ All commands use standard exit codes:
 * `5` - Corrupt archive
 * `6` - Unsupported format
 
-=== Environment Variables
+=== Environment variables
 
 Commands respect these environment variables:
 
 * `TMPDIR` - Temporary directory for operations
 * `CABRIOLET_VERBOSE` - Enable verbose mode (set to `1`)
 
-=== Next Steps
+=== Next steps
 
-* Choose your format and review its command reference
-* Learn about <<global-options#,global options>> available to all commands
-* See <<../../guides/basic-usage/index#,Basic Usage Guides>> for usage examples
+* Learn about <<global-options,global options>> available to all commands
+* See <<../../guides/basic-usage/index,usage examples>>
+* Read the <<../../resources/migration,Migration Guide>> if upgrading from legacy commands
+
+=== Related sections
+
+* link:../api/[Ruby API documentation]
+* link:../../guides/basic-usage/[Common operations]
+* link:../../getting-started/[Quick introduction]
+* link:../../examples/[Sample code and workflows]
 
 === Bibliography
 
-* <<../api/index#,API Reference>>
-* <<../../guides/index#,Usage Guides>>
 * https://github.com/omnizip/cabriolet[Cabriolet on GitHub]
+* https://docs.microsoft.com/en-us/previous-versions/bb417343(v=msdn.10)[Microsoft Cabinet SDK]

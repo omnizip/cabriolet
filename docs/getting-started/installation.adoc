@@ -12,7 +12,6 @@ This guide covers installing Cabriolet on your system. Cabriolet is a pure Ruby 
 
 === References
 
-* <<quick-start#,Quick Start Guide>>
 * https://rubygems.org/gems/cabriolet[Cabriolet on RubyGems]
 * https://www.ruby-lang.org/en/documentation/installation/[Installing Ruby]
 
@@ -154,13 +153,13 @@ gem update --system
 gem install cabriolet
 ----
 
-=== Next Steps
+=== Next steps
 
 Now that Cabriolet is installed:
 
-* Continue to <<quick-start#,Quick Start>> to extract your first CAB file
-* Or jump to <<your-first-cab#,Your First CAB>> to create an archive
-* Review the <<../reference/cli/index#,CLI Reference>> for all available commands
+* Continue to <<quick-start,Quick Start Guide>> to extract your first CAB file
+* Or jump to <<your-first-cab,Your First CAB File>> to create an archive
+* Review the <<../reference/cli/index,CLI Reference>> for all available commands
 
 === Bibliography
 

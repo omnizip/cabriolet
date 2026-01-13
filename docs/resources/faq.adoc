@@ -51,4 +51,4 @@ A: See xref:../developer/contributing.adoc[Contributing Guide].
 
 **Q: Can I add new formats?**
 
-A: Yes, see xref:../architecture/extending.adoc[Extending Cabriolet].
+A: Yes, see xref:../developer/architecture/extending.adoc[Extending Cabriolet].

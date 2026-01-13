@@ -13,7 +13,7 @@ This guide explains LZX compression, the highest-ratio algorithm used in CAB, CH
 
 === References
 
-* <<choosing-algorithm#,Choosing a Compression Algorithm>>
+* <<../../getting-started/index,Getting Started Guide>>
 * <<../formats/cab-format#compression-support,CAB Format>>
 * <<../formats/chm-format#compression-support,CHM Format>>
 * <<../formats/lit-format#compression-support,LIT Format>>
@@ -32,7 +32,7 @@ LZX (Lempel-Ziv Extended) is a high-ratio dictionary compression algorithm with 
 * **Multiple tables** - Huffman tables for different data types
 * **Block-based** - Processes data in blocks for efficiency
 
-=== Performance Characteristics
+=== Performance characteristics
 
 [cols="1,2"]
 |===
@@ -91,7 +91,7 @@ LZX (Lempel-Ziv Extended) is a high-ratio dictionary compression algorithm with 
 
 === Usage
 
-==== CAB Files
+==== CAB files
 
 [source,ruby]
 ----
@@ -256,7 +256,7 @@ compressor.generate('help.chm', window_bits: window_bits)
 |Variable
 |===
 
-=== Best Practices
+=== Best practices
 
 1. **Software distribution** - Use for installers and downloads
 2. **Large files** - Use larger windows for files >1 MB
@@ -363,12 +363,11 @@ Window larger than file wastes memory:
 * Use 15-bit (32 KB) for files <100 KB
 * Consider MSZIP for very small files
 
-=== See Also
+=== See also
 
-* <<choosing-algorithm#,Choosing a Compression Algorithm>>
-* <<mszip-compression#,MSZIP Compression>> - Faster alternative
-* <<../formats/cab-format#,CAB Format Guide>>
-* <<../formats/chm-format#,CHM Format Guide>>
+* <<mszip-compression,MSZIP Compression>> for faster alternative
+* <<lzss-compression,LZSS Compression>> for lower memory usage
+* <<choosing-algorithm,Choosing a Compression Algorithm>>
 
 === Bibliography
 

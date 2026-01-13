@@ -13,7 +13,7 @@ This guide explains uncompressed storage in Cabriolet - when and why to use no c
 
 === References
 
-* <<choosing-algorithm#,Choosing a Compression Algorithm>>
+* <<../../getting-started/index,Getting Started Guide>>
 * <<../formats/cab-format#compression-support,CAB Format - Compression>>
 
 === Concepts
@@ -39,7 +39,7 @@ Use uncompressed storage for:
 
 === Usage
 
-==== CAB Files
+==== CAB files
 
 [source,ruby]
 ----
@@ -49,7 +49,7 @@ compressor.add_file('video.mp4')
 compressor.write('media.cab')
 ----
 
-==== CHM Files
+==== CHM files
 
 [source,ruby]
 ----
@@ -92,15 +92,15 @@ cabriolet kwaj-compress --compression=none data.bin data.kwj
 |Minimal
 |===
 
-=== Best Practices
+=== Best practices
 
 1. **Use for pre-compressed files** - Never compress JPG, PNG, MP3, etc.
 2. **Test first** - Verify compression doesn't help before using none
 3. **Consider hybrid** - Mix compressed text with uncompressed media
 4. **Document choice** - Note why files are uncompressed
 
-=== See Also
+=== See also
 
-* <<choosing-algorithm#,Choosing a Compression Algorithm>>
-* <<mszip-compression#,MSZIP Compression>> - General-purpose compression
-* <<lzx-compression#,LZX Compression>> - Maximum compression
+* <<mszip-compression,MSZIP Compression>> for general-purpose compression
+* <<lzx-compression,LZX Compression>> for maximum compression
+* <<choosing-algorithm,Choosing a Compression Algorithm>>

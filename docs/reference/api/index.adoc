@@ -5,7 +5,7 @@ has_children: true
 nav_order: 2
 ---
 
-== Ruby API Reference
+== Ruby API reference
 
 === Purpose
 
@@ -13,9 +13,9 @@ Complete reference for the Cabriolet Ruby API. Use this section to integrate Cab
 
 === References
 
-* <<../cli/index#,CLI Reference>>
-* <<../../guides/basic-usage/index#,Basic Usage Guides>>
-* <<../../guides/advanced-usage/index#,Advanced Usage>>
+* <<../../getting-started/index,Getting Started Guide>>
+* <<../cli/index,CLI Reference>>
+* <<../../guides/advanced-usage/memory-operations,Memory Operations>>
 
 === Concepts
 
@@ -27,23 +27,23 @@ Cabriolet's Ruby API follows object-oriented design principles with a consistent
 
 Complete API for each format:
 
-* <<cab-api#,CAB API>> - `Cabriolet::CAB` module
-* <<chm-api#,CHM API>> - `Cabriolet::CHM` module
-* <<szdd-api#,SZDD API>> - `Cabriolet::SZDD` module
-* <<kwaj-api#,KWAJ API>> - `Cabriolet::KWAJ` module
-* <<hlp-api#,HLP API>> - `Cabriolet::HLP` module
-* <<lit-api#,LIT API>> - `Cabriolet::LIT` module
-* <<oab-api#,OAB API>> - `Cabriolet::OAB` module
+* link:cab-api[`Cabriolet::CAB` module]
+* link:chm-api[`Cabriolet::CHM` module]
+* link:szdd-api[`Cabriolet::SZDD` module]
+* link:kwaj-api[`Cabriolet::KWAJ` module]
+* link:hlp-api[`Cabriolet::HLP` module]
+* link:lit-api[`Cabriolet::LIT` module]
+* link:oab-api[`Cabriolet::OAB` module]
 
 ==== Core Components
 
 Shared components used across formats:
 
-* <<models#,Models>> - Cabinet, Folder, File, Header classes
-* <<system-io#,System I/O>> - IOSystem, FileHandle, MemoryHandle
-* <<error-classes#,Error Classes>> - Exception hierarchy
+* link:models[Cabinet, Folder, File, Header classes]
+* link:system-io[IOSystem, FileHandle, MemoryHandle]
+* link:error-classes[Exception hierarchy]
 
-=== Quick API Reference
+=== Quick API reference
 
 ==== CAB Format
 
@@ -146,9 +146,9 @@ Cabriolet
     └── IOError
 ----
 
-=== Common Patterns
+=== Common patterns
 
-==== Opening Archives
+==== Opening archives
 
 All decompressors follow the same pattern:
 
@@ -167,7 +167,7 @@ io = StringIO.new(cab_data)
 decompressor = Cabriolet::CAB::Decompressor.new(io)
 ----
 
-==== Extracting Files
+==== Extracting files
 
 [source,ruby]
 ----
@@ -186,7 +186,7 @@ decompressor.each_file do |file|
 end
 ----
 
-==== Creating Archives
+==== Creating archives
 
 [source,ruby]
 ----
@@ -206,7 +206,7 @@ compressor.write(output)
 cab_data = output.string
 ----
 
-==== Error Handling
+==== Error handling
 
 [source,ruby]
 ----
@@ -234,9 +234,9 @@ Cabriolet classes are thread-safe for read operations:
 * **Compressors**: Not thread-safe, use one per thread
 * **Models**: Immutable after creation, safe to share
 
-=== Performance Considerations
+=== Performance considerations
 
-==== Memory Usage
+==== Memory usage
 
 [source,ruby]
 ----
@@ -252,7 +252,7 @@ cabinet.files.each do |file|
 end
 ----
 
-==== I/O Efficiency
+==== I/O efficiency
 
 [source,ruby]
 ----
@@ -285,21 +285,27 @@ end
 * **Options hash last**: `method(param, options = {})`
 * **Blocks accepted**: Many methods accept blocks for iteration
 
-==== Return Values
+==== Return values
 
 * **Self for chaining**: Modification methods return `self`
 * **Enumerators**: Iteration methods return enumerators if no block
 * **Nil for side effects**: Write operations return `nil`
 
-=== Next Steps
+=== Next steps
 
 * Choose your format and review its API documentation
-* Study <<models#,Model classes>> for archive structure
-* Learn about <<system-io#,System I/O>> for custom backends
-* Review <<error-classes#,Error classes>> for exception handling
+* Study <<models,archive structure>>
+* Learn about <<system-io,custom I/O backends>>
+* Review <<error-classes,exception handling>>
+
+=== Related sections
+
+* link:../cli/[Command-line tools]
+* link:../../guides/basic-usage/[Common operations]
+* link:../../guides/advanced-usage/[Advanced features]
+* link:../../concepts/[Core concepts and architecture]
 
 === Bibliography
 
-* <<../cli/index#,CLI Reference>>
-* <<../../guides/advanced-usage/index#,Advanced Usage Guides>>
 * https://github.com/omnizip/cabriolet[Cabriolet Source Code]
+* https://docs.microsoft.com/en-us/previous-versions/bb417343(v=msdn.10)[Microsoft Cabinet SDK]

@@ -118,7 +118,7 @@ Performance on 512MB RAM system:
 | 148MB peak, heavy swapping
 |===
 
-=== See Also
+=== See also
 
-* link:compression-benchmarks.html[Compression Benchmarks]
+* xref:compression-benchmarks.adoc[Compression Benchmarks]
 * xref:guides/advanced-usage/performance-tuning.adoc[Performance Tuning]

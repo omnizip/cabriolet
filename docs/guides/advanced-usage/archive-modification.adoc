@@ -6,7 +6,7 @@ grand_parent: Guides
 nav_order: 3
 ---
 
-== Archive Modification
+== Archive modification
 
 === Purpose
 
@@ -65,7 +65,7 @@ puts report.summary
 ----
 ====
 
-=== See Also
+=== See also
 
 * xref:guides/basic-usage/creating-archives.adoc[Creating Archives]
 * xref:reference/api/modifier-api.adoc[Modifier API]

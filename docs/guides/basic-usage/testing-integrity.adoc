@@ -13,9 +13,9 @@ Learn how to verify archive integrity and detect corruption before extraction.
 
 === References
 
-* <<../../getting-started/quick-start#,Quick Start Guide>>
-* <<../formats/index#,Format Guides>>
-* <<../../reference/cli/index#,CLI Reference>>
+* <<../../getting-started/index,Getting Started Guide>>
+* <<../formats/index,Format Guides>>
+* <<../../reference/cli/index,CLI Reference>>
 
 === Concepts
 
@@ -23,7 +23,7 @@ Integrity testing verifies archives are not corrupted by checking signatures, ch
 
 === By Format
 
-==== CAB Files
+==== CAB files
 
 [source,bash]
 ----
@@ -50,7 +50,7 @@ else
 end
 ----
 
-==== CHM Files
+==== CHM files
 
 [source,bash]
 ----
@@ -73,7 +73,7 @@ rescue Cabriolet::FormatError => e
 end
 ----
 
-==== SZDD Files
+==== SZDD files
 
 [source,bash]
 ----
@@ -192,7 +192,7 @@ rescue StandardError => e
 end
 ----
 
-=== Common Patterns
+=== Common patterns
 
 ==== Batch Validation
 
@@ -343,7 +343,7 @@ rescue Cabriolet::UnsupportedError => e
 end
 ----
 
-=== Best Practices
+=== Best practices
 
 1. **Test before extraction** - Always verify integrity first
 2. **Check exit codes** - Use return values in scripts
@@ -373,8 +373,8 @@ cabinet = decompressor.open('damaged.cab')
 decompressor.extract_all(cabinet, 'recovered/')
 ----
 
-=== See Also
+=== See also
 
-* <<extracting-files#,Extracting Files>>
-* <<listing-contents#,Listing Contents>>
-* <<creating-archives#,Creating Archives>>
+* <<creating-archives,Creating Archives>>
+* <<extracting-files,Extracting Files>>
+* <<listing-contents,Listing Contents>>

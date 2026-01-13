@@ -57,7 +57,7 @@ The benchmark suite uses a standardized dataset:
 
 === Available Benchmark Reports
 
-==== link:compression-benchmarks.html[Compression Algorithm Benchmarks]
+==== xref:compression-benchmarks.adoc[Compression Algorithm Benchmarks]
 
 Detailed performance metrics for each compression algorithm:
 
@@ -66,7 +66,7 @@ Detailed performance metrics for each compression algorithm:
 * Compression ratio (%)
 * Memory usage during compression/decompression
 
-==== link:format-benchmarks.html[Format-Specific Benchmarks]
+==== xref:format-benchmarks.adoc[Format-Specific Benchmarks]
 
 Performance comparisons across different archive formats:
 
@@ -75,7 +75,7 @@ Performance comparisons across different archive formats:
 * Multi-volume performance
 * Metadata extraction speed
 
-==== link:platform-benchmarks.html[Platform and Ruby Version Benchmarks]
+==== xref:platform-benchmarks.adoc[Platform and Ruby Version Benchmarks]
 
 Cross-platform and Ruby version comparisons:
 
@@ -84,7 +84,7 @@ Cross-platform and Ruby version comparisons:
 * 32-bit vs. 64-bit performance
 * JRuby vs. MRI performance
 
-==== link:memory-benchmarks.html[Memory Usage Profiles]
+==== xref:memory-benchmarks.adoc[Memory Usage Profiles]
 
 Memory consumption analysis:
 
@@ -211,7 +211,7 @@ Use **MSZIP** (CAB Type 1):
 * Pre-compressed data (JPEG, PNG) shows 0-5%
 * Text/code shows 75-95%
 
-==== Memory Usage
+==== Memory usage
 
 * Peak memory during operation
 * Lower is better
@@ -230,8 +230,8 @@ To contribute benchmark results:
 
 See: xref:developer/contributing.adoc[Contributing Guide]
 
-=== See Also
+=== See also
 
 * xref:guides/compression/choosing-algorithm.adoc[Choosing Compression Algorithm]
 * xref:guides/advanced-usage/performance-tuning.adoc[Performance Tuning]
-* xref:format-comparison.adoc[Format Comparison]
+* xref:../../guides/formats/format-comparison.adoc[Format Comparison]
