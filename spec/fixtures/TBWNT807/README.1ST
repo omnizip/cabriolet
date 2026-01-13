@@ -1,0 +1,76 @@
+ThunderBYTE Anti-Virus
+======================
+
+This distribution of ThunderBYTE Anti-Virus (TBAV) for Windows comprises the 
+latest release of TBAV for Windows.
+
+1) Understanding the automatic update feature
+2) Making special installation sets
+3) Automatic update feature for laptops
+
+
+1) Understanding the automatic update feature
+---------------------------------------------
+This release provides you with an automatic update feature. Using this
+option of TBAV for Windows, it is possible to automatically update
+this version to a more recent version.
+
+To configure the automatic update feature, you can either install TBAV
+for Windows in the normal way and alter the setting via the 'Options'
+menu by clicking the 'Automatic Update feature' item, or you can
+edit the accompanying TbLoad.Ini file manually.
+
+The TbLoad.Ini file comprises three keywords:
+
+        [TbLoad]
+        UpdateDir=C:\TBAV\UPDATE          ; or C:\TBAVWNT, C:\TBAVW95
+        TimeStamp=04-03-1996, 07:01:00
+        UseTbLoad=1
+
+The first keyword, 'UpdateDir', specifies the (shared) directory that
+will contain the files of newer releases. In a network environment, we
+recommend you to dedicate a public server directory for TBAV updates.
+The second keyword labeled 'TimeStamp' is used by the automatic update
+feature to see wether or not files need to be updated. This timestamp
+refers to the last time TBAV for Windows was updated automatically.
+The last keyword is used to enable or disable the Automatic update
+feature. When this line says 'UseTbLoad=1' automatic updating is enabled.
+You can switch the automatic update feature off by changing the line
+into 'UseTbLoad=0'.
+
+Please specify the update directory parameter in TbLoad.Ini carefully! We 
+receive a lot of support calls from users who tell us that the Automatic 
+Update Feature doesn't work; after some time we always find out that the 
+users didn't change the 'UpdateDir' entry in TbLoad.Ini to their own 
+settings. So, if your system administrator created a dedicated public
+network directory for TBAV updates, eg., "J:\PUBLIC\TBAV_UPD", remember to 
+change the 'UpdateDir' entry in TbLoad.Ini to 'UpdateDir=J:\PUBLIC\TBAV_UPD'.
+
+
+2) Making special installation sets
+-----------------------------------
+By changing some options in the SETUP.INF you can alter the default 
+settings from the Windows SETUP dialogs.
+The default settings are put in the [Defaults] section in the SETUP.INF.
+Following is a list of settings which defaults can be altered.
+
+  DestinationPath      = C:\TBAV
+  Installation         = 0  ; 0 = First-time, express installation
+                            ; 1 = First-time, custom installation
+                            ; 2 = Update installation
+
+The following options only hold for First-time, express installation
+Per default 0 = No, and 1 = Yes on the given command.
+
+  AddProgManGroup      = 1  ; Create Program Manager group in MS-Windows ?
+  AddShellExt          = 1  ; Install Windows shell extensions
+  CreateDriveATarget   = 1  ; Create target file to scan drive A: ?
+  CreateDriveBTarget   = 1  ; Create target file to scan drive B: ?
+  CreateLocalTarget    = 1  ; Create target file to scan local drives ?
+  CreateNetworkTarget  = 1  ; Create target file to scan remote drives ?
+  CreateCDRomTarget    = 1  ; Create target file to scan CD-Rom drive ?
+  CreateFullScanTarget = 1  ; Create target file to scan all drives ?
+  PromptForDirectory   = 1  ; Ask for non-existent directories to be created ?
+  DisableStopButton    = 0  ; Disable Stop button while installing
+
+

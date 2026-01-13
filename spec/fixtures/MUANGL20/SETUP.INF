@@ -1,0 +1,30 @@
+Modules = 27
+AppMod=MUANGELO.EXE,1,1,0,"Microangelo Browser",99,96000
+AppMod=MUANI.EXE,1,1,0,"Microangelo Animator",3,193000
+AppMod=MUEDIT.EXE,1,1,0,"Microangelo Studio",2,209000
+AppMod=MUENGNR.EXE,1,1,0,"Microangelo Engineer",4,137000
+AppMod=MUMGR.EXE,1,1,0,"Microangelo Librarian",1,148000
+AppMod=MAUNINST.EXE,1,1,0,"Microangelo Uninstaller",99,25000
+AppMod=MUAPP.DLL,1,1,0,"Microangelo Common DLL",99,144000
+AppMod=MUANGELO.CNT,1,1,0,"Online Help File",0,1300
+AppMod=MUANGELO.HLP,1,1,0,"Online Help File",0,63000
+AppMod=MUMGR.CNT,1,1,0,"Online Help File",-1,1400
+AppMod=MUMGR.HLP,1,1,0,"Online Help File",-1,26000
+AppMod=MUEDIT.CNT,1,1,0,"Online Help File",-2,1900
+AppMod=MUEDIT.HLP,1,1,0,"Online Help File",-2,14000
+AppMod=MUENGNR.CNT,1,1,0,"Online Help File",-4,900
+AppMod=MUENGNR.HLP,1,1,0,"Online Help File",-4,16400
+AppMod=MUANI.CNT,1,1,0,"Online Help File",-3,1600
+AppMod=MUANI.HLP,1,1,0,"Online Help File",-3,14000
+AppMod=MUEINIT.DAT,1,1,0,"Microangelo Support File",0,4000
+AppMod=DEFAULT.PAL,1,1,1,"256 Color Palette",0,2900
+AppMod=GLOBE3.ANI,1,1,1,"Animated Cursor",0,19000
+AppMod=PRINTER.ANI,1,1,1,"Animated Cursor",0,11000
+AppMod=RAIN.ANI,1,1,1,"Animated Cursor",0,4000
+AppMod=SHUTTLE.ANI,1,1,1,"Animated Cursor",0,51500
+AppMod=TNT.ANI,1,1,1,"Animated Cursor",0,12000
+AppMod=MANUAL.DOC,1,0,0,"Program Documentation",0,22000
+AppMod=REGISTER.DOC,1,0,0,"Registration Form",0,18000
+AppMod=README.TXT,1,0,0,"README text file",0,8000
+
+

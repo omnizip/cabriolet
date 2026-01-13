@@ -1,0 +1,13 @@
+
+Update report of Norman Thunderbyte NVCLEAN Virus Cleaner
+    Prefixes:
+    '-'     indicates a change that does not require user attention.
+    '->'    indicates a modification that requires user attention, such as a
+            change in program invocation, etc.
+
+
+   -> NVCLEAN now supports boot virus cleaning for FAT32 
+      (OSR2 under Windows 95). After a cleaning operation, NVCLEAN 
+      will quit without changing any files. 
+
+   -> NVCLEAN does not support macro virus removal any more.
