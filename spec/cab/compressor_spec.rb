@@ -3,6 +3,7 @@
 require "spec_helper"
 require "tmpdir"
 require "fileutils"
+require_relative "../support/fixtures"
 
 RSpec.describe Cabriolet::CAB::Compressor do
   let(:temp_dir) { Dir.mktmpdir }
@@ -23,48 +24,57 @@ RSpec.describe Cabriolet::CAB::Compressor do
   end
 
   describe "#initialize" do
-    it "creates a new compressor with default settings" do
-      expect(compressor.files).to be_empty
-      expect(compressor.compression).to eq(:mszip)
-      expect(compressor.set_id).to be_a(Integer)
-      expect(compressor.cabinet_index).to eq(0)
-    end
+    subject(:fresh_compressor) { described_class.new }
 
-    it "accepts custom io_system" do
-      io_system = Cabriolet::System::IOSystem.new
-      comp = described_class.new(io_system)
-      expect(comp.io_system).to eq(io_system)
+    it { is_expected.to have_attributes(files: be_empty) }
+    it { is_expected.to have_attributes(compression: eq(:mszip)) }
+    it { is_expected.to have_attributes(set_id: be_a(Integer)) }
+    it { is_expected.to have_attributes(cabinet_index: eq(0)) }
+
+    context "with custom io_system" do
+      let(:io_system) { Cabriolet::System::IOSystem.new }
+      subject(:custom_compressor) { described_class.new(io_system) }
+
+      it { is_expected.to have_attributes(io_system: eq(io_system)) }
     end
   end
 
   describe "#add_file" do
-    it "adds a file to the cabinet" do
-      file1 = create_test_file("test1.txt", "Hello")
-      compressor.add_file(file1)
-      expect(compressor.files.size).to eq(1)
-      expect(compressor.files.first[:source]).to eq(file1)
+    context "when adding valid file" do
+      let(:test_file) { create_test_file("test1.txt", "Hello") }
+      before { compressor.add_file(test_file) }
+
+      it "adds file to cabinet" do
+        expect(compressor.files.size).to eq(1)
+        expect(compressor.files.first[:source]).to eq(test_file)
+      end
+
+      it "uses basename as default cabinet path" do
+        expect(compressor.files.first[:cab_path]).to eq("test1.txt")
+      end
     end
 
-    it "uses custom cabinet path if provided" do
-      file1 = create_test_file("test1.txt", "Hello")
-      compressor.add_file(file1, "custom/path.txt")
-      expect(compressor.files.first[:cab_path]).to eq("custom/path.txt")
+    context "with custom cabinet path" do
+      let(:test_file) { create_test_file("test1.txt", "Hello") }
+      before { compressor.add_file(test_file, "custom/path.txt") }
+
+      it "uses custom path" do
+        expect(compressor.files.first[:cab_path]).to eq("custom/path.txt")
+      end
     end
 
-    it "uses basename as default cabinet path" do
-      file1 = create_test_file("test1.txt", "Hello")
-      compressor.add_file(file1)
-      expect(compressor.files.first[:cab_path]).to eq("test1.txt")
+    context "with non-existent file" do
+      it "raises ArgumentError" do
+        expect { compressor.add_file("/nonexistent/file.txt") }
+          .to raise_error(ArgumentError, /does not exist/)
+      end
     end
 
-    it "raises error for non-existent file" do
-      expect { compressor.add_file("/nonexistent/file.txt") }
-        .to raise_error(ArgumentError, /does not exist/)
-    end
-
-    it "raises error for directory" do
-      expect { compressor.add_file(temp_dir) }
-        .to raise_error(ArgumentError, /Not a file/)
+    context "with directory instead of file" do
+      it "raises ArgumentError" do
+        expect { compressor.add_file(temp_dir) }
+          .to raise_error(ArgumentError, /Not a file/)
+      end
     end
   end
 
@@ -131,33 +141,33 @@ RSpec.describe Cabriolet::CAB::Compressor do
 
     context "with different compression types" do
       let(:test_content) { "Hello, World! " * 100 }
+      let(:test_file) { create_test_file("test.txt", test_content) }
+      before { compressor.add_file(test_file) }
 
-      it "creates CAB with no compression" do
-        file1 = create_test_file("test.txt", test_content)
-        compressor.add_file(file1)
+      context "with no compression" do
+        let(:cab_file) { create_cab_file("none.cab") }
+        before { compressor.generate(cab_file, compression: :none) }
 
-        cab_file = create_cab_file("none.cab")
-        compressor.generate(cab_file, compression: :none)
+        it "creates CAB with COMP_TYPE_NONE" do
+          decompressor = Cabriolet::CAB::Decompressor.new
+          cabinet = decompressor.open(cab_file)
+          folder = cabinet.folders.first
 
-        decompressor = Cabriolet::CAB::Decompressor.new
-        cabinet = decompressor.open(cab_file)
-        folder = cabinet.folders.first
-
-        expect(folder.comp_type).to eq(Cabriolet::Constants::COMP_TYPE_NONE)
+          expect(folder.comp_type).to eq(Cabriolet::Constants::COMP_TYPE_NONE)
+        end
       end
 
-      it "creates CAB with MSZIP compression" do
-        file1 = create_test_file("test.txt", test_content)
-        compressor.add_file(file1)
+      context "with MSZIP compression" do
+        let(:cab_file) { create_cab_file("mszip.cab") }
+        before { compressor.generate(cab_file, compression: :mszip) }
 
-        cab_file = create_cab_file("mszip.cab")
-        compressor.generate(cab_file, compression: :mszip)
+        it "creates CAB with COMP_TYPE_MSZIP" do
+          decompressor = Cabriolet::CAB::Decompressor.new
+          cabinet = decompressor.open(cab_file)
+          folder = cabinet.folders.first
 
-        decompressor = Cabriolet::CAB::Decompressor.new
-        cabinet = decompressor.open(cab_file)
-        folder = cabinet.folders.first
-
-        expect(folder.comp_type).to eq(Cabriolet::Constants::COMP_TYPE_MSZIP)
+          expect(folder.comp_type).to eq(Cabriolet::Constants::COMP_TYPE_MSZIP)
+        end
       end
     end
 
@@ -313,6 +323,57 @@ RSpec.describe Cabriolet::CAB::Compressor do
 
       expect(cabinet.files.size).to eq(1)
       expect(cabinet.folders.size).to eq(1)
+    end
+  end
+
+  describe "fixture compatibility" do
+    let(:io_system) { Cabriolet::System::IOSystem.new }
+    let(:parser) { Cabriolet::CAB::Parser.new(io_system) }
+    let(:decompressor) { Cabriolet::CAB::Decompressor.new }
+
+    context "can recreate and parse fixture structure" do
+      let(:basic_fixture) { Fixtures.for(:cab).path(:basic) }
+      let(:original_cabinet) { parser.parse(basic_fixture) }
+
+      it "creates similar cabinet structure as basic fixture" do
+        # Create files matching basic.cab structure
+        original_cabinet.files.each do |file|
+          test_content = "Test content for #{file.filename}"
+          test_file = create_test_file(file.filename, test_content)
+          compressor.add_file(test_file)
+        end
+
+        cab_file = create_cab_file("recreated.cab")
+        compressor.generate(cab_file, compression: :none)
+
+        # Verify it's parseable
+        recreated_cabinet = parser.parse(cab_file)
+
+        expect(recreated_cabinet.file_count).to eq(original_cabinet.file_count)
+        expect(recreated_cabinet.folder_count).to be >= 1
+        expect(recreated_cabinet.files.map(&:filename))
+          .to match_array(original_cabinet.files.map(&:filename))
+      end
+    end
+
+    context "compression method compatibility" do
+      let(:mszip_fixture) { Fixtures.for(:cab).path(:mszip) }
+      let(:mszip_cabinet) { parser.parse(mszip_fixture) }
+
+      it "creates MSZIP cabinet parseable like fixture" do
+        test_file = create_test_file("test.txt", "Test content for MSZIP")
+        compressor.add_file(test_file)
+
+        cab_file = create_cab_file("test_mszip.cab")
+        compressor.generate(cab_file, compression: :mszip)
+
+        # Verify compression type matches
+        result = parser.parse(cab_file)
+        result_comp_type = result.folders.first.comp_type
+        fixture_comp_type = mszip_cabinet.folders.first.comp_type
+
+        expect(result_comp_type).to eq(fixture_comp_type)
+      end
     end
   end
 end

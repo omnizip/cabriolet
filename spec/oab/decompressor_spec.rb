@@ -1,24 +1,26 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "tmpdir"
+require_relative "../support/fixtures"
 
 RSpec.describe Cabriolet::OAB::Decompressor do
   let(:io_system) { Cabriolet::System::IOSystem.new }
   let(:decompressor) { described_class.new(io_system) }
 
   describe "#initialize" do
-    it "creates a new decompressor with default I/O system" do
-      decomp = described_class.new
-      expect(decomp).to be_a(described_class)
-      expect(decomp.io_system).to be_a(Cabriolet::System::IOSystem)
+    context "with default I/O system" do
+      subject { described_class.new }
+
+      it { is_expected.to be_a(described_class) }
+      its(:io_system) { is_expected.to be_a(Cabriolet::System::IOSystem) }
+      its(:buffer_size) { is_expected.to eq(4096) }
     end
 
-    it "creates a new decompressor with custom I/O system" do
-      expect(decompressor.io_system).to eq(io_system)
-    end
-
-    it "sets default buffer size" do
-      expect(decompressor.buffer_size).to eq(4096)
+    context "with custom I/O system" do
+      it "uses the provided I/O system" do
+        expect(decompressor.io_system).to eq(io_system)
+      end
     end
   end
 
@@ -36,20 +38,37 @@ RSpec.describe Cabriolet::OAB::Decompressor do
       end.to raise_error(TypeError)
     end
 
-    context "with real OAB file" do
-      it "decompresses a full OAB file" do
-        fixture_path = File.join(__dir__, "..", "fixtures", "oab", "test_simple.oab")
-        skip "Fixture not found" unless File.exist?(fixture_path)
+    context "with OAB fixtures" do
+      let(:basic_fixture) { Fixtures.for(:oab).path(:simple) }
+      let(:large_fixture) { Fixtures.for(:oab).path(:large) }
 
-        require "tmpdir"
-        Dir.mktmpdir do |tmpdir|
-          output_path = File.join(tmpdir, "output.dat")
-          bytes = decompressor.decompress(fixture_path, output_path)
+      context "with basic fixture" do
+        it "decompresses a full OAB file" do
+          skip "Fixture not found" unless File.exist?(basic_fixture)
 
-          expect(bytes).to be > 0
-          expect(File.exist?(output_path)).to be true
-          content = File.read(output_path)
-          expect(content).to include("Hello, World!")
+          Dir.mktmpdir do |tmpdir|
+            output_path = File.join(tmpdir, "output.dat")
+            bytes = decompressor.decompress(basic_fixture, output_path)
+
+            expect(bytes).to be > 0
+            expect(File.exist?(output_path)).to be true
+            content = File.read(output_path)
+            expect(content).to include("Hello, World!")
+          end
+        end
+      end
+
+      context "with large fixture" do
+        it "decompresses larger OAB files" do
+          skip "Fixture not found" unless File.exist?(large_fixture)
+
+          Dir.mktmpdir do |tmpdir|
+            output_path = File.join(tmpdir, "output.dat")
+            bytes = decompressor.decompress(large_fixture, output_path)
+
+            expect(bytes).to be > 0
+            expect(File.exist?(output_path)).to be true
+          end
         end
       end
     end
@@ -136,6 +155,80 @@ RSpec.describe Cabriolet::OAB::Decompressor do
       expect do
         decompressor.decompress(truncated_file, output_file)
       end.to raise_error(Cabriolet::Error, /Failed to read/)
+    end
+  end
+
+  describe "fixture compatibility" do
+    let(:compressor) { Cabriolet::OAB::Compressor.new(io_system) }
+    let(:basic_fixtures) { Fixtures.for(:oab).scenario(:all) }
+
+    context "with real fixtures" do
+      it "opens all OAB fixtures successfully" do
+        basic_fixtures.each do |fixture|
+          skip "Fixture not found: #{fixture}" unless File.exist?(fixture)
+
+          Dir.mktmpdir do |tmpdir|
+            output_path = File.join(tmpdir, "output.dat")
+            expect { decompressor.decompress(fixture, output_path) }
+              .not_to raise_error
+          end
+        end
+      end
+    end
+
+    context "creates compatible files" do
+      it "decompresses files created by compressor" do
+        Dir.mktmpdir do |tmpdir|
+          input_file = File.join(tmpdir, "test.dat")
+          output_oab = File.join(tmpdir, "test.oab")
+          extracted = File.join(tmpdir, "extracted.dat")
+
+          original_data = "OAB decompressor compatibility test " * 10
+          File.write(input_file, original_data)
+
+          # Compress with compressor
+          compressor.compress(input_file, output_oab)
+
+          # Verify decompressor can decompress
+          bytes = decompressor.decompress(output_oab, extracted)
+          expect(bytes).to eq(original_data.bytesize)
+          expect(File.read(extracted)).to eq(original_data)
+        end
+      end
+    end
+
+    context "with multiple scenarios" do
+      it "handles small data files" do
+        Dir.mktmpdir do |tmpdir|
+          input_file = File.join(tmpdir, "small.dat")
+          output_oab = File.join(tmpdir, "small.oab")
+          extracted = File.join(tmpdir, "small_out.dat")
+
+          original_data = "Small"
+          File.write(input_file, original_data)
+
+          compressor.compress(input_file, output_oab)
+          decompressor.decompress(output_oab, extracted)
+
+          expect(File.read(extracted)).to eq(original_data)
+        end
+      end
+
+      it "handles larger data files" do
+        Dir.mktmpdir do |tmpdir|
+          input_file = File.join(tmpdir, "large.dat")
+          output_oab = File.join(tmpdir, "large.oab")
+          extracted = File.join(tmpdir, "large_out.dat")
+
+          original_data = "Large test data " * 100
+          File.write(input_file, original_data)
+
+          compressor.compress(input_file, output_oab)
+          decompressor.decompress(output_oab, extracted)
+
+          expect(File.read(extracted)).to eq(original_data)
+        end
+      end
     end
   end
 end

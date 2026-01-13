@@ -118,6 +118,13 @@ module Cabriolet
         # Extract file from section
         file_data = section_data[entry.offset, entry.size]
 
+        # Check if extraction was successful
+        unless file_data
+          raise Cabriolet::DecompressionError,
+                "Failed to extract file #{entry.name}: " \
+                "offset=#{entry.offset}, size=#{entry.size}, section_data_size=#{section_data&.bytesize || 0}"
+        end
+
         # Write to output
         output_handle = @io_system.open(output_path, Constants::MODE_WRITE)
         begin
@@ -294,9 +301,9 @@ module Cabriolet
           # Section 0 starts at content_offset
           @io_system.seek(handle, lit_file.content_offset, Constants::SEEK_START)
 
-          # Read until we hit another section or EOF
-          # For now, read a reasonable amount
-          @io_system.read(handle, 1024 * 1024) # 1MB for section 0
+          # Read all remaining data from content_offset to EOF
+          file_size = ::File.size(filename)
+          @io_system.read(handle, file_size - lit_file.content_offset)
         ensure
           @io_system.close(handle)
         end

@@ -3,6 +3,7 @@
 require "spec_helper"
 require "tempfile"
 require "fileutils"
+require_relative "../support/fixtures"
 
 RSpec.describe Cabriolet::CHM::Compressor do
   let(:compressor) { described_class.new }
@@ -329,6 +330,35 @@ RSpec.describe Cabriolet::CHM::Compressor do
         encoded = Cabriolet::Binary::ENCINTWriter.encode(value)
         decoded, = Cabriolet::Binary::ENCINTReader.read_from_string(encoded, 0)
         expect(decoded).to eq(value)
+      end
+    end
+  end
+
+  describe "fixture compatibility" do
+    let(:decompressor) { Cabriolet::CHM::Decompressor.new }
+
+    context "can open and parse fixture files" do
+      it "opens all basic CHM fixtures" do
+        basic_fixtures = Fixtures.for(:chm).scenario(:basic)
+
+        basic_fixtures.each do |fixture_path|
+          chm = decompressor.open(fixture_path)
+          expect(chm).to be_a(Cabriolet::Models::CHMHeader)
+          expect(chm.chunk_size).to be > 0
+          decompressor.close
+        end
+      end
+    end
+
+    context "can handle edge case fixtures" do
+      it "opens CVE test files" do
+        cve_fixtures = Fixtures.for(:chm).scenario(:cve).take(3)
+
+        cve_fixtures.each do |fixture_path|
+          chm = decompressor.open(fixture_path)
+          expect(chm).to be_a(Cabriolet::Models::CHMHeader)
+          decompressor.close
+        end
       end
     end
   end

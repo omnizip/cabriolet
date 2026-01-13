@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "tempfile"
+require_relative "../support/fixtures"
 
 RSpec.describe Cabriolet::HLP::WinHelp::Parser do
   let(:io_system) { Cabriolet::System::IOSystem.new }
@@ -217,6 +218,21 @@ RSpec.describe Cabriolet::HLP::WinHelp::Parser do
         expect { parser.parse(file.path) }.to raise_error(Cabriolet::ParseError, /magic/)
       ensure
         file.unlink
+      end
+    end
+  end
+
+  describe "fixture compatibility" do
+    context "with WinHelp fixture files" do
+      Fixtures.for(:hlp).scenario(:winhelp).each_with_index do |fixture, i|
+        context "WinHelp fixture #{i + 1}" do
+          let(:winhelp_fixture) { fixture }
+
+          it "parses successfully" do
+            hlp = parser.parse(winhelp_fixture)
+            expect(hlp).to be_a(Cabriolet::Models::WinHelpHeader)
+          end
+        end
       end
     end
   end

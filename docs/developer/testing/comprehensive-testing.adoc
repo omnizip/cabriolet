@@ -1,0 +1,434 @@
+= Comprehensive Testing Guide
+
+This guide describes the comprehensive testing infrastructure and patterns used in Cabriolet for testing all archive formats.
+
+== Overview
+
+Cabriolet uses a three-layer testing approach:
+
+* **Unit Tests**: Test individual classes (Parser, Compressor, Decompressor)
+* **Integration Tests**: Test components working together with real fixtures
+* **CLI Tests**: Test command-line interface with real file operations
+
+The testing infrastructure emphasizes:
+* **Real behavior over mocks**: Tests use actual fixture files and verify real outcomes
+* **DRY patterns**: RSpec's `let`, `context`, `subject`, and `its` eliminate duplication
+* **Fixture registry**: Centralized fixture access via `Fixtures.for(:format)`
+* **Meaningful assertions**: Tests verify actual behavior (files created, content correct)
+
+== Fixture Infrastructure
+
+=== Fixture Registry
+
+The fixture registry provides centralized access to all format fixtures:
+
+[source,ruby]
+----
+require_relative "../support/fixtures"
+
+# Access CAB fixtures
+basic_cab = Fixtures.for(:cab).path(:basic)
+bad_signature = Fixtures.for(:cab).edge_case(:bad_signature)
+
+# Access CHM fixtures
+chm_office = Fixtures.for(:chm).path(:excel_vba)
+
+# Get fixtures for a test scenario
+split_cabs = Fixtures.for(:cab).scenario(:split)
+----
+
+=== Fixture Organization
+
+Fixtures are organized by format in `spec/support/fixtures/`:
+
+* `cab_fixtures.rb` - CAB cabinet files
+* `chm_fixtures.rb` - CHM (HTML Help) files
+* `szdd_fixtures.rb` - SZDD compressed files
+* `kwaj_fixtures.rb` - KWAJ compressed files
+* `hlp_fixtures.rb` - WinHelp files
+* `lit_fixtures.rb` - LIT eBook files
+* `oab_fixtures.rb` - OAB (Outlook Address Book) files
+
+Each fixture module provides:
+
+* `FILES` hash - Named fixtures for common test cases
+* `EDGE_CASES` hash - Security and corruption test files
+* `path(name)` - Get absolute path to a named fixture
+* `edge_case(name)` - Get absolute path to an edge case fixture
+* `scenario(name)` - Get fixtures for a specific test scenario
+
+== Test Patterns
+
+=== DRY Test Organization
+
+Use RSpec's `let`, `context`, `subject`, and `its` to eliminate repetition:
+
+[source,ruby]
+----
+RSpec.describe Cabriolet::CAB::Parser do
+  let(:io_system) { Cabriolet::System::IOSystem.new }
+  let(:parser) { described_class.new(io_system) }
+
+  describe "#parse" do
+    context "with basic cabinet" do
+      let(:fixture) { Fixtures.for(:cab).path(:basic) }
+      subject(:parsed) { parser.parse(fixture) }
+
+      it { expect { parsed }.not_to raise_error }
+      its(:file_count) { is_expected.to eq(2) }
+      its(:folder_count) { is_expected.to eq(1) }
+
+      describe "cabinet structure" do
+        it { is_expected.to be_a(Cabriolet::Models::Cabinet) }
+        its(:length) { is_expected.to be > 0 }
+      end
+    end
+  end
+end
+----
+
+Key patterns:
+
+* `let(:fixture)` - Define reusable fixture path
+* `subject(:parsed)` - Define the subject under test
+* `its(:attribute) { is_expected.to... }` - Test attributes on subject
+* `describe` blocks - Group related tests
+* `context` blocks - Describe different scenarios
+
+=== Testing Real Behavior
+
+Tests should verify actual outcomes, not just "no errors":
+
+[source,ruby]
+----
+# BAD - Only tests no error
+it "extracts files" do
+  expect { cli.extract(fixture, output_dir) }.not_to raise_error
+end
+
+# GOOD - Verifies actual behavior
+it "extracts all files to output directory" do
+  Dir.mktmpdir do |output_dir|
+    cli.extract(fixture, output_dir)
+
+    extracted_files = Dir.glob("#{output_dir}/**/*").select { |f| File.file?(f) }
+    expect(extracted_files.length).to eq(2)
+  end
+end
+----
+
+=== Testing with Fixtures
+
+Use the fixture registry to access test files:
+
+[source,ruby]
+----
+# Standard fixtures
+context "with basic cabinet" do
+  let(:fixture) { Fixtures.for(:cab).path(:basic) }
+  # ...
+end
+
+# Edge cases
+context "with corrupted header" do
+  let(:fixture) { Fixtures.for(:cab).edge_case(:partial_shortheader) }
+  # ...
+end
+
+# Test scenarios
+context "with split cabinets" do
+  Fixtures.for(:cab).scenario(:split).each_with_index do |fixture, i|
+    let(:split_fixture) { fixture }
+
+    it "parses split cabinet #{i + 1}" do
+      cabinet = parser.parse(split_fixture)
+      expect(cabinet.file_count).to be >= 0
+    end
+  end
+end
+----
+
+== Testing CLI Commands
+
+CLI tests verify real behavior without mocks:
+
+[source,ruby]
+----
+RSpec.describe Cabriolet::CLI, "CAB commands" do
+  let(:cli) { described_class.new }
+
+  def invoke_command(command, *args, options: {})
+    cli.options = Thor::CoreExt::HashWithIndifferentAccess.new(options)
+    cli.public_send(command, *args)
+  end
+
+  describe "#extract" do
+    it "extracts all files from cabinet to output directory" do
+      Dir.mktmpdir do |output_dir|
+        invoke_command(:extract, basic_fixture, output_dir)
+
+        extracted_files = Dir.glob("#{output_dir}/**/*").select { |f| File.file?(f) }
+        expect(extracted_files.length).to eq(2)
+      end
+    end
+  end
+end
+----
+
+Key principles for CLI tests:
+
+* Test the CLI class methods directly (not spawned processes)
+* Verify actual file operations (files created, content correct)
+* Use `Dir.mktmpdir` for temporary test directories
+* Test error cases (non-existent files, invalid signatures)
+
+=== Format-Specific CLI Tests
+
+Each format has dedicated CLI command tests:
+
+==== CHM Commands (`chm_command_spec.rb`)
+
+Tests CHM (HTML Help) CLI commands:
+* `#chm_info` - Display CHM file information
+* `#chm_extract` - Extract CHM content to directory
+* `#chm_list` - List files in CHM archive
+
+==== HLP Commands (`hlp_command_spec.rb`)
+
+Tests HLP (WinHelp) CLI commands:
+* `#hlp_info` - Display HLP file information
+* `#hlp_extract` - Extract HLP content to directory
+* `#hlp_list` - List files in HLP archive
+
+==== KWAJ Commands (`kwaj_command_spec.rb`)
+
+Tests KWAJ compressed file CLI commands:
+* `#kwaj_info` - Display KWAJ file information
+* `#kwaj_extract` - Extract KWAJ content
+* `#kwaj_decompress` - Decompress KWAJ files
+
+==== LIT Commands (`lit_command_spec.rb`)
+
+Tests LIT (Microsoft eBook) CLI commands:
+* `#lit_info` - Display LIT file information
+* `#lit_extract` - Extract LIT content to directory
+* `#lit_list` - List files in LIT archive
+
+==== OAB Commands (`oab_command_spec.rb`)
+
+Tests OAB (Outlook Address Book) CLI commands:
+* `#oab_info` - Display OAB file information
+* `#oab_extract` - Extract OAB content to file
+* `#oab_create` - Create OAB files from source
+
+Note: OAB format has no parser class, only compressor/decompressor.
+
+==== SZDD Commands (`szdd_command_spec.rb`)
+
+Tests SZDD (MS-DOS compression) CLI commands:
+* `#szdd_info` - Display SZDD file information
+* `#expand` - Expand SZDD files (decompression)
+* `#compress` - Compress files to SZDD format
+
+Note: SZDD supports NORMAL and QBASIC formats with custom missing characters.
+
+== Adding New Fixtures
+
+=== Adding Standard Fixtures
+
+1. Place the fixture file in the appropriate `spec/fixtures/` subdirectory
+2. Add an entry to the `FILES` hash in the format fixture module:
+
+[source,ruby]
+----
+module CabFixtures
+  FILES = {
+    existing: "path/to/existing.cab",
+    new_fixture: "path/to/new_file.cab",  # Add this
+  }.freeze
+end
+----
+
+=== Adding Edge Cases
+
+For security or corruption test files, add to `EDGE_CASES`:
+
+[source,ruby]
+----
+module CabFixtures
+  EDGE_CASES = {
+    existing: "path/to/existing.cab",
+    new_vulnerability: "path/to/cve-XXXX-XXXX.cab",  # Add this
+  }.freeze
+end
+----
+
+=== Adding Test Scenarios
+
+For groups of related fixtures, add a `scenario` method:
+
+[source,ruby]
+----
+def self.scenario(scenario)
+  case scenario
+  when :basic
+    [path(:simple), path(:basic)]
+  when :all_compression
+    [path(:mszip), path(:lzx)]
+  when :new_scenario  # Add this
+    [path(:file1), path(:file2)]
+  else
+    raise ArgumentError, "Unknown scenario: #{scenario}"
+  end
+end
+----
+
+== Shared Examples
+
+The `edge_case_examples.rb` file provides shared RSpec examples for common edge cases:
+
+[source,ruby]
+----
+RSpec.shared_examples "edge case handling" do |format|
+  context "with non-existent file" do
+    it "raises IOError" do
+      parser = parser_for_format(format)
+      expect { parser.parse("/nonexistent.#{format}") }
+        .to raise_error(Cabriolet::IOError)
+    end
+  end
+end
+
+# Use in format-specific tests
+RSpec.describe Cabriolet::CAB::Parser do
+  it_behaves_like "edge case handling", :cab
+end
+----
+
+== Format Test Helper
+
+The `format_test_helper.rb` module provides common test scenarios:
+
+[source,ruby]
+----
+include FormatTestHelper
+
+# Test list command
+test_list_command(:cab, basic_fixture)
+
+# Test extract with expected count
+test_extract_command(:cab, basic_fixture, expected_count: 2)
+
+# Test API parser
+test_api_parser(:cab, basic_fixture)
+
+# Test API decompressor
+test_api_decompressor(:cab, basic_fixture)
+----
+
+== Test Categories
+
+=== Unit Tests (`spec/{format}/`)
+
+Each format has its own spec directory following the same pattern:
+
+* `parser_spec.rb` - Tests parsing format files
+* `compressor_spec.rb` - Tests creating format files
+* `decompressor_spec.rb` - Tests extracting format files
+
+Formats with unit tests:
+* `spec/cab/` - CAB cabinet files
+* `spec/chm/` - CHM (HTML Help) files
+* `spec/hlp/` - HLP (WinHelp) files
+* `spec/kwaj/` - KWAJ compressed files
+* `spec/lit/` - LIT eBook files
+* `spec/oab/` - OAB (Outlook Address Book) files
+* `spec/szdd/` - SZDD compressed files
+
+Note: OAB format has no parser class, only compressor/decompressor.
+
+=== Integration Tests (`spec/cli/`)
+
+* `cab_command_spec.rb` - Tests CAB CLI commands
+* `chm_command_spec.rb` - Tests CHM CLI commands
+* `hlp_command_spec.rb` - Tests HLP CLI commands
+* `kwaj_command_spec.rb` - Tests KWAJ CLI commands
+* `lit_command_spec.rb` - Tests LIT CLI commands
+* `oab_command_spec.rb` - Tests OAB CLI commands
+* `szdd_command_spec.rb` - Tests SZDD CLI commands
+
+=== Test Coverage Goals
+
+For each format, tests should cover:
+
+* **Parsing**: Valid files, invalid signatures, edge cases
+* **Extraction**: Standard extraction, corrupted files, different compression types
+* **Creation**: Basic archives, compression options, multi-file archives
+* **CLI Commands**: list, extract, info, test, create (where applicable)
+* **Edge Cases**: CVE security files, truncated files, malformed data
+
+== Running Tests
+
+Run all tests:
+
+[source,shell]
+----
+bundle exec rspec
+----
+
+Run specific test files:
+
+[source,shell]
+----
+bundle exec rspec spec/cab/parser_spec.rb
+----
+
+Run with documentation format:
+
+[source,shell]
+----
+bundle exec rspec --format documentation
+----
+
+Run with focused examples:
+
+[source,shell]
+----
+bundle exec rspec --format documentation --focus
+----
+
+== Best Practices
+
+=== Do
+
+* Use `let` for reusable values
+* Use `subject` to define the object under test
+* Use `context` to describe different scenarios
+* Use `its` for testing attributes on subjects
+* Test real behavior with actual files
+* Verify actual outcomes (files created, content correct)
+* Use fixtures from the registry
+
+=== Don't
+
+* Don't mock unless absolutely necessary
+* Don't test stdout - test real behavior instead
+* Don't spawn subprocesses for CLI tests
+* Don't hardcode fixture paths - use the registry
+* Don't write tests that don't verify meaningful behavior
+* Don't duplicate test setup - use DRY patterns
+
+== Continuous Integration
+
+The test suite runs on CI/CD pipelines. Ensure:
+
+* All tests pass before committing
+* New fixtures are documented in `spec/fixtures/README.adoc`
+* New test scenarios follow the established patterns
+* Tests are MECE (Mutually Exclusive, Collectively Exhaustive)
+
+== Further Reading
+
+* link:../architecture/index.adoc[Architecture Documentation]
+* link:../code-style.adoc[Code Style Guidelines]
+* link:../../spec/fixtures/README.adoc[Fixture Documentation]

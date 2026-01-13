@@ -2,72 +2,136 @@
 
 require "spec_helper"
 require "tempfile"
+require_relative "../support/fixtures"
 
 RSpec.describe Cabriolet::CHM::Decompressor do
-  let(:fixture_dir) { File.join(__dir__, "../fixtures/libmspack/chmd") }
-  let(:decompressor) { described_class.new }
+  let(:fixture_file) { Fixtures.for(:chm).path(:encints_64bit_both) }
+
+  describe "#initialize" do
+    context "with default options" do
+      subject(:decompressor) { described_class.new }
+
+      it { is_expected.to be_a(described_class) }
+    end
+  end
 
   describe "#open" do
-    let(:test_file) { File.join(fixture_dir, "encints-64bit-both.chm") }
+    let(:decompressor) { described_class.new }
 
-    it "opens a CHM file successfully" do
-      chm = decompressor.open(test_file)
+    context "with valid CHM file" do
+      subject(:chm) do
+        result = decompressor.open(fixture_file)
+        result
+      end
 
-      expect(chm).to be_a(Cabriolet::Models::CHMHeader)
-      expect(chm.filename).to eq(test_file)
-      expect(chm.version.to_i).to be_a(Integer)
+      after { decompressor.close }
 
-      decompressor.close
+      it { is_expected.to be_a(Cabriolet::Models::CHMHeader) }
+      its(:filename) { is_expected.to eq(fixture_file) }
+      its(:num_chunks) { is_expected.to be > 0 }
+
+      it "parses all file entries by default" do
+        expect(subject.all_files.length).to be > 0
+      end
     end
 
-    it "parses all file entries by default" do
-      chm = decompressor.open(test_file)
+    context "with multiple fixtures" do
+      let(:decompressor) { described_class.new }
 
-      expect(chm.all_files.length).to be > 0
+      Fixtures.for(:chm).scenario(:basic).each_with_index do |fixture, i|
+        context "basic fixture #{i + 1}" do
+          let(:basic_fixture) { fixture }
 
-      decompressor.close
+          it "opens successfully" do
+            chm = decompressor.open(basic_fixture)
+            expect(chm).to be_a(Cabriolet::Models::CHMHeader)
+            expect(chm.chunk_size).to be > 0
+            decompressor.close
+          end
+        end
+      end
     end
   end
 
   describe "#fast_open" do
-    let(:test_file) { File.join(fixture_dir, "encints-64bit-both.chm") }
+    let(:decompressor) { described_class.new }
 
-    it "opens a CHM file without parsing all entries" do
-      chm = decompressor.fast_open(test_file)
+    context "with valid CHM file" do
+      subject(:chm) do
+        result = decompressor.fast_open(fixture_file)
+        result
+      end
 
-      expect(chm).to be_a(Cabriolet::Models::CHMHeader)
-      expect(chm.files).to be_nil
+      after { decompressor.close }
 
-      decompressor.close
+      it { is_expected.to be_a(Cabriolet::Models::CHMHeader) }
+      its(:files) { is_expected.to be_nil }
     end
   end
 
   describe "#close" do
-    let(:test_file) { File.join(fixture_dir, "encints-64bit-both.chm") }
+    let(:decompressor) { described_class.new }
 
-    it "closes the CHM file" do
-      decompressor.open(test_file)
-      expect { decompressor.close }.not_to raise_error
+    context "after opening file" do
+      before { decompressor.open(fixture_file) }
+
+      it "closes without error" do
+        expect { decompressor.close }.not_to raise_error
+      end
+    end
+  end
+
+  describe "#extract" do
+    let(:decompressor) { described_class.new }
+    let(:temp_dir) { Dir.mktmpdir }
+
+    after { FileUtils.rm_rf(temp_dir) }
+
+    context "extracting files from CHM" do
+      before { decompressor.open(fixture_file) }
+
+      it "can list all files for extraction" do
+        chm = decompressor.instance_variable_get(:@chm)
+        expect(chm.all_files.length).to be > 0
+      end
+
+      after { decompressor.close }
     end
   end
 
   describe "error handling" do
-    it "raises error for non-existent files" do
-      expect do
-        decompressor.open("nonexistent.chm")
-      end.to raise_error
+    let(:decompressor) { described_class.new }
+
+    context "with non-existent file" do
+      it "raises error" do
+        expect { decompressor.open("/nonexistent/file.chm") }.to raise_error
+      end
     end
 
-    it "raises error for invalid CHM files" do
-      file = Tempfile.new(["test", ".chm"])
-      file.write("NOT A CHM FILE")
-      file.close
+    context "with invalid CHM file" do
+      let(:invalid_file) do
+        file = Tempfile.new(["test", ".chm"])
+        file.write("NOT A CHM FILE")
+        file.close
+        file.path
+      end
 
-      expect do
-        decompressor.open(file.path)
-      end.to raise_error(StandardError) # BinData raises IOError for truncated data
+      it "raises error for invalid data" do
+        expect { decompressor.open(invalid_file) }.to raise_error(StandardError)
+      end
+    end
+  end
 
-      file.unlink
+  describe "fixture compatibility" do
+    let(:decompressor) { described_class.new }
+
+    context "with edge case fixtures" do
+      it "opens CVE test files" do
+        cve_fixture = Fixtures.for(:chm).edge_case(:cve_2015_4468)
+        chm = decompressor.open(cve_fixture)
+        expect(chm).to be_a(Cabriolet::Models::CHMHeader)
+        decompressor.close
+      end
     end
   end
 end

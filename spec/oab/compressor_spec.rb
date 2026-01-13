@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "tmpdir"
+require_relative "../support/fixtures"
 
 RSpec.describe Cabriolet::OAB::Compressor do
   let(:io_system) { Cabriolet::System::IOSystem.new }
@@ -174,6 +175,101 @@ RSpec.describe Cabriolet::OAB::Compressor do
       expect(header.version_lo).to eq(2)
       expect(header.source_size).to eq(base_data.bytesize)
       expect(header.target_size).to eq(new_data.bytesize)
+    end
+  end
+
+  describe "fixture compatibility" do
+    let(:decompressor) { Cabriolet::OAB::Decompressor.new(io_system) }
+
+    context "creates compatible files" do
+      it "generates files that decompressor can decompress" do
+        Dir.mktmpdir do |tmpdir|
+          input_file = File.join(tmpdir, "test.dat")
+          output_oab = File.join(tmpdir, "test.oab")
+          extracted = File.join(tmpdir, "extracted.dat")
+
+          original_data = "OAB fixture compatibility test"
+          File.write(input_file, original_data)
+
+          compressor.compress(input_file, output_oab)
+
+          # Verify decompressor can decompress
+          bytes = decompressor.decompress(output_oab, extracted)
+          expect(bytes).to eq(original_data.bytesize)
+          expect(File.read(extracted)).to eq(original_data)
+        end
+      end
+
+      it "generates files with valid header structure" do
+        Dir.mktmpdir do |tmpdir|
+          input_file = File.join(tmpdir, "test.dat")
+          output_file = File.join(tmpdir, "test.oab")
+          File.write(input_file, "Test")
+
+          compressor.compress(input_file, output_file)
+
+          # Verify header is valid by reading it
+          header_data = File.read(output_file, 16)
+          header = Cabriolet::Binary::OABStructures::FullHeader.read(header_data)
+          expect(header.version_hi).to eq(3)
+          expect(header.version_lo).to eq(1)
+          expect(header.valid?).to be true
+        end
+      end
+
+      it "generates patch files with valid header structure" do
+        Dir.mktmpdir do |tmpdir|
+          base_file = File.join(tmpdir, "base.dat")
+          new_file = File.join(tmpdir, "new.dat")
+          patch_file = File.join(tmpdir, "patch.oab")
+
+          File.write(base_file, "Base")
+          File.write(new_file, "New")
+
+          compressor.compress_incremental(new_file, base_file, patch_file)
+
+          # Verify patch header is valid by reading it
+          header_data = File.read(patch_file, 28)
+          header = Cabriolet::Binary::OABStructures::PatchHeader.read(header_data)
+          expect(header.version_hi).to eq(3)
+          expect(header.version_lo).to eq(2)
+        end
+      end
+    end
+
+    context "with multiple scenarios" do
+      it "handles small data files" do
+        Dir.mktmpdir do |tmpdir|
+          input_file = File.join(tmpdir, "small.dat")
+          output_oab = File.join(tmpdir, "small.oab")
+          extracted = File.join(tmpdir, "extracted.dat")
+
+          original_data = "Small"
+          File.write(input_file, original_data)
+
+          compressor.compress(input_file, output_oab)
+
+          # Verify by reading header
+          header_data = File.read(output_oab, 16)
+          header = Cabriolet::Binary::OABStructures::FullHeader.read(header_data)
+          expect(header.target_size).to eq(5)
+        end
+      end
+
+      it "handles larger data files" do
+        Dir.mktmpdir do |tmpdir|
+          input_file = File.join(tmpdir, "large.dat")
+          output_oab = File.join(tmpdir, "large.oab")
+          File.write(input_file, "Large test data " * 100)
+
+          compressor.compress(input_file, output_oab)
+
+          # Verify by reading header
+          header_data = File.read(output_oab, 16)
+          header = Cabriolet::Binary::OABStructures::FullHeader.read(header_data)
+          expect(header.target_size).to be > 1000
+        end
+      end
     end
   end
 

@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "tmpdir"
+require_relative "../support/fixtures"
 
 RSpec.describe Cabriolet::KWAJ::Compressor do
   let(:io_system) { Cabriolet::System::IOSystem.new }
@@ -436,6 +437,20 @@ RSpec.describe Cabriolet::KWAJ::Compressor do
           # Verify
           result = File.read(decompressed)
           expect(result).to eq(test_case[:data])
+        end
+      end
+    end
+  end
+
+  describe "fixture compatibility" do
+    context "can decompress fixture files" do
+      it "opens all basic KWAJ fixtures" do
+        all_fixtures = Fixtures.for(:kwaj).scenario(:basic)
+
+        all_fixtures.each do |fixture_path|
+          header = decompressor.open(fixture_path)
+          expect(header).to be_a(Cabriolet::Models::KWAJHeader)
+          decompressor.close(header)
         end
       end
     end

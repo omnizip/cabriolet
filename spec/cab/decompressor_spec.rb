@@ -1,51 +1,39 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require_relative "../support/fixtures"
 
 RSpec.describe Cabriolet::CAB::Decompressor do
-  let(:fixture_file) do
-    File.join(__dir__, "../fixtures/libmspack/cabd/normal_2files_1folder.cab")
-  end
+  let(:fixture_file) { Fixtures.for(:cab).path(:basic) }
 
   describe "#initialize" do
     context "with default io_system" do
-      it "creates a default IOSystem" do
-        decompressor = described_class.new
-        expect(decompressor.io_system).to be_a(Cabriolet::System::IOSystem)
-      end
+      subject(:decompressor) { described_class.new }
 
-      it "initializes with default buffer_size" do
-        decompressor = described_class.new
-        expect(decompressor.buffer_size).to eq(Cabriolet.default_buffer_size)
-      end
-
-      it "initializes with fix_mszip disabled" do
-        decompressor = described_class.new
-        expect(decompressor.fix_mszip).to be(false)
-      end
-
-      it "initializes with salvage disabled" do
-        decompressor = described_class.new
-        expect(decompressor.salvage).to be(false)
-      end
+      it { is_expected.to have_attributes(io_system: be_a(Cabriolet::System::IOSystem)) }
+      it { is_expected.to have_attributes(buffer_size: eq(Cabriolet.default_buffer_size)) }
+      it { is_expected.to have_attributes(fix_mszip: be(false)) }
+      it { is_expected.to have_attributes(salvage: be(false)) }
     end
 
     context "with custom io_system" do
-      it "uses the provided io_system" do
-        custom_io = Cabriolet::System::IOSystem.new
-        decompressor = described_class.new(custom_io)
-        expect(decompressor.io_system).to eq(custom_io)
+      let(:custom_io) { Cabriolet::System::IOSystem.new }
+      subject(:decompressor) { described_class.new(custom_io) }
+
+      it { is_expected.to have_attributes(io_system: eq(custom_io)) }
+    end
+
+    context "parser initialization" do
+      subject(:decompressor) { described_class.new }
+
+      it "initializes a parser" do
+        expect(decompressor.parser).to be_a(Cabriolet::CAB::Parser)
       end
-    end
 
-    it "initializes a parser" do
-      decompressor = described_class.new
-      expect(decompressor.parser).to be_a(Cabriolet::CAB::Parser)
-    end
-
-    it "parser uses the same io_system" do
-      decompressor = described_class.new
-      expect(decompressor.parser.instance_variable_get(:@io_system)).to eq(decompressor.io_system)
+      it "parser uses the same io_system" do
+        parser_io = decompressor.parser.instance_variable_get(:@io_system)
+        expect(parser_io).to eq(decompressor.io_system)
+      end
     end
   end
 
@@ -77,9 +65,7 @@ RSpec.describe Cabriolet::CAB::Decompressor do
     end
 
     context "with invalid signature" do
-      let(:bad_file) do
-        File.join(__dir__, "../fixtures/libmspack/cabd/bad_signature.cab")
-      end
+      let(:bad_file) { Fixtures.for(:cab).edge_case(:bad_signature) }
 
       it "raises ParseError" do
         expect do
@@ -97,9 +83,7 @@ RSpec.describe Cabriolet::CAB::Decompressor do
     end
 
     context "with partial/corrupted files" do
-      let(:partial_file) do
-        File.join(__dir__, "../fixtures/libmspack/cabd/partial_shortheader.cab")
-      end
+      let(:partial_file) { Fixtures.for(:cab).edge_case(:partial_shortheader) }
 
       it "raises ParseError for short header" do
         expect do
@@ -110,7 +94,7 @@ RSpec.describe Cabriolet::CAB::Decompressor do
   end
 
   describe "accessor methods" do
-    let(:decompressor) { described_class.new }
+    subject(:decompressor) { described_class.new }
 
     describe "#buffer_size" do
       it "can be read" do
@@ -118,8 +102,9 @@ RSpec.describe Cabriolet::CAB::Decompressor do
       end
 
       it "can be set" do
-        decompressor.buffer_size = 4096
-        expect(decompressor.buffer_size).to eq(4096)
+        expect { decompressor.buffer_size = 8192 }
+          .to change { decompressor.buffer_size }
+          .to(8192)
       end
     end
 
@@ -128,15 +113,16 @@ RSpec.describe Cabriolet::CAB::Decompressor do
         expect(decompressor.fix_mszip).to be(false)
       end
 
-      it "can be set to true" do
-        decompressor.fix_mszip = true
-        expect(decompressor.fix_mszip).to be(true)
-      end
+      it "can be toggled" do
+        expect { decompressor.fix_mszip = true }
+          .to change { decompressor.fix_mszip }
+          .from(false)
+          .to(true)
 
-      it "can be set to false" do
-        decompressor.fix_mszip = true
-        decompressor.fix_mszip = false
-        expect(decompressor.fix_mszip).to be(false)
+        expect { decompressor.fix_mszip = false }
+          .to change { decompressor.fix_mszip }
+          .from(true)
+          .to(false)
       end
     end
 
@@ -145,15 +131,16 @@ RSpec.describe Cabriolet::CAB::Decompressor do
         expect(decompressor.salvage).to be(false)
       end
 
-      it "can be set to true" do
-        decompressor.salvage = true
-        expect(decompressor.salvage).to be(true)
-      end
+      it "can be toggled" do
+        expect { decompressor.salvage = true }
+          .to change { decompressor.salvage }
+          .from(false)
+          .to(true)
 
-      it "can be set to false" do
-        decompressor.salvage = true
-        decompressor.salvage = false
-        expect(decompressor.salvage).to be(false)
+        expect { decompressor.salvage = false }
+          .to change { decompressor.salvage }
+          .from(true)
+          .to(false)
       end
     end
   end
@@ -288,30 +275,51 @@ RSpec.describe Cabriolet::CAB::Decompressor do
       expect(cabinet.file_count).to be > 0
     end
 
-    it "handles multi-part CAB files" do
-      multi_file = File.join(__dir__,
-                             "../fixtures/libmspack/cabd/multi_basic_pt1.cab")
+    context "with multi-part CAB files" do
+      let(:multi_file) { Fixtures.for(:cab).path(:multi_pt1) }
 
-      cabinet = decompressor.open(multi_file)
-      expect(cabinet).to be_a(Cabriolet::Models::Cabinet)
+      it "handles multi-part cabinet structure" do
+        cabinet = decompressor.open(multi_file)
+        expect(cabinet).to be_a(Cabriolet::Models::Cabinet)
+      end
     end
 
-    it "handles CAB files with reserve data" do
-      reserve_file = File.join(__dir__,
-                               "../fixtures/libmspack/cabd/reserve_HFD.cab")
+    context "with CAB files with reserve data" do
+      let(:reserve_file) { File.join(__dir__, "../fixtures/libmspack/cabd/reserve_HFD.cab") }
 
-      cabinet = decompressor.open(reserve_file)
-      expect(cabinet).to be_a(Cabriolet::Models::Cabinet)
-      expect(cabinet.has_reserve?).to be(true)
+      it "handles reserve data flag" do
+        cabinet = decompressor.open(reserve_file)
+        expect(cabinet).to be_a(Cabriolet::Models::Cabinet)
+        expect(cabinet.has_reserve?).to be(true)
+      end
     end
 
-    it "handles CAB files with multiple compression types" do
-      mixed_file = File.join(__dir__,
-                             "../fixtures/libmspack/cabd/mszip_lzx_qtm.cab")
+    context "with multiple compression types" do
+      let(:mixed_file) { Fixtures.for(:cab).path(:mszip) }
 
-      cabinet = decompressor.open(mixed_file)
-      expect(cabinet).to be_a(Cabriolet::Models::Cabinet)
-      expect(cabinet.folder_count).to be > 1
+      it "handles mixed compression in one cabinet" do
+        cabinet = decompressor.open(mixed_file)
+        expect(cabinet).to be_a(Cabriolet::Models::Cabinet)
+        expect(cabinet.folder_count).to be > 1
+      end
+    end
+
+    context "fixture compatibility" do
+      it "can open all basic fixture cabinets" do
+        basic_fixtures = [:basic, :simple]
+        basic_fixtures.each do |fixture_name|
+          cabinet = decompressor.open(Fixtures.for(:cab).path(fixture_name))
+          expect(cabinet.file_count).to be >= 0
+        end
+      end
+
+      it "can open compression type fixtures" do
+        compression_fixtures = [:mszip]
+        compression_fixtures.each do |fixture_name|
+          cabinet = decompressor.open(Fixtures.for(:cab).path(fixture_name))
+          expect(cabinet.folder_count).to be >= 1
+        end
+      end
     end
   end
 end

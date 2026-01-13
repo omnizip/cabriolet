@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "tmpdir"
+require_relative "../support/fixtures"
 
 RSpec.describe Cabriolet::LIT::Decompressor do
   let(:io_system) { Cabriolet::System::IOSystem.new }
@@ -188,6 +189,64 @@ RSpec.describe Cabriolet::LIT::Decompressor do
         expect(File.exist?(File.join(output_dir, "file1.txt"))).to be true
         expect(File.exist?(File.join(output_dir, "file2.txt"))).to be true
         expect(count).to be >= 2
+
+        decompressor.close(header)
+      end
+    end
+  end
+
+  describe "fixture compatibility" do
+    context "with real LIT fixture files" do
+      it "opens all LIT fixture files" do
+        all_fixtures = Fixtures.for(:lit).scenario(:all)
+
+        all_fixtures.each do |fixture_path|
+          header = decompressor.open(fixture_path)
+          expect(header).to be_a(Cabriolet::Models::LITFile)
+          expect(header.directory).not_to be_nil
+          expect(header.directory.entries).not_to be_empty
+          decompressor.close(header)
+        end
+      end
+    end
+
+    context "with multiple LIT fixtures" do
+      Fixtures.for(:lit).scenario(:all).each_with_index do |fixture, i|
+        context "LIT fixture #{i + 1}" do
+          let(:lit_fixture) { fixture }
+
+          it "opens successfully" do
+            header = decompressor.open(lit_fixture)
+            expect(header).to be_a(Cabriolet::Models::LITFile)
+            decompressor.close(header)
+          end
+        end
+      end
+    end
+  end
+
+  describe "round-trip compatibility" do
+    let(:compressor) { Cabriolet::LIT::Compressor.new(io_system) }
+
+    it "compresses and decompresses data correctly" do
+      Dir.mktmpdir do |tmpdir|
+        original_data = "Round-trip LIT test data!"
+
+        input_file = File.join(tmpdir, "input.txt")
+        File.write(input_file, original_data)
+
+        lit_file = File.join(tmpdir, "test.lit")
+
+        # Compress
+        compressor.add_file(input_file, "input.txt")
+        compressor.generate(lit_file)
+
+        # Decompress
+        header = decompressor.open(lit_file)
+        output_file = File.join(tmpdir, "output.txt")
+        decompressor.extract(header, "input.txt", output_file)
+
+        expect(File.read(output_file)).to eq(original_data)
 
         decompressor.close(header)
       end
