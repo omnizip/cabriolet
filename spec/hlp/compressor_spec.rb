@@ -3,6 +3,7 @@
 require "spec_helper"
 require "tmpdir"
 require "tempfile"
+require_relative "../support/fixtures"
 
 RSpec.describe Cabriolet::HLP::Compressor do
   let(:io_system) { Cabriolet::System::IOSystem.new }
@@ -176,6 +177,23 @@ RSpec.describe Cabriolet::HLP::Compressor do
       end
 
       decompressor.close(header)
+    end
+  end
+
+  describe "fixture compatibility" do
+    let(:io_system) { Cabriolet::System::IOSystem.new }
+    let(:decompressor) { Cabriolet::HLP::Decompressor.new(io_system) }
+
+    context "can open and parse fixture files" do
+      it "opens all HLP fixtures" do
+        all_fixtures = Fixtures.for(:hlp).scenario(:all)
+
+        all_fixtures.each do |fixture_path|
+          header = decompressor.open(fixture_path)
+          expect(header).to be_a(Cabriolet::Models::HLPHeader)
+          decompressor.close(header)
+        end
+      end
     end
   end
 end

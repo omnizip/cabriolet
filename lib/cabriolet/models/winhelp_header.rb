@@ -124,7 +124,8 @@ module Cabriolet
       #
       # @return [String] Hex representation of magic
       def magic_hex
-        "0x#{@magic.to_s(16).upcase}"
+        magic_int = @magic.respond_to?(:to_i) ? @magic.to_i : @magic.to_int
+        "0x#{magic_int.to_s(16).upcase}"
       end
     end
   end
