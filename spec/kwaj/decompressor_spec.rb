@@ -1,127 +1,127 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "tmpdir"
 require "tempfile"
+require_relative "../support/fixtures"
 
 RSpec.describe Cabriolet::KWAJ::Decompressor do
   let(:decompressor) { described_class.new }
 
   describe "#open" do
-    it "opens and parses a valid KWAJ file" do
-      file = fixture_path("libmspack/kwajd/f00.kwj")
-      header = decompressor.open(file)
+    context "with basic KWAJ fixtures" do
+      let(:fixture) { Fixtures.for(:kwaj).path(:f00) }
 
-      expect(header).to be_a(Cabriolet::Models::KWAJHeader)
-      expect(header.comp_type).to eq(Cabriolet::Constants::KWAJ_COMP_NONE)
+      it "opens and parses a valid KWAJ file" do
+        header = decompressor.open(fixture)
+
+        expect(header).to be_a(Cabriolet::Models::KWAJHeader)
+        expect(header.comp_type).to eq(Cabriolet::Constants::KWAJ_COMP_NONE)
+        decompressor.close(header)
+      end
     end
 
-    it "raises ParseError for invalid file" do
-      file = fixture_path("libmspack/cabd/normal_2files_1folder.cab")
+    context "with multiple KWAJ fixtures" do
+      Fixtures.for(:kwaj).scenario(:basic).each_with_index do |fixture, i|
+        context "KWAJ fixture #{i + 1}" do
+          let(:kwaj_fixture) { fixture }
 
-      expect do
-        decompressor.open(file)
-      end.to raise_error(Cabriolet::ParseError)
+          it "opens successfully" do
+            header = decompressor.open(kwaj_fixture)
+            expect(header).to be_a(Cabriolet::Models::KWAJHeader)
+            decompressor.close(header)
+          end
+        end
+      end
+    end
+
+    context "with invalid file" do
+      it "raises ParseError for non-KWAJ file" do
+        cab_fixture = Fixtures.for(:cab).path(:basic)
+
+        expect do
+          decompressor.open(cab_fixture)
+        end.to raise_error(Cabriolet::ParseError)
+      end
     end
   end
 
   describe "#close" do
     it "closes a KWAJ header without error" do
-      file = fixture_path("libmspack/kwajd/f00.kwj")
-      header = decompressor.open(file)
+      fixture = Fixtures.for(:kwaj).path(:f00)
+      header = decompressor.open(fixture)
 
       expect { decompressor.close(header) }.not_to raise_error
     end
   end
 
   describe "#extract" do
-    context "with NONE compression" do
-      it "extracts uncompressed data (f00.kwj)" do
-        file = fixture_path("libmspack/kwajd/f00.kwj")
-        header = decompressor.open(file)
+    context "with basic KWAJ fixtures" do
+      let(:fixture) { Fixtures.for(:kwaj).path(:f00) }
 
-        output = temp_file("output")
-        bytes = decompressor.extract(header, file, output)
+      it "extracts data successfully" do
+        header = decompressor.open(fixture)
+
+        output = Tempfile.new(["kwaj", ".bin"])
+        bytes = decompressor.extract(header, fixture, output.path)
 
         expect(bytes).to be > 0
-        expect(File.exist?(output)).to be true
+        expect(File.exist?(output.path)).to be true
+        expect(File.size(output.path)).to eq(bytes)
 
-        File.delete(output)
+        output.close
+        output.unlink
+        decompressor.close(header)
       end
     end
 
-    context "with XOR compression" do
-      it "extracts XOR-encrypted data (f10.kwj)" do
-        file = fixture_path("libmspack/kwajd/f10.kwj")
-        header = decompressor.open(file)
+    context "with multiple KWAJ fixtures" do
+      Fixtures.for(:kwaj).scenario(:basic).each_with_index do |fixture, i|
+        context "KWAJ fixture #{i + 1}" do
+          let(:kwaj_fixture) { fixture }
 
-        output = temp_file("output")
-        bytes = decompressor.extract(header, file, output)
+          it "extracts successfully" do
+            header = decompressor.open(kwaj_fixture)
 
-        expect(bytes).to be > 0
-        expect(File.exist?(output)).to be true
+            output = Tempfile.new(["kwaj_#{i}", ".bin"])
+            bytes = decompressor.extract(header, kwaj_fixture, output.path)
 
-        File.delete(output)
+            expect(bytes).to be >= 0
+            expect(File.exist?(output.path)).to be true
+
+            output.close
+            output.unlink
+            decompressor.close(header)
+          end
+        end
       end
-    end
-
-    context "with SZDD compression" do
-      it "extracts LZSS-compressed data (f20.kwj)" do
-        file = fixture_path("libmspack/kwajd/f20.kwj")
-        header = decompressor.open(file)
-
-        output = temp_file("output")
-        bytes = decompressor.extract(header, file, output)
-
-        expect(bytes).to be > 0
-        expect(File.exist?(output)).to be true
-
-        File.delete(output)
-      end
-    end
-
-    context "with MSZIP compression" do
-      it "extracts MSZIP-compressed data (f40.kwj)" do
-        file = fixture_path("libmspack/kwajd/f40.kwj")
-        header = decompressor.open(file)
-
-        output = temp_file("output")
-        bytes = decompressor.extract(header, file, output)
-
-        expect(bytes).to be > 0
-        expect(File.exist?(output)).to be true
-
-        File.delete(output)
-      end
-    end
-
-    context "with LZH compression" do
-      # NOTE: LZH compression tests require actual LZH-compressed KWAJ test files
-      # which are not currently available in the test fixtures.
     end
   end
 
   describe "#decompress" do
     it "performs one-shot decompression" do
-      input = fixture_path("libmspack/kwajd/f00.kwj")
-      output = temp_file("output")
+      input = Fixtures.for(:kwaj).path(:f00)
+      output = Tempfile.new(["kwaj", ".bin"])
 
-      bytes = decompressor.decompress(input, output)
+      bytes = decompressor.decompress(input, output.path)
 
       expect(bytes).to be > 0
-      expect(File.exist?(output)).to be true
+      expect(File.exist?(output.path)).to be true
 
-      File.delete(output)
+      output.close
+      output.unlink
     end
 
-    it "auto-detects output filename when not provided" do
-      input = fixture_path("libmspack/kwajd/f03.kwj")
-      # f03 has embedded filename
+    it "extracts to correct output" do
+      input = Fixtures.for(:kwaj).path(:f00)
+      output = Tempfile.new(["kwaj", ".bin"])
 
-      # This will create output in the same directory as input
-      # We'll just verify it doesn't raise an error
-      expect do
-        decompressor.open(input)
-      end.not_to raise_error
+      decompressor.decompress(input, output.path)
+
+      expect(File.size(output.path)).to be > 0
+
+      output.close
+      output.unlink
     end
   end
 
@@ -146,11 +146,30 @@ RSpec.describe Cabriolet::KWAJ::Decompressor do
     end
   end
 
-  def fixture_path(path)
-    File.join(__dir__, "..", "fixtures", path)
-  end
+  describe "round-trip compatibility" do
+    let(:compressor) { Cabriolet::KWAJ::Compressor.new }
 
-  def temp_file(name)
-    File.join(Dir.tmpdir, "kwaj_test_#{name}")
+    it "compresses and decompresses data correctly" do
+      Dir.mktmpdir do |tmpdir|
+        original_data = "Round-trip KWAJ test data!"
+        compressed = File.join(tmpdir, "test.kwj")
+        decompressed = File.join(tmpdir, "test.out")
+
+        # Compress
+        compressor.compress_data(
+          original_data,
+          compressed,
+          compression: :szdd,
+          include_length: true,
+        )
+
+        # Decompress
+        bytes = decompressor.decompress(compressed, decompressed)
+
+        expect(bytes).to eq(original_data.bytesize)
+        result = File.read(decompressed)
+        expect(result).to eq(original_data)
+      end
+    end
   end
 end

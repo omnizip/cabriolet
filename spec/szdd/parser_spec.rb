@@ -2,10 +2,18 @@
 
 require "spec_helper"
 require "tmpdir"
+require_relative "../support/fixtures"
 
 RSpec.describe Cabriolet::SZDD::Parser do
   let(:io_system) { Cabriolet::System::IOSystem.new }
   let(:parser) { described_class.new(io_system) }
+
+  describe "#initialize" do
+    subject { parser }
+
+    it { is_expected.to be_a(described_class) }
+    its(:io_system) { is_expected.to eq(io_system) }
+  end
 
   describe "#parse_handle" do
     context "with NORMAL format SZDD" do
@@ -144,6 +152,64 @@ RSpec.describe Cabriolet::SZDD::Parser do
     it "returns 12 for QBASIC format" do
       offset = parser.data_offset(Cabriolet::Models::SZDDHeader::FORMAT_QBASIC)
       expect(offset).to eq(12)
+    end
+  end
+
+  describe "fixture compatibility" do
+    let(:basic_fixtures) { Fixtures.for(:szdd).scenario(:tbwnt807) }
+
+    context "with real SZDD fixtures" do
+      it "parses all TBWNT807 fixtures successfully" do
+        basic_fixtures.each do |fixture|
+          skip "Fixture not found: #{fixture}" unless File.exist?(fixture)
+
+          handle = io_system.open(fixture, Constants::MODE_READ)
+          begin
+            header = parser.parse_handle(handle, File.basename(fixture))
+            expect(header).to be_a(Cabriolet::Models::SZDDHeader)
+            expect(header.length).to be > 0
+          ensure
+            io_system.close(handle)
+          end
+        end
+      end
+    end
+
+    context "with different fixture sources" do
+      it "handles MUANGL20 fixtures" do
+        fixtures = Fixtures.for(:szdd).scenario(:muangl20)
+
+        fixtures.each do |fixture|
+          skip "Fixture not found: #{fixture}" unless File.exist?(fixture)
+
+          handle = io_system.open(fixture, Constants::MODE_READ)
+          begin
+            header = parser.parse_handle(handle, File.basename(fixture))
+            expect(header).to be_a(Cabriolet::Models::SZDDHeader)
+            expect(header.format).to eq(Cabriolet::Models::SZDDHeader::FORMAT_NORMAL)
+          ensure
+            io_system.close(handle)
+          end
+        end
+      end
+    end
+
+    context "with all fixtures" do
+      it "parses all available SZDD fixtures" do
+        all_fixtures = Fixtures.for(:szdd).scenario(:all)
+
+        all_fixtures.each do |fixture|
+          skip "Fixture not found: #{fixture}" unless File.exist?(fixture)
+
+          handle = io_system.open(fixture, Constants::MODE_READ)
+          begin
+            header = parser.parse_handle(handle, File.basename(fixture))
+            expect(header).to be_a(Cabriolet::Models::SZDDHeader)
+          ensure
+            io_system.close(handle)
+          end
+        end
+      end
     end
   end
 end

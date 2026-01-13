@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "tmpdir"
+require_relative "../support/fixtures"
 
 RSpec.describe Cabriolet::HLP::Decompressor do
   let(:io_system) { Cabriolet::System::IOSystem.new }
@@ -27,23 +28,33 @@ RSpec.describe Cabriolet::HLP::Decompressor do
   end
 
   describe "#open" do
-    context "with WinHelp file" do
-      it "opens and parses WinHelp 4.x file" do
-        fixture_path = File.join(__dir__, "..", "fixtures", "masm32_hlp", "SE.HLP")
-        skip "Fixture not found" unless File.exist?(fixture_path)
+    context "with WinHelp fixture files" do
+      let(:fixture) { Fixtures.for(:hlp).path(:se) }
 
-        header = decompressor.open(fixture_path)
+      it "opens and parses WinHelp 4.x file" do
+        header = decompressor.open(fixture)
         expect(header).to be_a(Cabriolet::Models::WinHelpHeader)
         decompressor.close(header)
       end
 
       it "sets filename in header" do
-        fixture_path = File.join(__dir__, "..", "fixtures", "masm32_hlp", "SE.HLP")
-        skip "Fixture not found" unless File.exist?(fixture_path)
-
-        header = decompressor.open(fixture_path)
-        expect(header.filename).to eq(fixture_path)
+        header = decompressor.open(fixture)
+        expect(header.filename).to eq(fixture)
         decompressor.close(header)
+      end
+    end
+
+    context "with multiple HLP fixtures" do
+      Fixtures.for(:hlp).scenario(:all).each_with_index do |fixture, i|
+        context "HLP fixture #{i + 1}" do
+          let(:hlp_fixture) { fixture }
+
+          it "opens successfully" do
+            header = decompressor.open(hlp_fixture)
+            expect(header).to be_a(Cabriolet::Models::WinHelpHeader)
+            decompressor.close(header)
+          end
+        end
       end
     end
 

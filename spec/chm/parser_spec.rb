@@ -2,16 +2,15 @@
 
 require "spec_helper"
 require "tempfile"
+require_relative "../support/fixtures"
 
 RSpec.describe Cabriolet::CHM::Parser do
-  let(:fixture_dir) { File.join(__dir__, "../fixtures/libmspack/chmd") }
-
   describe "#parse" do
-    context "with valid CHM files" do
-      let(:test_file) { File.join(fixture_dir, "encints-64bit-both.chm") }
+    context "with basic CHM file" do
+      let(:fixture) { Fixtures.for(:chm).path(:encints_64bit_both) }
 
-      it "parses CHM header successfully" do
-        File.open(test_file, "rb") do |io|
+      it "parses CHM file successfully" do
+        File.open(fixture, "rb") do |io|
           parser = described_class.new(io)
           chm = parser.parse
 
@@ -23,7 +22,7 @@ RSpec.describe Cabriolet::CHM::Parser do
       end
 
       it "parses file entries" do
-        File.open(test_file, "rb") do |io|
+        File.open(fixture, "rb") do |io|
           parser = described_class.new(io)
           chm = parser.parse(entire: true)
 
@@ -31,11 +30,30 @@ RSpec.describe Cabriolet::CHM::Parser do
         end
       end
 
-      it "identifies sections correctly" do
-        File.open(test_file, "rb") do |io|
-          parser = described_class.new(io)
-          chm = parser.parse
+      describe "CHM structure" do
+        subject(:chm) do
+          File.open(fixture, "rb") do |io|
+            parser = described_class.new(io)
+            parser.parse
+          end
+        end
 
+        it { is_expected.to be_a(Cabriolet::Models::CHMHeader) }
+        its(:length) { is_expected.to be > 0 }
+        its(:version) { is_expected.to be > 0 }
+        its(:chunk_size) { is_expected.to be > 0 }
+        its(:num_chunks) { is_expected.to be > 0 }
+      end
+
+      describe "sections" do
+        subject(:chm) do
+          File.open(fixture, "rb") do |io|
+            parser = described_class.new(io)
+            parser.parse
+          end
+        end
+
+        it "identifies sections correctly" do
           expect(chm.sec0).to be_a(Cabriolet::Models::CHMSecUncompressed)
           expect(chm.sec0.id).to eq(0)
           expect(chm.sec1).to be_a(Cabriolet::Models::CHMSecMSCompressed)
@@ -44,11 +62,56 @@ RSpec.describe Cabriolet::CHM::Parser do
       end
     end
 
+    context "with multiple CHM fixtures" do
+      Fixtures.for(:chm).scenario(:basic).each_with_index do |fixture, i|
+        context "basic fixture #{i + 1}" do
+          let(:basic_fixture) { fixture }
+
+          it "parses successfully" do
+            File.open(basic_fixture, "rb") do |io|
+              parser = described_class.new(io)
+              chm = parser.parse
+
+              expect(chm).to be_a(Cabriolet::Models::CHMHeader)
+              expect(chm.chunk_size).to be > 0
+            end
+          end
+        end
+      end
+    end
+
+    context "with CVE security test files" do
+      it "parses CVE file without crashes" do
+        fixture = Fixtures.for(:chm).edge_case(:cve_2015_4468)
+
+        expect do
+          File.open(fixture, "rb") do |io|
+            parser = described_class.new(io)
+            parser.parse
+          end
+        end.not_to raise_error
+      end
+    end
+
+    context "with encoding test files" do
+      it "parses 64-bit encoding file" do
+        fixture = Fixtures.for(:chm).edge_case(:encints_64bit_both)
+
+        File.open(fixture, "rb") do |io|
+          parser = described_class.new(io)
+          chm = parser.parse
+
+          expect(chm).to be_a(Cabriolet::Models::CHMHeader)
+          expect(chm.version.to_i).to be_a(Integer)
+        end
+      end
+    end
+
     context "with fast parsing" do
-      let(:test_file) { File.join(fixture_dir, "encints-64bit-both.chm") }
+      let(:fixture) { Fixtures.for(:chm).path(:encints_64bit_both) }
 
       it "parses headers without file entries" do
-        File.open(test_file, "rb") do |io|
+        File.open(fixture, "rb") do |io|
           parser = described_class.new(io)
           chm = parser.parse(entire: false)
 
@@ -60,8 +123,8 @@ RSpec.describe Cabriolet::CHM::Parser do
     end
 
     context "with invalid files" do
-      it "raises SignatureError for non-CHM files" do
-        file = Tempfile.new("test.bin")
+      it "raises error for non-CHM files" do
+        file = Tempfile.new(["test", ".bin"])
         file.write("NOT A CHM FILE")
         file.rewind
 

@@ -3,6 +3,7 @@
 require "spec_helper"
 require "tmpdir"
 require "fileutils"
+require_relative "../support/fixtures"
 
 RSpec.describe Cabriolet::LIT::Compressor do
   let(:io_system) { Cabriolet::System::IOSystem.new }
@@ -168,6 +169,42 @@ RSpec.describe Cabriolet::LIT::Compressor do
         expect(extracted_content2).to eq("<html><body>Test HTML</body></html>")
 
         decompressor.close(lit_header)
+      end
+    end
+  end
+
+  describe "fixture compatibility" do
+    let(:decompressor) { Cabriolet::LIT::Decompressor.new(io_system) }
+
+    context "can decompress real LIT fixture files" do
+      it "opens all LIT fixture files" do
+        all_fixtures = Fixtures.for(:lit).scenario(:all)
+
+        all_fixtures.each do |fixture_path|
+          lit_header = decompressor.open(fixture_path)
+          expect(lit_header).to be_a(Cabriolet::Models::LITFile)
+          decompressor.close(lit_header)
+        end
+      end
+    end
+
+    context "creates compatible files" do
+      it "generates files that decompressor can parse" do
+        Dir.mktmpdir do |tmpdir|
+          source = File.join(tmpdir, "test.txt")
+          output = File.join(tmpdir, "test.lit")
+          File.write(source, "LIT fixture compatibility test")
+
+          compressor.add_file(source, "test.txt")
+          compressor.generate(output)
+
+          # Verify decompressor can parse it
+          lit_header = decompressor.open(output)
+          expect(lit_header).to be_a(Cabriolet::Models::LITFile)
+          expect(lit_header.directory.entries).not_to be_empty
+
+          decompressor.close(lit_header)
+        end
       end
     end
   end
