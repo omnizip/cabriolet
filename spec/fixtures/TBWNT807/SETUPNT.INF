@@ -1,0 +1,133 @@
+[SetupInfo]
+  Title        = TBAV for Windows NT Setup
+  ProductName1 = ThunderByte
+  ProductName2 = Anti-Virus for Windows NT
+  Version      = 0x0807        ; Hexadecimal TBAV for Windows NT version number
+  Space        = 1800          ; Required disk space in Kbytes
+  Flags        = 0x0040
+  WinFiles     = WHATSNEW.807 _SETUPNT.EXE SETUPNT.INF TBAVW32.EXE TBAVW32.DLL TBAVWNT.DLL TBCW32.DLL TBWRES32.DLL UNINSTAL.EXE UNINSTAL.LNG TBAVWIN.HLP INTRO.HLP SETUP.HLP INSTALL.HLP TBLOAD32.EXE TBALERT.WAV
+  WinSysFiles  =
+  DosFiles     = TBSCAN.SIG TBSCAN.DEF TBSETUP.DAT APPNOTES.Txt AGENTS.Txt LICENSE.Txt REPORT.Txt TBAV.FAQ
+  OptionalFiles= TBORDER.Txt TBKEYW32.EXE TBAVWIN.EXE TBLOAD.INI TBAVW.LNG README.1ST INSTALL.Txt TBAV.KEY TBAV.INI TBNET.INI INSTALL.BAT REGISTER.EXE VELDMAN.PGP ESASS.PGP INSTALL.EXE LANG.FIL ORDER.TXT TBINST.FIL TBINST.LNG UPGRADE.FIL WSSETUP.EXE DISCLAIM.Doc NVCLEAN.EXE NVCLEAN.TXT TBARCH32.DLL TBLU32.DLL TBAV.PWD TBAVWNT.ASU
+  ObsoleteFiles= TbScan.Com VirScan.Dat AddnSigs.Dat ComprSca.* *.AVR MTE.Doc Washburn.Doc TbScanX.Com TbRescue.* TBAV.CFG TbShell.* TbGarble.* GetBoot.* Intro.Doc TbSetup.Doc TbUtil.Doc TbScan.Doc TbClean.Doc StackMan.Doc TbGensig.Doc TbDriver.Doc TbScanX.Doc TbCheck.Doc TbMem.Doc TbFile.Doc TbDisk.Doc TbDel.Doc Upgrade.Bat TBAV.ICO TBAV.PIF TBWNOTIF.EXE DOSBOX0.PIF DOSBOX1.PIF DOSFS0.PIF DOSFS1.PIF BC402RTL.DLL BTTNCUR.DLL WHATSNEW.WIN STASTRIP.DLL TBAVW16.* TBSCAN.ECI
+  PMGroup      = TBAV for Windows NT
+  GroupItems   = @TBAVW32.EXE:TBAV for Windows NT @UNINSTAL.EXE:Uninstall TBAV for Windows NT
+  QuickScan    = TBAV Quick Scan -
+  ExplorerText = T&BScan for viruses
+
+[Extensions]
+  .EX_         = .EXE
+  .DL_         = .DLL
+  .38_         = .386
+  .LN_         = .LNG
+  .1S_         = .1ST
+  .WA_         = .WAV
+
+[FileNames]
+  DriveA    = First floppy disk drive.Scn
+  DriveB    = Second floppy disk drive.Scn
+  Local     = All local fixed disks.Scn
+  Network   = All network drives.Scn
+  CDRom     = All CD-Rom drives.Scn
+  AllDrives = All drives.Scn
+
+[Defaults]
+  DestinationPath      = C:\TBAVWNT
+  Installation         = 0  ; 0 = First-time, express installation
+                            ; 1 = First-time, custom installation
+                            ; 2 = Update installation
+; The following options only hold for First-time, express installation
+  AddProgManGroup      = 1  ; Create Program Manager group in Windows NT ?
+  AddShellExt          = 1  ; Install Windows NT shell extensions
+  UseTbLoad            = 1  ; Use auto-update feature ?
+  CreateDriveATarget   = 1  ; Create target file to scan drive A: ?
+  CreateDriveBTarget   = 1  ; Create target file to scan drive B: ?
+  CreateLocalTarget    = 1  ; Create target file to scan local drives ?
+  CreateNetworkTarget  = 1  ; Create target file to scan remote drives ?
+  CreateCDRomTarget    = 1  ; Create target file to scan CD-Rom drive ?
+  CreateFullScanTarget = 1  ; Create target file to scan all drives ?
+  PromptForDirectory   = 1  ; Ask for non-existent directories to be created ?
+  DisableStopButton    = 0  ; Disable Stop button while installing
+  InstallWinNTService  = 0  ; Install the TBAV/WinNT Service as an extra
+
+[Language]
+  SrcPathSubst = You specified a non-physical drive or path as the source path.\n\nCorrect this problem by selecting another source directory.
+  DstPathSubst = You specified a non-physical drive or path as the destination path.\n\nCorrect this problem by selecting another destination directory.
+  SrcEqualsDst = The source directory and destination directory you specified are the same.\n\nPlease change either the source directory or the destination directory.
+  SrcNotThere  = The source directory you specified does not exist.\n\nCorrect this problem by selecting another source directory.
+  DstNotThere  = The destination directory you specified does not exist.\n\nDo you want me to create this directory ?
+  LowDiskSpace = The destination directory you specified does not have enough free disk space to install TBAV for Windows NT.\n\nCorrect this problem by selecting another destination directory.
+  AutoExecRO   = Your AutoExec.Bat file seems to be read-only. In order to incorporate the settings you selected, the AutoExec.Bat file needs to be changed.\n\nPress OK if you want the AutoExec.Bat file to be changed, or CANCEL to continue.
+  ActionFT     = To setup your system for use with TBAV for Windows NT, the TbSetup program will be executed to process the TBAV files.\n\nAfter that TbScan will scan your system for viruses. If a virus is found, you should immediately exit Windows NT, reboot your system with a clean bootdiskette (eg., the Windows NT rescue disk) and disinfect the infected files.\n\nIf no viruses are found TbSetup will be run again to process your local drives.\n\nPress OK to start the TbSetup/TbScan/TbSetup procedure.
+  ActionUpd    = The TbSetup program will now generate or update the fingerprint information of the files located in the TBAV directory.\n\nPress OK to continue.
+  AddPMGroup   = To provide access to the TBAV for Windows NT program, it is recommended to create a new program manager group.\n\nDo you want me to create a new 'TBAV for Windows NT' program manager group?\n\nPress YES to create the program manager group, NO to continue.
+  AddLoadIs    = TBAV for Windows NT has some nice features, such as the background scan scheduler and a file I/O monitor. To get the most out of these features of TBAV for Windows NT, you might want to automatically start TBAV for Windows NT each time WindowsNT is started.\n\nPress YES if you want to automatically start TBAV for Windows NT each time WindowsNT is started, NO to continue.
+  AddShellExt  = Another nice feature of TBAV for Windows NT is the integration with Explorer via the right mouse button menu. This allows you to scan files or paths directly from within Explorer. Do you want to install the TBAV for Windows NT shell extensions ? \n\nPress YES to install the shell extensions, NO to continue.
+  TBAVWINActive= WARNING!\n\nAn instance of TBAV for Windows NT is currently active.\n\nPlease quit TBAV for Windows NT (you can switch to TBAV for Windows NT using the Alt+TAB key, and close it using Alt-F4). Then, press the OK button to continue or press CANCEL to quit the installation program.
+  ExistingCopy = WARNING!\n\nThe destination directory you specified already contains a TBAV or TBAV for Windows NT installation. Be aware that installing TBAV for Windows NT will remove your current TBAV for Windows NT copy. Do you really want to use this destination directory ?\n\nPress YES to delete all TBAV for Windows NT files and use this directory, or NO to specify another directory.
+  ExecError    = ERROR! - Couldn't activate TBAV for Windows NT!\n\nThe setup procress (and scan process, if applicable) will NOT be executed.\n\nPress OK to continue.
+  WrongUserName= ERROR! - You must at least use three characters for your username! \n\nPress OK to continue.
+  RegisterError= ERROR! - You did not enter the correct registration information. Please fill in all the fields, i.e., the security code, your name (at least 3 characters) and the registration serial number.\n\nPress OK to continue.
+  NoLicense    = ERROR! - The TBAV-for-Windows NT disk does not contain the license agreement! The installation program will now be aborted.\n\nPress OK to continue.
+  NoWindowsDir = ERROR! - The directory you specified is not your MS-Windows 3.xx directory. Please specifiy the correct directory.\n\nPress OK to continue.
+
+[Dialog:DLG_SETUPTBAVW]
+  Title        = TBAV for Windows NT Setup
+  Text(100)    = Browse
+  Text(101)    = Browse
+  Text(104)    = &First-time installation
+  Text(105)    = &Update installation
+  Text(106)    = &Express installation
+  Text(107)    = &Custom installation
+  Text(1)      = C&ontinue
+  Text(2)      = &Quit
+  Text(998)    = &Help
+  Text(0xF000) = Congratulations for buying the ThunderBYTE Anti-Virus utilities for Windows NT!\n\nSetup will help you install TBAV for Windows NT.
+  Text(0xF001) = Install TBAV for Windows NT from:
+  Text(0xF002) = Install TBAV for Windows NT to:
+  Text(0xF003) = Directory options
+  Text(0xF004) = Installation options
+
+[Dialog:DLG_CHANGEDISK]
+  Title        = Change disks !
+  Text(1)      = &Ok
+  Text(2)      = &Cancel
+  Text(0xF000) = Disk change information
+  Text(0xF001) = The following file could not be found in the source directory. Please change the disk or change directory.
+  Text(0xF003) = You can specify a new path for the source files below.
+
+[Dialog:DLG_COPY]
+  Title        = Copying files
+  Text(0xF001) = Copying ...
+
+[Dialog:DLG_GETWIN16DIR]
+  Title       = Removing old copy of TBAV for Windows...
+  Text(0xF003)= MS-Windows 3.xx Directory
+  Text(0xF004)= To neatly remove your existing copy of TBAV for Windows, we need the directory pathname where you installed MS-Windows 3.xx. Please enter this directory here.
+  Text(3105)  = Browse
+
+[Dialog:DLG_SETUPABORT]
+  Title        = Aborting Setup
+  Text(0xF000) = The TBAV for Windows NT Setup process is aborted.\n\nIf you still wish to install TBAV for Windows NT, please try again later.
+
+[Dialog:DLG_SETUPOK]
+  Title        = End of Setup
+  Text(0xF000) = The TBAV for Windows NT Setup process has been succesfully completed.\n\nYou can start using TBAV for Windows NT after pressing the OK button.
+  Text(1)      = &Ok
+
+[Dialog:DLG_GETSERVICEINSTALLDIR]
+  Title        = Change disks !
+  Text(1)      = &Ok
+  Text(2)      = &Cancel
+  Text(0xF000) = Disk change information
+  Text(0xF001) = Please insert the disk, or type the name of the directory, that contains the files for the TBAV Service for Windows NT.
+  Text(0xF003) = You can specify a new path for the source files below.
+
+[Dialog:DLG_TBLOAD]
+  Title       = Options for automatic update
+  Text(998)   = &Help
+  Text(0xF003)= Update options
+  Text(0xF004)= &Update directory
+  Text(3105)  = Browse
+  Text(3101)  = &Enable the automatic update feature
+

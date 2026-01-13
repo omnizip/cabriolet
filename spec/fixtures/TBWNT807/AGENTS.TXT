@@ -1,0 +1,596 @@
+                                                              May 13, 1998
+
+
+    ThunderBYTE Head Quarters (Research and Development)
+    ----------------------------------------------------
+
+    Company:    ESaSS B.V.
+    Address:    P.O. Box 1380
+                NL-6501 BJ  Nijmegen
+                The Netherlands
+    Phone:      +31 (0)24 64 88 555
+    Fax:        +31 (0)24 64 50 899
+    Email:      info@thunderbyte.nl
+                sales@thunderbyte.nl
+                support@thunderbyte.nl
+    Website:    http://www.thunderbyte.nl
+
+
+    For customers interested in any form of site licensing,     
+    discuss their anti-virus security needs, or who prefer to 
+    purchase the commercial version of ThunderBYTE Anti Virus
+    Utilities, complete with a printed manual, please contact
+    one of the following commercial distributors.
+
+
+    IMPORTANT!
+    If you do not see your country listed, please send an e- 
+    mail directly to info@thunderbyte.nl or call ESaSS B.V..
+
+
+
+    ThunderBYTE Distributors
+    ------------------------------------
+
+ 
+Argentina
+---------
+Company:   UniSoft S.r.L.
+Address:   Sarmiento 1452 - Piso 1 Dep.A
+           1042 Buenos Aires
+           Republica Argentina
+Phone:     +54 1 - 372 7243
+Fax:       +54 1 - 374 9469
+Email:     abrcic@unisoft.com.ar
+
+                
+Australasia
+-----------
+Company:   ThunderByte Australia
+Address:   P.O. Box 29
+           Kallangur 4503
+           Australia
+Phone:     +61 7 - 32 04 5000
+Email:     sales@tbav.com.au
+Website:   http://www.tbav.com.au
+FTP:       ftp.tbav.com.au
+      
+
+Austria
+-------
+Company:   AICC Trading GmbH
+Address:   Dr. Schrebergasse 5
+           A-2380 Perchtoldsdorf bei Wien
+           Austria
+Phone:     +43 (0)1 869 7736
+Fax:       +43 (0)1 865 0504
+Email:     hw@aicc.co.at
+Website:   http://www.aicc.co.at\security
+
+
+Belgium
+-------
+Company:   Simac Distribution Benelux
+Address:   Vijfhoekstraat 36
+           B-1801 Peutie
+           Belgium
+Phone:     +32 (0)2 253 6899
+Fax:       +32 (0)2 253 6758
+Email:     chris.van.poele@simac.be
+
+
+Company:   Sica International BVBA
+Address:   Europaplein 34
+           B-3630 Maasmechelen
+           Belgium
+Phone:     +32 (0)89 77 5850
+Fax:       +32 (0)89 76 4164
+Email:     tsica@club.innet.be
+
+
+Brazil
+------
+Company:   Kanopus Informatica
+Address:   Caixa Postal 8301
+           80011-970 Curitiba PR
+           Brazil
+Phone:     +55 41 - 222 0277
+Fax:       +55 41 - 233 4232
+Email:     jan@kanopus.com.br
+Website:   http://www.kanopus.com.br/~tbav
+
+   
+Canada
+------
+Company:   NOVaSTOR Corporation
+Address:   80-B West Cochran Street
+           Simi Valley, CA 93065-6219
+           USA
+Phone:     (805) 579-6700
+Fax:       (805) 579-6710
+BBS:       (805) 579-6720  
+Email:     tracey@novastor.com
+Website:   http://www.novastor.com
+
+
+The Carribean
+-------------
+Company:   CCS Technology
+Address:   155-157 Tragarete Road
+           Port of Spain
+           Trinidad
+Phone:     +809 622 0035/6
+Fax:       +809 628 4130
+E-mail:    nsim@neal-and-massy.com
+
+
+Chile
+-----
+Company:   TOPsoft S.A.
+Address:   Cirujano Guzman 171
+           Providencia
+           Chile
+Phone:     +562 2354 456
+Fax:       +562 2359 471
+Email:     rgamberini@interactiva.iactiva.cl
+
+
+Costa Rica
+----------
+Company:   EEC TicoSoft GJ sa.
+Address:   ACCT # SJO 1316
+           1601 NW 07th Ave. Unit C-101
+           Miami, Fl, 33102 
+           USA
+Phone:     +506 383 8315
+Fax:       +506 259 0059
+Email:     ticosoft@usa.net 	
+
+
+Croatia
+-------
+Company:   Mraz Computer Systems
+Address:   Drziceva 14a
+           Zagreb
+           Croatia 10000
+Phone:     +385 161 529 61
+Fax:       +385 161 529 62
+Email:     mrazelektronik@zg.tel.hr
+
+
+Czech Republic
+--------------
+Company:   AEC-Systems Ltd.
+Address:   Bayerova 30
+           60200 Brno
+           Czech Republic
+Phone:     +420 5 - 4123 5466
+Fax:       +420 5 - 4123 5038
+Email:     info@aec.cz
+
+
+Denmark
+-------
+Company:   Total Control Scandinavia
+Address:   Ronnebaervej 57
+           2840 Holte
+           Denmark
+Phone:     +45 - 45 41 14 46
+Fax:       +45 - 45 41 14 47
+CompuServe:101726,1430
+
+
+Finland
+-------
+Company:   Computer Security Nordic AB
+Address:   Stora Sodergatan 8c
+           222 23 Lund
+           Sweden
+Phone:     +46 - 46 324 525
+Fax:       +46 - 46 324 540
+Email:     mailus@comsecnordic.se
+
+
+France
+------
+Company:   Delta Logic S.A.
+Address:   55, Avenue des Champs Pierreux
+           92012 Nanterre Cedex 
+           France
+Phone:     +33 1 - 41 37 40 90
+Fax:       +33 1 - 41 37 40 99
+Email:     info@delta-logic.fr
+Website:   http://www.delta-logic.fr
+
+
+Germany
+-------
+Company:   Norman Data Defense Systems GmbH
+Address:   Kieler Strasse 15
+           D-42697 Solingen
+           Germany
+Phone:     +49 (0)212 - 267 180
+Fax:       +49 (0)212 - 267 1815
+Email:     norman@norman.de
+
+
+Company:   Promus Conception GmbH
+Address:   Aktienstr. 62
+           D-45473 Mulheim a.d. Ruhr
+           Germany
+Phone:     +49 (0)208 - 450 890
+Fax:       +49 (0)208 - 473 115
+Email:     promus@promus.de
+Website:   http://www.promus.de
+
+    
+Company:   AndroTec GmbH
+Address:   Lunener Strasse 201
+           D-59077 Hamm
+           Germany
+Phone:     +49 (0)2381 - 996 000
+Fax:       +49 (0)2381 - 996 003
+Email:     AndroTec@aol.com
+
+
+Greece
+------
+Company:   Inter Engineering
+Address:   PO Box 1626
+           G-410 02 Larissa
+           Greece
+Phone:     +30 (0)41 - 55 39 80
+Fax:       +30 (0)41 - 28 52 80
+Email:     inter@inter.gr
+           sales@inter.gr        
+       
+       
+India
+-----
+Company:   Knokvir
+Address:   # 202, Vishnupriya Apartments
+           Durgebai Dermukh Colony
+           Hyderabad - 500 013
+           India
+Phone:     +91 - 40 763 5069
+Fax:       +91 - 40 812 334
+Email:     vijaya.vibha@axcess.net.in
+
+
+Ireland
+-------
+Company:   Reflex Magnetics Ireland
+Address:   Enterprise House, New Street
+           Waterford
+           Ireland
+Phone:     +353 51 841 051
+Fax:       +353 51 841 052
+Email:     sales@reflex.ie
+
+
+Italy
+-----
+Company:   TTT Tomorrow's Technologies Today
+Address:   Via Matteao Bandello, 4/2
+           20100 Milano
+           Italy
+Phone:     +39 (0)2 - 48011237
+Fax:       +39 (0)2 - 48008329
+Email:     norman.sales@bbs.infosquare.it
+Website:   http://www.tttoday.com
+
+
+Korea
+-----
+Company:   A C & P
+Address:   #506 Deoksan Building
+           51 Gyonam-dong, Chongro-gu
+           Seoul 110-100
+           Korea
+Phone:     +82 2 736 4406
+Fax:       +82 2 736 5625
+E-mail:    acnp@chollian.dacom.co.kr
+
+
+Luxembourg
+---------
+Company:   Delta Systems 
+Address:   Route d'Arlon 82
+           L-1150 Luxembourg
+           Luxembourg
+Phone:     +352 451 752
+Fax:       +352 451 754
+E-mail:    1032271215@compuserve.com
+
+
+Company:   Traxx Computer Systems
+Address:   9, Rue de Stavelot
+           L-9280 Diekirch
+           Luxembourg
+Phone:     +352 802 436
+Fax:       +352 802 821
+E-mail:    tcs@hermesnet.com
+
+
+Madagascar
+--------
+Company:   Linkajy Madagascar
+Address:   B.P. 7007
+           101-Antananarivo
+           Madagascar
+Phone:     +261 20 22 411 17
+Fax:       +261 20 22 411 17
+Email:     linkajy@dts.mg
+
+
+Malaysia
+--------
+Company:   Langdale Systems Sdn Bhd
+Address:   Suite 19A-11-2
+           50450 Kuala Lumpur
+           Malaysia
+Phone:     +60 (0)3 - 264 6588
+Fax:       +60 (0)3 - 264 6804
+Email:     lploo@insas.po.my
+
+
+Marocco
+-------
+Company:   Abacus Maroc S.A.
+Address:   65, Av. Abdelkrim Khattabi Sect. 1
+           Hay Essalam
+           Sale
+           Marocco
+Phone:     + 212 - 7 804 646
+Fax:       + 212 - 7 804 648
+Email:     abacus@mbox.azure.net
+
+
+Mexico
+------
+Company:   MicroAsist S.A. de C.V.
+Address:   Acapulco No. 62-3, Colonia, Roma
+           06700 Mexico D.F., Mexico City
+           Mexico
+Phone:     +525 - 211 5764
+Fax:       +525 - 553 0042
+Email:     framos@thunderbyte.com.mx
+Website:   http://www.thunderbyte.com.mx
+
+
+The Netherlands
+---------------
+Company:   S.H.A.R.K. B.V. International
+Address:   P.O. Box 159
+           NL-2130 AD  Hoofddorp
+           The Netherlands
+Phone:     +31 (0)23 56 33 960
+Fax:       +31 (0)23 56 13 165
+Email:     international@shark.nl
+CompuServe:100613,573
+Website:   http://www.shark.nl
+
+
+Norway
+------
+Company:   Computer Security Nordic AB
+Address:   Stora Sodergatan 8c
+           222 23 Lund
+           Sweden
+Phone:     +46 - 46 324 525
+Fax:       +46 - 46 324 540
+Email:     mailus@comsecnordic.se
+
+
+Company:   Total Control Norge
+Address:   Ensjoveien 12b
+           N-0655 Oslo
+           Norway
+Phone:     +47 - 2267 1157
+Fax:       +47 - 2268 0505
+
+
+Peru
+----
+Company:   CompuPlus S.A.
+Address:   Diez Canseco 150
+           Ofic. 603 Miraflores Lima 18
+           Peru
+Phone:     +51 1241 0594
+Fax:       +51 1444 3755
+Email:     jlpn@amauta.rcp.net.pe
+
+
+Philippines
+-----------
+Company:   Integrity Computer Software Systems
+Address:   #19 11-12 EDSA
+           Makati City, Metro Manila
+           Philippines
+Phone:     +63 - 2821 5854
+Fax:       +63 - 2823 0247
+E-mail:    integrit@mnl.sequel.net
+
+
+Poland
+------
+Company:   Polgraf-Harma spolka cywilna
+Address:   P.O. Box 448
+           64-920 Pila
+           Poland
+Phone:     +48 - 67 12 51 37
+Fax:       +48 - 67 12 51 37
+E-mail:    polgraf@pol.pl
+
+
+Portugal
+--------
+Company:   Moniz Dias, Lda
+Address:   Quinta do Mirante
+           Rua Loubet Bravo, 47
+           Atelier B - Pendao
+           2745 Queluz
+           Portugal
+Phone:     +351 1 - 436 5714
+Fax:       +351 1 - 436 5716
+E-mail:    mdti@mail.telepac.pt
+
+
+Republic of Singapore
+---------------------
+Company:   Langdale Computer Services Pte Ltd.
+Address:   45 Jalan Pemimpin #09-00
+           Foo Wah Industrial Building
+           Singapore 2057
+Phone:     +65 - 259 6855
+Fax:       +65 - 258 2397
+Email:     lploo@insas.po.my
+
+
+Romania
+-------
+Company:   CS-Software SRL
+Address:   Str. Izv. Crisului Nr. 7
+           Bl. A5,  Sc. D, Ap. 55
+           75385 Bucharest
+           Romania
+Phone:     +40 - 1 629 54 27
+Fax:       +40 - 1 629 54 27
+Email:     gabriel@css.pcnet.ro
+
+
+Company:   R.C. Team
+Address:   Str. Arges nr. 13
+           1900 Timisoara
+           Romania
+Phone:     +40 - 56 201271
+Fax:       +40 - 56 201128
+Email:     bmagda@online.ro
+
+
+Slovak Republik
+---------------
+Company:   AEC-Systems Ltd.
+Address:   Pribinova 25
+           81902 Bratislava
+           Slovakia
+Phone:     +421 7 - 563 3027
+Fax:       +421 7 - 563 3029
+Email:     aec@aec.cz
+
+
+Slovenia
+--------
+Company:   QuickTime D.O.O.
+Address:   Dunajska C116
+           P.P. 3263
+           1000 Ljubijana
+           Slovenia
+Phone:     +386 61 168 6327
+Fax:       +386 61 168 6277
+E-mail:    quicktime@siol.net
+
+
+Southern Africa
+--------------- 
+Company:   Gauteng Technologies
+Address:   79-3rd Avenue, Highlands North
+           PO Box 1541
+           ZA-2018 (Bramley) Johannesburg
+           South Africa
+Phone:     +27 11 885 2960
+Fax:       +27 11 885 2963
+E-mail:    helpyou@iafrica.com
+
+
+Spain
+-----
+Company:   ORJUPEGA S.L.
+Address:   Lago Van 14 Local
+           28032 Madrid
+           Spain
+Phone:     +34 1 776 6431
+Fax:       +34 1 776 6537
+E-mail:    orjupega@lix.intercom.es
+
+
+Company:   Sc2 Security in Computing and Communication
+Address:   Sor Angela de la Cruz 22, 1L
+           28020 Madrid
+           Spain
+Phone:     +34 1 571 8125
+Fax:       +34 1 571 8341
+E-mail:    sc2@accessnet.es
+Website:   http://www.sc2.es
+
+
+Suriname
+--------
+Company:   CASH N.V.
+Address:   Grote Hofstraat 5
+           Paramaribo
+           Suriname
+Phone:     +597 - 422 121
+Fax:       +597 - 422 070
+Email:     cashnv@sr.net
+
+
+Sweden
+------
+Company:   Computer Security Nordic AB
+Address:   Stora Sodergatan 8C
+           222 23 Lund
+           Sweden
+Phone:     +46 - 46 324 525
+Fax:       +46 - 46 324 540 
+Email:     mailus@comsecnordic.se
+
+
+Switzerland
+-----------
+Company:   Norman Data Defense Systems AG
+Address:   Holeestrasse 87
+           CH-4015 Basel
+           Switzerland
+Phone:     +41 61 302 4020
+Fax:       +41 61 302 4021
+Email:     ftschachtli@norman.ch
+
+
+United Kingdom
+------
+Company:   Norman Data Defense Systems UK
+Address:   1 Padstow Avenue
+           Milton Keynes
+           Bucks, MK6 2EP
+           United Kingdom
+Phone:     +44 1908 847410
+Fax:       +44 1908 847552
+Email:     dcase@normandata.co.uk
+
+
+USA
+---
+Company:   NOVaSTOR Corporation
+Address:   80-B West Cochran Street
+           Simi Valley, CA 93065-6219
+           USA
+Phone:     (805) 579-6700
+Fax:       (805) 579-6710
+BBS:       (805) 579-6720  
+Email:     tracey@novastor.com
+Website:   http://www.novastor.com
+
+ 
+Yugoslavia
+----------
+Company:   GEA Computer Systems
+Address:   Bogiceviceva 6
+           32000 Cacak
+           Yugoslavia
+Phone:     +381 32 24 890
+Fax:       +381 32 23 277
+E-mail:    geacom@sezampro.yu
+
+
+

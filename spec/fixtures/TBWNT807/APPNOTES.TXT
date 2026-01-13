@@ -1,0 +1,115 @@
+Word 6.0/7.0 versus Template Problems
+-------------------------------------
+One of the effects of an infection with WordMacro viruses under Word 6.0 or
+7.0(a) is that documents only can be stored as templates. The reason is 
+quite simple: only templates can become infected and therefore any document,
+which has been infected, will be changed to a template by the virus.
+Otherwise, the virus would never be executed. The distinction of a WordObject
+being a template or document is just one bit. 
+Nevertheless, this bit is the cause of all the problems.
+
+What actually happens when you disinfect an infected Word 6.0 or Word 7.0(a)
+file? The macros disappear. So far, so good. The problem is what to do with
+the Template bit. Just resetting it will not do. Original templates will turn
+into a document and all template data (customizations, toolbars, usermacros,
+stylesheets, etc) will be lost.
+
+The database used by TbScan has been updated where possible to take care of
+this problem. For about 50 percent of the viruses, the difference between an
+infected document and an infected template can be spotted on the actual 
+infection. When we encounter an infection where this is possible, we will
+reset the Template Bit if the infection was on a document (local infection),
+and if the infection was on a template (global infection), we will not touch
+the Template Bit.
+
+There is also the possibility that we can not see the difference.
+In those cases, we apply the following rule: if the extension of the file is 
+.DOC (default document extension), we will reset the Template Bit, otherwise
+we will not touch it.
+
+
+
+Word 6.0/7.0 versus Word 8.0 
+----------------------------
+Many users are starting to use Word 8.0 now and our support people are 
+getting the same question repeatedly: 'We had an infected Word 6.0 or Word 
+7.0(a) document which we disinfected with TbScan. When we load this document
+in Word 8.0, it claims that there are macros inside the document, which will
+be executed when the document is opened. Did we or didn't we disinfect the 
+document?'
+
+To really understand this issue, let's explain a bit about the differences
+between Word 6.0 and Word 7.0(a) on the one hand and about Word 8.0 on the
+other. 
+
+Word 6.0 and Word 7.0(a) make use of the macrolanguage WordBasic.
+Word 8.0 is using VBA5 (Visual Basic for Applications Version 5.0) and is 
+much more powerful than WordBasic, and not downwards compatible with WordBasic.
+
+To insure maintenance for the users who have built their macros in Word 6.0
+or Word 7.0(a), Microsoft has built in a WordBasic to VBA5 translator.
+It is a one-way translator and functionality of the macros after translation
+is not guaranteed.
+
+When a user loads a Word 6.0 or Word 7.0(a) document in Word 8.0, Word 8.0
+will automatically translate the previous Word format into the new Word
+format. However, if it detects the presence of macros, Microsoft's anti-virus
+techniques jump in and Word 8.0 will present a box which informs the user
+the document has macro's and asks the user if the macro's should be skipped.
+
+We realize that the presence of this box may raise a few questions.
+TbScan did remove the macros from your infected document. Nevertheless, Word
+8.0 does not know this. How is this possible?
+Our research team has discovered, after some research, that Word 8.0 is
+'not that smart' handling older types of documents. When it opens a Word 6.0
+or Word 7.0(a) document, it will look at the area where the Macro Table is 
+stored. In addition, when there are macros listed in that section, it will
+present the box above. Microsoft does not check whether the file is a template
+or not and does not check if the macros 'present' are deleted or not.
+
+To prevent this box from popping up, we have added some functionality to the
+scanner when cleaning and erasing macros. In cases where, after cleaning a
+document, no further macros are present and no other Template Data are 
+present, we will remove the Macro Table from the document.
+The user will not be bothered again by Word 8.0 when the user loads a 
+previously infected Word 6.0 or Word 7.0(a) document.
+
+
+
+AllFiles versus AllExec 
+-----------------------
+Release 8.03 of TbScan will have two 'at first glance' similar switches:
+AllExec (AE) and AllFiles (AF). There is an important difference between the
+two switches though. With the appearance of macro viruses everybody has
+started to scan using the old AllFiles switch because documents and templates
+can have any extension. The scan process slowed down and scan times increased.
+
+TbScan is known, among other items, for its speed. The old AllFiles switch
+really was time consuming as All Files were scanned against All Viruses. Thus,
+any non-executable extension was scanned not only for macro viruses, the
+intention of the user, but also for all binary viruses. At that time the old
+AllFiles switch was appointed another function: Scan All Files for All Macro
+Viruses. Exactly what the users wanted and no redundant overhead in time.
+
+In version 8.03, the functionality Scan All Files for All Viruses was
+reinstated and has been put behind the command line switch AllExec (AE).
+
+By default, all executable files and OLE2 files (Word/Excel) are scanned.
+
+Additional option: When To Use What Switch?
+
+ - To scan all files for macro viruses, use the AllFiles (AF) switch. In the
+   Windows versions, this is the 'non executable scan', which can be found in
+   "Options"
+ - To scan all files for all viruses (macro and binary), use the AllExec
+   Switch, which is called 'scan all (non-executable) files as executables'
+   in "Advanced Options"
+
+We expect the AllFiles switch to be used most frequently, since macro viruses
+have become increasingly important. As the spread of macro viruses grows each
+day, we offer updates on macro virus detection at least once a week on our
+web-site (http://www.norman.nl) and ftp-site (ftp://ftp.norman.nl) with the
+file TbScan.Def to ensure the most secure solution possible. But remember:
+even when you have updated your product with the latest definition file, there
+are at least a dozen macro viruses out there which nobody has seen yet and
+which are thus undetected.

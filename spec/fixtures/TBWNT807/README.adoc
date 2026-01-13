@@ -1,0 +1,10 @@
+= Example SZDD file
+
+The `*.*_` files in this directory is obtained from TBWNT807.ZIP
+from https://files.mpoli.fi/software/ANTIVIR/.
+
+[quote]
+____
+ThunderByte Anti-Virus version 8.07 for NT
+____
+

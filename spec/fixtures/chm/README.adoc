@@ -1,0 +1,16 @@
+= Microsoft CHM (Compiled HTML Help) content
+
+The `.chm` files in this directory are openly licensed content packaged by
+various developers.
+
+The following files were packaged by @ike9000e and obtained at the following
+location:
+
+`lua_5x2_reference_manual_r0x1_20141013.chm`:: the Lua reference manual, at
+https://github.com/ike9000e/Offline-Doc-Collection/blob/master/docs_001/lua_5x2_reference_manual_r0x1_20141013.chm
+
+`imlib2_doc_v1x1x1_r1x0_20171019.chm`:: the Imlib 2 reference manual, at
+https://github.com/ike9000e/Offline-Doc-Collection/blob/master/docs_001/imlib2_doc_v1x1x1_r1x0_20171019.chm
+
+We thank you for packaging and distributing open content!
+
