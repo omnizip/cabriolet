@@ -204,6 +204,82 @@ module Cabriolet
         uint16 :starting_block
         stringz :filename
       end
+
+      # WinHelp B+ tree header (from FILEHEADER of directory)
+      #
+      # Structure from helpdeco:
+      # - 2 bytes: Magic (0x293B)
+      # - 2 bytes: Flags (bit 0x0002 always 1, bit 0x0400 1 if directory)
+      # - 2 bytes: PageSize (0x0400=1k if directory, 0x0800=2k else)
+      # - 16 bytes: Structure (string describing structure of data)
+      # - 2 bytes: MustBeZero (0)
+      # - 2 bytes: PageSplits (number of page splits Btree has suffered)
+      # - 2 bytes: RootPage (page number of Btree root page)
+      # - 2 bytes: MustBeNegOne (0xFFFF)
+      # - 2 bytes: TotalPages (number of Btree pages)
+      # - 2 bytes: NLevels (number of levels of Btree)
+      # - 4 bytes: TotalBtreeEntries (number of entries in Btree)
+      #
+      # Total: 38 bytes (not 30!)
+      class WinHelpBTreeHeader < BinData::Record
+        endian :little
+
+        uint16 :magic           # 0x293B
+        uint16 :flags
+        uint16 :page_size
+        string :structure, length: 16
+        int16  :must_be_zero
+        int16  :page_splits
+        int16  :root_page
+        int16  :must_be_neg_one
+        int16  :total_pages
+        int16  :n_levels
+        int32  :total_btree_entries
+        # Total: 2 + 2 + 2 + 16 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 4 = 38 bytes
+      end
+
+      # WinHelp B+ tree leaf node header
+      #
+      # Structure at beginning of every leaf-page:
+      # - 2 bytes: Unknown (no ID to identify leaf-page)
+      # - 2 bytes: NEntries (number of entries in this leaf-page)
+      # - 2 bytes: PreviousPage (page number of preceeding leaf-page or -1)
+      # - 2 bytes: NextPage (page number of next leaf-page or -1)
+      class WinHelpBTreeNodeHeader < BinData::Record
+        endian :little
+
+        uint16 :unknown
+        int16  :n_entries
+        int16  :previous_page
+        int16  :next_page
+      end
+
+      # WinHelp B+ tree index node header (for internal nodes)
+      #
+      # Structure at beginning of every index-page:
+      # - 2 bytes: Unknown (no ID to identify index-page)
+      # - 2 bytes: NEntries (number of entries in this index-page)
+      # - 2 bytes: PreviousPage (page number of previous page)
+      class WinHelpBTreeIndexHeader < BinData::Record
+        endian :little
+
+        uint16 :unknown
+        int16  :n_entries
+        int16  :previous_page
+      end
+
+      # WinHelp FILEHEADER structure at FileOffset of each internal file
+      #
+      # - 4 bytes: ReservedSpace (reserved space in help file incl. FILEHEADER)
+      # - 4 bytes: UsedSpace (used space in help file excl. FILEHEADER)
+      # - 1 byte: FileFlags (normally 4)
+      class WinHelpFileHeader < BinData::Record
+        endian :little
+
+        int32  :reserved_space
+        int32  :used_space
+        uint8  :file_flags
+      end
     end
   end
 end

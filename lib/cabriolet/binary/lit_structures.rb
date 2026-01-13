@@ -251,6 +251,7 @@ module Cabriolet
       module GUIDs
         DESENCRYPT = "{67F6E4A2-60BF-11D3-8540-00C04F58C3CF}".freeze
         LZXCOMPRESS = "{0A9007C6-4076-11D3-8789-0000F8105754}".freeze
+        IDENTITY = "{00000020-1000-FF00-FFFF-FFFFFFFFFF01}".freeze # No-op/identity transform
         PIECE3 = [0xC3, 0x07, 0x90, 0x0A, 0x40, 0x76, 0x11, 0xD3,
                   0x87, 0x89, 0x00, 0x00, 0xF8, 0x10, 0x57, 0x54].pack("C*").freeze
         PIECE4 = [0xC4, 0x07, 0x90, 0x0A, 0x40, 0x76, 0x11, 0xD3,

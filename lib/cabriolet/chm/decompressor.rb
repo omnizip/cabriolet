@@ -73,7 +73,7 @@ module Cabriolet
         when 1
           extract_compressed(file, output_path)
         else
-          raise Errors::FormatError, "Invalid section ID: #{file.section.id}"
+          raise Cabriolet::FormatError, "Invalid section ID: #{file.section.id}"
         end
       end
 
@@ -109,13 +109,20 @@ module Cabriolet
         while remaining.positive?
           chunk_size = [buffer_size, remaining].min
           data = @input_handle.read(chunk_size)
-          if data.nil? || data.length < chunk_size
-            raise Errors::ReadError,
+          if data.nil?
+            raise Cabriolet::ReadError,
+                  "Unexpected end of file"
+          end
+
+          # It's OK if we read less than chunk_size (e.g., last chunk or EOF)
+          # Only raise an error if we read nothing when we expected data
+          if data.empty? && remaining.positive?
+            raise Cabriolet::ReadError,
                   "Unexpected end of file"
           end
 
           output_handle.write(data)
-          remaining -= chunk_size
+          remaining -= data.length
         end
 
         output_handle.close
@@ -175,15 +182,15 @@ module Cabriolet
         control = sec.control || find_system_file(Parser::CONTROL_NAME)
 
         unless content
-          raise Errors::FormatError,
+          raise Cabriolet::FormatError,
                 "MSCompressed Content file not found"
         end
-        raise Errors::FormatError, "ControlData file not found" unless control
+        raise Cabriolet::FormatError, "ControlData file not found" unless control
 
         # Read control data
         control_data = read_system_file(control)
         unless control_data.length == 28
-          raise Errors::FormatError,
+          raise Cabriolet::FormatError,
                 "ControlData wrong size"
         end
 
@@ -199,13 +206,13 @@ module Cabriolet
                       when 0x100000 then 20
                       when 0x200000 then 21
                       else
-                        raise Errors::FormatError,
+                        raise Cabriolet::FormatError,
                               "Invalid window size: #{window_size}"
                       end
 
         # Validate reset interval
         if reset_interval.zero? || (reset_interval % LZX_FRAME_SIZE) != 0
-          raise Errors::FormatError, "Invalid reset interval: #{reset_interval}"
+          raise Cabriolet::FormatError, "Invalid reset interval: #{reset_interval}"
         end
 
         # Find reset table entry for this file
@@ -245,7 +252,7 @@ module Cabriolet
       def parse_control_data(data)
         signature = data[4, 4]
         unless signature == "LZXC"
-          raise Errors::SignatureError,
+          raise Cabriolet::SignatureError,
                 "Invalid LZXC signature"
         end
 
@@ -258,7 +265,7 @@ module Cabriolet
           reset_interval *= LZX_FRAME_SIZE
           window_size *= LZX_FRAME_SIZE
         elsif version != 1
-          raise Errors::FormatError, "Unknown ControlData version: #{version}"
+          raise Cabriolet::FormatError, "Unknown ControlData version: #{version}"
         end
 
         [window_size, reset_interval]
@@ -275,7 +282,7 @@ module Cabriolet
           # Fall back to SpanInfo
           spaninfo = sec.spaninfo || find_system_file(Parser::SPANINFO_NAME)
           unless spaninfo
-            raise Errors::FormatError,
+            raise Cabriolet::FormatError,
                   "Neither ResetTable nor SpanInfo found"
           end
 
@@ -287,12 +294,12 @@ module Cabriolet
       # Read an entry from the reset table
       def read_reset_table_entry(rtable, entry, reset_interval)
         data = read_system_file(rtable)
-        raise Errors::FormatError, "ResetTable too short" if data.length < 40
+        raise Cabriolet::FormatError, "ResetTable too short" if data.length < 40
 
         # Check frame length
         frame_len = data[32, 8].unpack1("Q<")
         unless frame_len == LZX_FRAME_SIZE
-          raise Errors::FormatError,
+          raise Cabriolet::FormatError,
                 "Invalid frame length"
         end
 
@@ -310,7 +317,7 @@ module Cabriolet
                    when 4 then data[pos, 4].unpack1("V")
                    when 8 then data[pos, 8].unpack1("Q<")
                    else
-                     raise Errors::FormatError,
+                     raise Cabriolet::FormatError,
                            "Invalid entry size: #{entry_size}"
                    end
 
@@ -328,11 +335,11 @@ module Cabriolet
       # Read SpanInfo to get uncompressed length
       def read_spaninfo(spaninfo)
         data = read_system_file(spaninfo)
-        raise Errors::FormatError, "SpanInfo wrong size" unless data.length == 8
+        raise Cabriolet::FormatError, "SpanInfo wrong size" unless data.length == 8
 
         length = data.unpack1("Q<")
         unless length.positive?
-          raise Errors::FormatError,
+          raise Cabriolet::FormatError,
                 "Invalid SpanInfo length"
         end
 
@@ -353,7 +360,7 @@ module Cabriolet
       # Read a system file's contents
       def read_system_file(file)
         unless file.section.id.zero?
-          raise Errors::FormatError,
+          raise Cabriolet::FormatError,
                 "System file must be in section 0"
         end
 
@@ -420,7 +427,7 @@ module Cabriolet
               file.length = length
               return file
             end
-          rescue Errors::FormatError
+          rescue Cabriolet::FormatError
             break
           end
         end

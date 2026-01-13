@@ -1,5 +1,11 @@
 # frozen_string_literal: true
 
+require_relative "../../binary/hlp_structures"
+require_relative "../../models/winhelp_header"
+require_relative "../../errors"
+require_relative "../../system/io_system"
+require_relative "../../constants"
+
 module Cabriolet
   module HLP
     module WinHelp
@@ -226,13 +232,12 @@ module Cabriolet
           end
         end
 
-        # Parse WinHelp 4.x internal file directory
+        # Parse WinHelp 4.x internal file directory using B+ tree
         #
         # WinHelp 4.x directory structure:
-        # - Directory starts at directory_offset
-        # - Can have two formats:
-        #   1. Fixed 12-byte entries: size(4) + block(2) + unknown(2) + name_offset(4)
-        #   2. Variable-length entries (like WinHelp 3.x): size(4) + block(2) + filename
+        # - FILEHEADER at directory_offset
+        # - BTREEHEADER immediately after FILEHEADER
+        # - B+ tree pages containing filename -> file_offset mappings
         #
         # @param handle [System::FileHandle] Open file handle
         # @param header [Models::WinHelpHeader] Header to populate
@@ -240,30 +245,145 @@ module Cabriolet
         def parse_directory_winhelp4(handle, header)
           return if header.directory_offset.zero?
 
-          dir_start = header.directory_offset
-          @io_system.seek(handle, dir_start, Constants::SEEK_START)
+          # Seek to directory and read FILEHEADER
+          @io_system.seek(handle, header.directory_offset, Constants::SEEK_START)
+          file_header_data = @io_system.read(handle, 9) # FILEHEADER is 9 bytes
 
-          header.internal_files = []
+          raise Cabriolet::ParseError, "Failed to read FILEHEADER" if file_header_data.nil? || file_header_data.bytesize < 9
 
-          # Try to detect format by reading first few bytes
-          # Check if this looks like variable-length format (filename starts with '|')
-          preview = @io_system.read(handle, 20)
-          return if preview.nil? || preview.bytesize < 6
+          # Read BTREEHEADER (38 bytes according to helpdeco)
+          btree_header_data = @io_system.read(handle, 38) # BTREEHEADER is 38 bytes
 
-          # In variable-length format: bytes 0-3 = size, bytes 4-5 = block, bytes 6+ = filename
-          # In fixed format: bytes 0-3 = size, bytes 4-5 = block, bytes 6-7 = unknown, bytes 8-11 = name_offset
-          # If byte 6 is part of a filename starting with '|', use variable format
-          # The filename starts at byte 6, so check if byte 6 is '|'
-          # Actually, filename starts after size(4) + block(2) = byte 6
-          if preview.getbyte(6) == 0x7C
-            # Variable-length format (inline filenames)
-            @io_system.seek(handle, dir_start, Constants::SEEK_START)
-            parse_directory_variable(handle, header)
-          else
-            # Fixed 12-byte format with name_offset
-            @io_system.seek(handle, dir_start, Constants::SEEK_START)
-            parse_directory_fixed(handle, header)
+          raise Cabriolet::ParseError, "Failed to read BTREEHEADER" if btree_header_data.nil? || btree_header_data.bytesize < 38
+
+          btree_header = Binary::HLPStructures::WinHelpBTreeHeader.read(btree_header_data)
+
+          # Validate B+ tree magic
+          unless btree_header.magic == 0x293B
+            raise Cabriolet::ParseError, "Invalid B+ tree magic: 0x#{btree_header.magic.to_s(16)}"
           end
+
+          # Store first page offset (where B+ tree pages start)
+          first_page_offset = @io_system.tell(handle)
+
+          # Parse all files from B+ tree
+          header.internal_files = []
+          parse_btree_files(handle, header, btree_header, first_page_offset)
+        end
+
+        # Parse all files from WinHelp B+ tree
+        #
+        # @param handle [System::FileHandle] Open file handle
+        # @param header [Models::WinHelpHeader] Header to populate
+        # @param btree_header [Binary::HLPStructures::WinHelpBTreeHeader] B+ tree header
+        # @param first_page_offset [Integer] Offset of first B+ tree page
+        def parse_btree_files(handle, header, btree_header, first_page_offset)
+          return unless btree_header.total_btree_entries.positive?
+
+          # Start at root page and traverse to first leaf page
+          current_page = btree_header.root_page
+
+          # If we have multiple levels, traverse down index pages to find first leaf page
+          if btree_header.n_levels > 1
+            (btree_header.n_levels - 1).times do
+              # Seek to index page
+              page_offset = first_page_offset + (current_page * btree_header.page_size)
+              @io_system.seek(handle, page_offset, Constants::SEEK_START)
+
+              # Read index header
+              index_header_data = @io_system.read(handle, 6)
+              break if index_header_data.nil? || index_header_data.bytesize < 6
+
+              # For index pages, the first page is always 0 (leftmost child)
+              # The index header is followed by entries: (filename, page_number)
+              # We want the leftmost (smallest filename), so we take the first entry's page
+              current_page = read_first_page_from_index(handle, index_header_data)
+              break if current_page.nil?
+            end
+          end
+
+          # Now read all leaf pages
+          loop do
+            # Seek to leaf page
+            page_offset = first_page_offset + (current_page * btree_header.page_size)
+            @io_system.seek(handle, page_offset, Constants::SEEK_START)
+
+            # Read leaf node header
+            leaf_header_data = @io_system.read(handle, 8)
+            break if leaf_header_data.nil? || leaf_header_data.bytesize < 8
+
+            leaf_header = Binary::HLPStructures::WinHelpBTreeNodeHeader.read(leaf_header_data)
+
+            # Read all entries in this leaf page
+            leaf_header.n_entries.times do
+              # Read null-terminated filename
+              filename = read_cstring(handle)
+              break if filename.nil?
+
+              # Read file offset (4-byte LE value)
+              offset_data = @io_system.read(handle, 4)
+              break if offset_data.nil? || offset_data.bytesize < 4
+
+              file_offset = offset_data.unpack1("V")
+
+              # Skip empty filenames
+              next if filename.empty?
+
+              # Read FILEHEADER at file_offset to get file size
+              # This will seek away, so save current position first
+              current_position = @io_system.tell(handle)
+              file_size = read_file_size(handle, file_offset)
+              @io_system.seek(handle, current_position, Constants::SEEK_START)
+
+              header.internal_files << {
+                filename: filename,
+                file_size: file_size,
+                file_offset: file_offset,  # Store actual offset, not block number
+              }
+            end
+
+            # Move to next leaf page or exit
+            break if leaf_header.next_page == -1
+            current_page = leaf_header.next_page
+          end
+        end
+
+        # Read first page number from index page
+        #
+        # @param handle [System::FileHandle] Open file handle
+        # @param index_header_data [String] Index header data (6 bytes)
+        # @return [Integer, nil] First page number or nil on error
+        def read_first_page_from_index(handle, index_header_data)
+          # For index pages, we want the leftmost (smallest filename)
+          # The index header is followed by entries: (filename, page_number)
+          # We read the first filename and then the page number
+          filename = read_cstring(handle)
+          return nil if filename.nil?
+
+          # Read page number (2-byte LE)
+          page_data = @io_system.read(handle, 2)
+          return nil if page_data.nil? || page_data.bytesize < 2
+
+          page_data.unpack1("v")
+        end
+
+        # Read file size from FILEHEADER at given offset
+        #
+        # @param handle [System::FileHandle] Open file handle
+        # @param file_offset [Integer] Offset of FILEHEADER
+        # @return [Integer] File size (UsedSpace from FILEHEADER)
+        def read_file_size(handle, file_offset)
+          # Seek to FILEHEADER
+          @io_system.seek(handle, file_offset, Constants::SEEK_START)
+
+          # Read FILEHEADER (9 bytes)
+          file_header_data = @io_system.read(handle, 9)
+          return 0 if file_header_data.nil? || file_header_data.bytesize < 9
+
+          file_header = Binary::HLPStructures::WinHelpFileHeader.read(file_header_data)
+
+          # Return UsedSpace (the actual file size)
+          file_header.used_space
         end
 
         # Parse variable-length directory entries (WinHelp 3.x style)
@@ -306,99 +426,6 @@ module Cabriolet
               file_size: file_size,
               starting_block: starting_block,
             }
-          end
-        end
-
-        # Parse fixed 12-byte directory entries (WinHelp 4.x style with name_offset)
-        def parse_directory_fixed(handle, header)
-          # Read directory entries
-          entries = []
-          100.times do # Safety limit
-            entry_data = @io_system.read(handle, 12)
-            break if entry_data.nil? || entry_data.bytesize < 12
-
-            # Read size as 4-byte LE value (bytes 0-3)
-            file_size = entry_data[0..3].unpack1("V")
-
-            # Check for end of directory marker
-            break if file_size.zero?
-
-            # Read block as 2-byte LE value (bytes 4-5)
-            starting_block = entry_data[4..5].unpack1("v")
-
-            # Read name_offset as 4-byte LE value (bytes 8-11)
-            name_offset = entry_data[8..11].unpack1("V")
-
-            entries << {
-              file_size: file_size,
-              starting_block: starting_block,
-              name_offset: name_offset,
-            }
-          end
-
-          return if entries.empty?
-
-          # Scan for filenames starting after the directory entries
-          scan_start = @io_system.tell(handle)
-          @io_system.seek(handle, scan_start, Constants::SEEK_START)
-          scan_data = @io_system.read(handle, 2000)
-
-          # Find all filenames (null-terminated strings starting with '|')
-          filenames = []
-          i = 0
-          while i < scan_data.bytesize
-            # Skip 0xFF filler bytes
-            if scan_data.getbyte(i) == 0xFF
-              i += 1
-              next
-            end
-
-            # Check for filename start
-            if scan_data.getbyte(i) == 0x7C
-              # Read null-terminated string
-              filename = +""
-              j = i
-              while j < scan_data.bytesize
-                byte = scan_data.getbyte(j)
-                break if byte == 0x00
-                filename << byte.chr
-                j += 1
-              end
-
-              # Valid filename must start with '|' and have content
-              if filename.start_with?("|") && filename.length > 1
-                filenames << filename
-              end
-
-              # Move past this filename
-              i = j + 1
-            else
-              i += 1
-            end
-          end
-
-          # Match filenames with directory entries
-          total_size = entries.empty? ? 0 : entries[0][:file_size]
-          base_block = entries.empty? ? 0 : entries[0][:starting_block]
-
-          filenames.each_with_index do |filename, idx|
-            if idx < entries.length
-              entry = entries[idx]
-              header.internal_files << {
-                filename: filename,
-                file_size: entry[:file_size],
-                starting_block: entry[:starting_block],
-              }
-            else
-              # Estimate size and block for additional files
-              estimated_size = total_size / filenames.length
-              estimated_block = base_block + idx
-              header.internal_files << {
-                filename: filename,
-                file_size: estimated_size,
-                starting_block: estimated_block,
-              }
-            end
           end
         end
 

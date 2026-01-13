@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require_relative "../../system/io_system"
+require_relative "../../constants"
+
 module Cabriolet
   module HLP
     module QuickHelp

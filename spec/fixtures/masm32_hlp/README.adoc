@@ -1,4 +1,4 @@
-= Microsoft Help HLP files
+= Microsoft WinHelp HLP files
 
 The `.HLP` files in this directory are obtained from the MASM32 SDK at:
 http://www.carabez.com/downloads.html

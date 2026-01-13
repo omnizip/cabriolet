@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "../../system/io_system"
+require_relative "../../constants"
 require_relative "huffman_tree"
 require_relative "huffman_stream"
 require_relative "compression_stream"
