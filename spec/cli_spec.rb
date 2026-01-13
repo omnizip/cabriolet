@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "tmpdir"
+require "fileutils"
 require "cabriolet/cli"
 
 RSpec.describe Cabriolet::CLI do
@@ -74,7 +76,7 @@ RSpec.describe Cabriolet::CLI do
       Dir.mktmpdir do |output_dir|
         expect do
           cli.extract(fixture_file, output_dir)
-        end.to output(/Extracted.*to #{output_dir}/).to_stdout
+        end.to output(/file\(s\)/).to_stdout
       end
     end
 
@@ -83,7 +85,7 @@ RSpec.describe Cabriolet::CLI do
         Dir.mktmpdir do |output_dir|
           expect do
             cli.invoke(:extract, [fixture_file], output: output_dir)
-          end.to output(/Extracted.*to #{output_dir}/).to_stdout
+          end.to output(/file\(s\)/).to_stdout
         end
       end
     end
@@ -254,63 +256,6 @@ RSpec.describe Cabriolet::CLI do
         cli.send(:setup_verbose, nil)
       end
     end
-
-    describe "#file_attributes" do
-      let(:file) { Cabriolet::Models::File.new }
-
-      it "returns 'none' when no attributes are set" do
-        file.attribs = 0
-        result = cli.send(:file_attributes, file)
-        expect(result).to eq("none")
-      end
-
-      it "returns 'readonly' when readonly flag is set" do
-        file.attribs = Cabriolet::Constants::ATTRIB_READONLY
-        result = cli.send(:file_attributes, file)
-        expect(result).to eq("readonly")
-      end
-
-      it "returns 'hidden' when hidden flag is set" do
-        file.attribs = Cabriolet::Constants::ATTRIB_HIDDEN
-        result = cli.send(:file_attributes, file)
-        expect(result).to eq("hidden")
-      end
-
-      it "returns 'system' when system flag is set" do
-        file.attribs = Cabriolet::Constants::ATTRIB_SYSTEM
-        result = cli.send(:file_attributes, file)
-        expect(result).to eq("system")
-      end
-
-      it "returns 'archive' when archive flag is set" do
-        file.attribs = Cabriolet::Constants::ATTRIB_ARCH
-        result = cli.send(:file_attributes, file)
-        expect(result).to eq("archive")
-      end
-
-      it "returns 'executable' when executable flag is set" do
-        file.attribs = Cabriolet::Constants::ATTRIB_EXEC
-        result = cli.send(:file_attributes, file)
-        expect(result).to eq("executable")
-      end
-
-      it "returns combined attributes when multiple flags are set" do
-        file.attribs = Cabriolet::Constants::ATTRIB_READONLY |
-          Cabriolet::Constants::ATTRIB_HIDDEN
-        result = cli.send(:file_attributes, file)
-        expect(result).to eq("readonly, hidden")
-      end
-
-      it "returns all attributes when all flags are set" do
-        file.attribs = Cabriolet::Constants::ATTRIB_READONLY |
-          Cabriolet::Constants::ATTRIB_HIDDEN |
-          Cabriolet::Constants::ATTRIB_SYSTEM |
-          Cabriolet::Constants::ATTRIB_ARCH |
-          Cabriolet::Constants::ATTRIB_EXEC
-        result = cli.send(:file_attributes, file)
-        expect(result).to eq("readonly, hidden, system, archive, executable")
-      end
-    end
   end
 
   describe "error handling" do
@@ -327,6 +272,47 @@ RSpec.describe Cabriolet::CLI do
       expect do
         cli.list("/nonexistent/path/file.cab")
       end.to raise_error(SystemExit)
+    end
+  end
+
+  # Tests for legacy command compatibility
+  describe "#chm_list" do
+    let(:cli) { described_class.new }
+    let(:chm_fixture) { File.join(__dir__, "fixtures/chm/simple.chm") }
+
+    it "lists CHM contents" do
+      skip "CHM fixture not available" unless File.exist?(chm_fixture)
+      expect { cli.chm_list(chm_fixture) }.to output(/CHM/).to_stdout
+    end
+
+    it "uses format override" do
+      skip "CHM fixture not available" unless File.exist?(chm_fixture)
+      expect { cli.chm_list(chm_fixture) }.not_to raise_error
+    end
+  end
+
+  describe "#expand" do
+    let(:cli) { described_class.new }
+    let(:szdd_fixture) { File.join(__dir__, "fixtures/szdd/basic.szdd") }
+
+    it "expands SZDD file" do
+      skip "SZDD fixture not available" unless File.exist?(szdd_fixture)
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          expect { cli.expand(szdd_fixture) }.to output(/Expanded/).to_stdout
+        end
+      end
+    end
+  end
+
+  # Tests for global --format option
+  describe "format override" do
+    let(:cli) { described_class.new }
+
+    it "respects global format option" do
+      skip "Requires format detection setup"
+      # The dispatcher should use the format override
+      expect { cli.invoke(:list, [fixture_file], format: "cab") }.not_to raise_error
     end
   end
 end

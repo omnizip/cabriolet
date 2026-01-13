@@ -2,88 +2,119 @@
 
 require "thor"
 
+require_relative "cli/command_registry"
+require_relative "cli/command_dispatcher"
+
+# Register all format handlers with the command registry
+require_relative "cab/command_handler"
+require_relative "chm/command_handler"
+require_relative "szdd/command_handler"
+require_relative "kwaj/command_handler"
+require_relative "hlp/command_handler"
+require_relative "lit/command_handler"
+require_relative "oab/command_handler"
+
+Cabriolet::Commands::CommandRegistry.register_format(:cab, Cabriolet::CAB::CommandHandler)
+Cabriolet::Commands::CommandRegistry.register_format(:chm, Cabriolet::CHM::CommandHandler)
+Cabriolet::Commands::CommandRegistry.register_format(:szdd, Cabriolet::SZDD::CommandHandler)
+Cabriolet::Commands::CommandRegistry.register_format(:kwaj, Cabriolet::KWAJ::CommandHandler)
+Cabriolet::Commands::CommandRegistry.register_format(:hlp, Cabriolet::HLP::CommandHandler)
+Cabriolet::Commands::CommandRegistry.register_format(:lit, Cabriolet::LIT::CommandHandler)
+Cabriolet::Commands::CommandRegistry.register_format(:oab, Cabriolet::OAB::CommandHandler)
+
 module Cabriolet
-  # CLI provides command-line interface for Cabriolet
+  # CLI provides unified command-line interface for Cabriolet
+  #
+  # The CLI uses auto-detection to determine the format of input files,
+  # then dispatches commands to the appropriate format handler.
+  # A --format option allows manual override when needed.
+  #
+  # Legacy format-specific commands are maintained for backward compatibility.
+  #
   class CLI < Thor
     def self.exit_on_failure?
       true
     end
 
-    desc "list FILE", "List contents of CAB file"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
+    # Global option for format override
+    class_option :format, type: :string, enum: %w[cab chm szdd kwaj hlp lit oab],
+                          desc: "Force format (overrides auto-detection)"
+
+    # Global option for verbose output
+    class_option :verbose, type: :boolean, aliases: "-v",
+                           desc: "Enable verbose output"
+
+    # ==========================================================================
+    # Unified Commands (auto-detect format)
+    # ==========================================================================
+
+    desc "list FILE", "List contents of archive file (auto-detects format)"
+    option :format, type: :string, hide: true # Deprecated, use global --format
     def list(file)
-      setup_verbose(options[:verbose])
-
-      decompressor = CAB::Decompressor.new
-      cabinet = decompressor.open(file)
-
-      puts "Cabinet: #{cabinet.filename}"
-      puts "Set ID: #{cabinet.set_id}, Index: #{cabinet.set_index}"
-      puts "Folders: #{cabinet.folder_count}, Files: #{cabinet.file_count}"
-      puts "\nFiles:"
-
-      cabinet.files.each do |f|
-        puts "  #{f.filename} (#{f.length} bytes)"
-      end
-    rescue Error => e
-      abort "Error: #{e.message}"
+      run_dispatcher(:list, file, **options)
     end
 
-    desc "extract FILE [OUTPUT_DIR]", "Extract files from CAB"
-    option :output, type: :string, aliases: "-o", desc: "Output directory"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
-    option :salvage, type: :boolean,
-                     desc: "Enable salvage mode for corrupted files"
+    desc "extract FILE [OUTPUT_DIR]", "Extract files from archive (auto-detects format)"
+    option :output, type: :string, aliases: "-o", desc: "Output file/directory path"
+    option :salvage, type: :boolean, desc: "Enable salvage mode for corrupted files (CAB only)"
+    option :base_file, type: :string, desc: "Base file for incremental patches (OAB only)"
+    option :use_manifest, type: :boolean, desc: "Use manifest for filenames (LIT only)"
+    option :format, type: :string, hide: true # Deprecated, use global --format
     def extract(file, output_dir = nil)
-      setup_verbose(options[:verbose])
-      output_dir ||= options[:output] || "."
-
-      decompressor = CAB::Decompressor.new
-      decompressor.salvage = options[:salvage] if options[:salvage]
-
-      cabinet = decompressor.open(file)
-      count = decompressor.extract_all(cabinet, output_dir)
-
-      puts "Extracted #{count} file(s) to #{output_dir}"
-    rescue Error => e
-      abort "Error: #{e.message}"
+      run_dispatcher(:extract, file, output_dir, **options)
     end
 
-    desc "info FILE", "Show detailed CAB file information"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
+    desc "create OUTPUT FILES...", "Create archive file (auto-detects format from extension)"
+    option :compression, type: :string, enum: %w[none mszip lzx quantum],
+                         desc: "Compression type (CAB only)"
+    option :format, type: :string, enum: %w[cab chm szdd kwaj hlp lit oab],
+                    desc: "Output format (default: auto-detect from OUTPUT extension)"
+    option :window_bits, type: :numeric, desc: "LZX window size for CHM (15-21)"
+    option :missing_char, type: :string, desc: "Missing character for SZDD"
+    option :szdd_format, type: :string, enum: %w[normal qbasic],
+                         desc: "SZDD format variant (default: normal)"
+    option :kwaj_compression, type: :string, enum: %w[none xor szdd mszip],
+                              desc: "KWAJ compression method (default: szdd)"
+    option :include_length, type: :boolean, desc: "Include length in KWAJ header"
+    option :kwaj_filename, type: :string, desc: "Original filename for KWAJ header"
+    option :extra_data, type: :string, desc: "Extra data for KWAJ header"
+    option :hlp_format, type: :string, enum: %w[quickhelp winhelp],
+                        desc: "HLP format variant (default: quickhelp)"
+    option :language_id, type: :string, desc: "Language ID for LIT (e.g., 0x409)"
+    option :lit_version, type: :numeric, desc: "LIT format version (default: 1)"
+    option :block_size, type: :numeric, desc: "Block size for OAB compression"
+    option :compress, type: :boolean, default: true, desc: "Compress files in HLP/LIT"
+    def create(output, *files)
+      # Normalize options for create command
+      create_options = normalize_create_options(options)
+
+      # Detect format from output extension if not specified
+      format = detect_format_from_output(output, create_options[:format])
+
+      # Set the format in options for the dispatcher
+      create_options[:format] = format
+
+      run_dispatcher(:create, output, files, **create_options)
+    end
+
+    desc "info FILE", "Show detailed archive file information (auto-detects format)"
+    option :format, type: :string, hide: true # Deprecated, use global --format
     def info(file)
-      setup_verbose(options[:verbose])
-
-      decompressor = CAB::Decompressor.new
-      cabinet = decompressor.open(file)
-
-      display_cabinet_info(cabinet)
-    rescue Error => e
-      abort "Error: #{e.message}"
+      run_dispatcher(:info, file, **options)
     end
 
-    desc "test FILE", "Test CAB file integrity"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
+    desc "test FILE", "Test archive file integrity (auto-detects format)"
+    option :format, type: :string, hide: true # Deprecated, use global --format
     def test(file)
-      setup_verbose(options[:verbose])
-
-      decompressor = CAB::Decompressor.new
-      cabinet = decompressor.open(file)
-
-      puts "Testing #{cabinet.filename}..."
-      # TODO: Implement integrity testing
-      puts "OK: All #{cabinet.file_count} files passed integrity check"
-    rescue Error => e
-      abort "Error: #{e.message}"
+      run_dispatcher(:test, file, **options)
     end
 
+    # ==========================================================================
+    # Legacy Commands (maintained for backward compatibility)
+    # ==========================================================================
+
+    # CAB-specific legacy commands
     desc "search FILE", "Search for embedded CAB files"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
     def search(file)
       setup_verbose(options[:verbose])
 
@@ -107,579 +138,205 @@ module Cabriolet
       abort "Error: #{e.message}"
     end
 
-    desc "create OUTPUT FILES...", "Create a CAB file from source files"
-    option :compression, type: :string, enum: %w[none mszip lzx quantum],
-                         default: "mszip", desc: "Compression type"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
-    def create(output, *files)
-      setup_verbose(options[:verbose])
-
-      raise ArgumentError, "No files specified" if files.empty?
-
-      files.each do |f|
-        raise ArgumentError, "File does not exist: #{f}" unless File.exist?(f)
-      end
-
-      compressor = CAB::Compressor.new
-      files.each { |f| compressor.add_file(f) }
-
-      puts "Creating #{output} with #{files.size} file(s) (#{options[:compression]} compression)" if options[:verbose]
-      bytes = compressor.generate(output,
-                                  compression: options[:compression].to_sym)
-      puts "Created #{output} (#{bytes} bytes, #{files.size} files)"
-    rescue Error => e
-      abort "Error: #{e.message}"
-    end
-
-    # CHM commands
-    desc "chm-list FILE", "List contents of CHM file"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
+    # CHM legacy commands (aliases to unified commands with format override)
+    desc "chm-list FILE", "List contents of CHM file (legacy, use: list --format chm FILE)"
+    option :verbose, type: :boolean, aliases: "-v", desc: "Enable verbose output"
     def chm_list(file)
-      setup_verbose(options[:verbose])
-
-      decompressor = CHM::Decompressor.new
-      chm = decompressor.open(file)
-
-      puts "CHM File: #{chm.filename}"
-      puts "Version: #{chm.version}"
-      puts "Language: #{chm.language}"
-      puts "Chunks: #{chm.num_chunks}, Chunk Size: #{chm.chunk_size}"
-      puts "\nFiles:"
-
-      chm.all_files.each do |f|
-        section_name = f.section.id.zero? ? "Uncompressed" : "MSCompressed"
-        puts "  #{f.filename} (#{f.length} bytes, #{section_name})"
-      end
-
-      decompressor.close
-    rescue Error => e
-      abort "Error: #{e.message}"
+      run_with_format(:list, :chm, file, verbose: options[:verbose])
     end
 
-    desc "chm-extract FILE [OUTPUT_DIR]", "Extract files from CHM"
+    desc "chm-extract FILE [OUTPUT_DIR]", "Extract files from CHM (legacy, use: extract --format chm FILE)"
     option :output, type: :string, aliases: "-o", desc: "Output directory"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
+    option :verbose, type: :boolean, aliases: "-v", desc: "Enable verbose output"
     def chm_extract(file, output_dir = nil)
-      setup_verbose(options[:verbose])
-      output_dir ||= options[:output] || "."
-
-      decompressor = CHM::Decompressor.new
-      chm = decompressor.open(file)
-
-      require "fileutils"
-      FileUtils.mkdir_p(output_dir)
-
-      count = 0
-      chm.all_files.each do |f|
-        next if f.system_file?
-
-        output_path = File.join(output_dir, f.filename)
-        output_subdir = File.dirname(output_path)
-        FileUtils.mkdir_p(output_subdir)
-
-        puts "Extracting: #{f.filename}" if options[:verbose]
-        decompressor.extract(f, output_path)
-        count += 1
-      end
-
-      decompressor.close
-      puts "Extracted #{count} file(s) to #{output_dir}"
-    rescue Error => e
-      abort "Error: #{e.message}"
+      opts = { verbose: options[:verbose], output: options[:output] }
+      run_with_format(:extract, :chm, file, output_dir, **opts)
     end
 
-    desc "chm-info FILE", "Show detailed CHM file information"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
+    desc "chm-info FILE", "Show CHM file information (legacy, use: info --format chm FILE)"
+    option :verbose, type: :boolean, aliases: "-v", desc: "Enable verbose output"
     def chm_info(file)
-      setup_verbose(options[:verbose])
-
-      decompressor = CHM::Decompressor.new
-      chm = decompressor.open(file)
-
-      display_chm_info(chm)
-      decompressor.close
-    rescue Error => e
-      abort "Error: #{e.message}"
-
-      desc "chm-create OUTPUT FILES...", "Create a CHM file from HTML files"
-      option :window_bits, type: :numeric, default: 16,
-                           desc: "LZX window size (15-21)"
-      option :verbose, type: :boolean, aliases: "-v",
-                       desc: "Enable verbose output"
-      def chm_create(output, *files)
-        setup_verbose(options[:verbose])
-
-        raise ArgumentError, "No files specified" if files.empty?
-
-        files.each do |f|
-          raise ArgumentError, "File does not exist: #{f}" unless File.exist?(f)
-        end
-
-        compressor = CHM::Compressor.new
-        files.each do |f|
-          # Default to compressed section for .html, uncompressed for images
-          section = f.end_with?(".html", ".htm") ? :compressed : :uncompressed
-          compressor.add_file(f, "/#{File.basename(f)}", section: section)
-        end
-
-        if options[:verbose]
-          puts "Creating #{output} with #{files.size} file(s) (window_bits: #{options[:window_bits]})"
-        end
-        bytes = compressor.generate(output, window_bits: options[:window_bits])
-        puts "Created #{output} (#{bytes} bytes, #{files.size} files)"
-      rescue Error => e
-        abort "Error: #{e.message}"
-      end
+      run_with_format(:info, :chm, file, verbose: options[:verbose])
     end
 
-    # SZDD commands
-    desc "expand FILE [OUTPUT]",
-         "Expand SZDD compressed file (like MS-DOS EXPAND.EXE)"
+    desc "chm-create OUTPUT FILES...", "Create CHM file (legacy, use: create --format chm OUTPUT FILES...)"
+    option :window_bits, type: :numeric, default: 16, desc: "LZX window size (15-21)"
+    option :verbose, type: :boolean, aliases: "-v", desc: "Enable verbose output"
+    def chm_create(output, *files)
+      opts = { verbose: options[:verbose], window_bits: options[:window_bits], format: :chm }
+      run_dispatcher(:create, output, files, **opts)
+    end
+
+    # SZDD legacy commands
+    desc "expand FILE [OUTPUT]", "Expand SZDD file (legacy, use: extract --format szdd FILE OUTPUT)"
     option :output, type: :string, aliases: "-o", desc: "Output file path"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
+    option :verbose, type: :boolean, aliases: "-v", desc: "Enable verbose output"
     def expand(file, output = nil)
-      setup_verbose(options[:verbose])
-      output ||= options[:output]
-
-      decompressor = SZDD::Decompressor.new
-      header = decompressor.open(file)
-
-      # Auto-detect output name if not provided
-      output ||= decompressor.auto_output_filename(file, header)
-
-      puts "Expanding #{file} -> #{output}" if options[:verbose]
-      bytes = decompressor.extract(header, output)
-      decompressor.close(header)
-
-      puts "Expanded #{file} to #{output} (#{bytes} bytes)"
-    rescue Error => e
-      abort "Error: #{e.message}"
+      opts = { verbose: options[:verbose], output: options[:output], format: :szdd }
+      run_dispatcher(:extract, file, nil, **opts)
     end
 
-    desc "szdd-info FILE", "Show SZDD file information"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
+    desc "szdd-info FILE", "Show SZDD file information (legacy, use: info --format szdd FILE)"
+    option :verbose, type: :boolean, aliases: "-v", desc: "Enable verbose output"
     def szdd_info(file)
-      setup_verbose(options[:verbose])
-
-      decompressor = SZDD::Decompressor.new
-      header = decompressor.open(file)
-
-      puts "SZDD File Information"
-      puts "=" * 50
-      puts "Filename: #{file}"
-      puts "Format: #{header.format.to_s.upcase}"
-      puts "Uncompressed size: #{header.length} bytes"
-      if header.missing_char
-        puts "Missing character: '#{header.missing_char}'"
-        puts "Suggested filename: #{header.suggested_filename(File.basename(file))}"
-      end
-
-      decompressor.close(header)
-    rescue Error => e
-      abort "Error: #{e.message}"
+      run_with_format(:info, :szdd, file, verbose: options[:verbose])
     end
 
-    desc "compress FILE [OUTPUT]",
-         "Compress file to SZDD format (like MS-DOS COMPRESS.EXE)"
+    desc "compress FILE [OUTPUT]", "Compress to SZDD format (legacy, use: create --format szdd OUTPUT FILE)"
     option :output, type: :string, aliases: "-o", desc: "Output file path"
-    option :missing_char, type: :string,
-                          desc: "Missing character for filename reconstruction"
+    option :missing_char, type: :string, desc: "Missing character for filename"
     option :format, type: :string, enum: %w[normal qbasic], default: "normal",
                     desc: "SZDD format (normal or qbasic)"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
+    option :verbose, type: :boolean, aliases: "-v", desc: "Enable verbose output"
     def compress(file, output = nil)
-      setup_verbose(options[:verbose])
-      output ||= options[:output]
-
-      # Auto-generate output name: file.txt -> file.tx_
+      opts = {
+        verbose: options[:verbose],
+        output: options[:output],
+        format: options[:format] || :szdd,
+        missing_char: options[:missing_char]
+      }
+      # SZDD convention: auto-generate output name
+      output ||= opts[:output]
       if output.nil?
-        output = file.sub(/\.([^.])$/, "._")
-        # If no extension or single char extension, just append _
-        output = "#{file}_" if output == file
-      end
-
-      compressor = SZDD::Compressor.new
-
-      puts "Compressing #{file} -> #{output}" if options[:verbose]
-
-      compress_options = { format: options[:format].to_sym }
-      if options[:missing_char]
-        compress_options[:missing_char] =
-          options[:missing_char]
-      end
-
-      bytes = compressor.compress(file, output, **compress_options)
-
-      puts "Compressed #{file} to #{output} (#{bytes} bytes)"
-    rescue Error => e
-      abort "Error: #{e.message}"
-    end
-
-    # KWAJ commands
-    desc "kwaj-extract FILE [OUTPUT]", "Extract KWAJ compressed file"
-    option :output, type: :string, aliases: "-o", desc: "Output file path"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
-    def kwaj_extract(file, output = nil)
-      setup_verbose(options[:verbose])
-      output ||= options[:output]
-
-      decompressor = KWAJ::Decompressor.new
-      header = decompressor.open(file)
-
-      # Auto-detect output name if not provided
-      output ||= decompressor.auto_output_filename(file, header)
-
-      puts "Extracting #{file} -> #{output}" if options[:verbose]
-      bytes = decompressor.extract(header, file, output)
-      decompressor.close(header)
-
-      puts "Extracted #{file} to #{output} (#{bytes} bytes)"
-    rescue Error => e
-      abort "Error: #{e.message}"
-    end
-
-    desc "kwaj-info FILE", "Show KWAJ file information"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
-    def kwaj_info(file)
-      setup_verbose(options[:verbose])
-
-      decompressor = KWAJ::Decompressor.new
-      header = decompressor.open(file)
-
-      puts "KWAJ File Information"
-      puts "=" * 50
-      puts "Filename: #{file}"
-      puts "Compression: #{header.compression_name}"
-      puts "Data offset: #{header.data_offset} bytes"
-      puts "Uncompressed size: #{header.length || 'unknown'} bytes"
-      puts "Original filename: #{header.filename}" if header.filename
-      if header.extra && !header.extra.empty?
-        puts "Extra data: #{header.extra_length} bytes"
-        puts "  #{header.extra}"
-      end
-
-      decompressor.close(header)
-    rescue Error => e
-      abort "Error: #{e.message}"
-    end
-
-    desc "kwaj-compress FILE [OUTPUT]", "Compress file to KWAJ format"
-    option :output, type: :string, aliases: "-o", desc: "Output file path"
-    option :compression, type: :string, enum: %w[none xor szdd mszip],
-                         default: "szdd", desc: "Compression method"
-    option :include_length, type: :boolean,
-                            desc: "Include uncompressed length in header"
-    option :filename, type: :string,
-                      desc: "Original filename to embed in header"
-    option :extra_data, type: :string, desc: "Extra data to include in header"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
-    def kwaj_compress(file, output = nil)
-      setup_verbose(options[:verbose])
-      output ||= options[:output] || "#{file}.kwj"
-
-      compressor = KWAJ::Compressor.new
-
-      puts "Compressing #{file} -> #{output} (#{options[:compression]} compression)" if options[:verbose]
-
-      compress_options = { compression: options[:compression].to_sym }
-      if options[:include_length]
-        compress_options[:include_length] =
-          options[:include_length]
-      end
-      compress_options[:filename] = options[:filename] if options[:filename]
-      if options[:extra_data]
-        compress_options[:extra_data] =
-          options[:extra_data]
-      end
-
-      bytes = compressor.compress(file, output, **compress_options)
-
-      puts "Compressed #{file} to #{output} (#{bytes} bytes, #{options[:compression]} compression)"
-    rescue Error => e
-      abort "Error: #{e.message}"
-    end
-
-    # HLP commands
-    desc "hlp-extract FILE [OUTPUT_DIR]", "Extract HLP file"
-    option :output, type: :string, aliases: "-o", desc: "Output directory"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
-    def hlp_extract(file, output_dir = nil)
-      setup_verbose(options[:verbose])
-      output_dir ||= options[:output] || "."
-
-      decompressor = HLP::Decompressor.new
-      header = decompressor.open(file)
-
-      require "fileutils"
-      FileUtils.mkdir_p(output_dir)
-
-      puts "Extracting #{header.files.size} files from #{file}" if options[:verbose]
-      count = decompressor.extract_all(header, output_dir)
-
-      decompressor.close(header)
-      puts "Extracted #{count} file(s) to #{output_dir}"
-    rescue Error => e
-      abort "Error: #{e.message}"
-    end
-
-    desc "hlp-create OUTPUT FILES...", "Create HLP file"
-    option :compress, type: :boolean, default: true,
-                      desc: "Compress files (LZSS MODE_MSHELP)"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
-    def hlp_create(output, *files)
-      setup_verbose(options[:verbose])
-
-      raise ArgumentError, "No files specified" if files.empty?
-
-      files.each do |f|
-        raise ArgumentError, "File does not exist: #{f}" unless File.exist?(f)
-      end
-
-      compressor = HLP::Compressor.new
-      files.each do |f|
-        compressor.add_file(f, File.basename(f), compress: options[:compress])
-      end
-
-      puts "Creating #{output} with #{files.size} file(s)" if options[:verbose]
-      bytes = compressor.generate(output)
-      puts "Created #{output} (#{bytes} bytes, #{files.size} files)"
-    rescue Error => e
-      abort "Error: #{e.message}"
-    end
-
-    desc "hlp-info FILE", "Show HLP file information"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
-    def hlp_info(file)
-      setup_verbose(options[:verbose])
-
-      decompressor = HLP::Decompressor.new
-      header = decompressor.open(file)
-
-      puts "HLP File Information"
-      puts "=" * 50
-      puts "Filename: #{file}"
-      puts "Version: #{header.version}"
-      puts "Files: #{header.files.size}"
-      puts ""
-      puts "Files:"
-      header.files.each do |f|
-        compression = f.compressed? ? "LZSS" : "none"
-        puts "  #{f.filename}"
-        puts "    Uncompressed: #{f.length} bytes"
-        puts "    Compressed: #{f.compressed_length} bytes (#{compression})"
-      end
-
-      decompressor.close(header)
-    rescue Error => e
-      abort "Error: #{e.message}"
-    end
-
-    # LIT commands
-    desc "lit-extract FILE [OUTPUT_DIR]", "Extract LIT eBook file"
-    option :output, type: :string, aliases: "-o", desc: "Output directory"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
-    def lit_extract(file, output_dir = nil)
-      setup_verbose(options[:verbose])
-      output_dir ||= options[:output] || "."
-
-      decompressor = LIT::Decompressor.new
-      header = decompressor.open(file)
-
-      abort "Error: LIT file is DRM-encrypted. Decryption not yet supported." if header.encrypted?
-
-      require "fileutils"
-      FileUtils.mkdir_p(output_dir)
-
-      puts "Extracting #{header.files.size} files from #{file}" if options[:verbose]
-      count = decompressor.extract_all(header, output_dir)
-
-      decompressor.close(header)
-      puts "Extracted #{count} file(s) to #{output_dir}"
-    rescue Error => e
-      abort "Error: #{e.message}"
-    rescue NotImplementedError => e
-      abort "Error: #{e.message}"
-    end
-
-    desc "lit-create OUTPUT FILES...", "Create LIT eBook file"
-    option :compress, type: :boolean, default: true,
-                      desc: "Compress files with LZX"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
-    def lit_create(output, *files)
-      setup_verbose(options[:verbose])
-
-      raise ArgumentError, "No files specified" if files.empty?
-
-      files.each do |f|
-        raise ArgumentError, "File does not exist: #{f}" unless File.exist?(f)
-      end
-
-      compressor = LIT::Compressor.new
-      files.each do |f|
-        compressor.add_file(f, File.basename(f), compress: options[:compress])
-      end
-
-      puts "Creating #{output} with #{files.size} file(s)" if options[:verbose]
-      bytes = compressor.generate(output)
-      puts "Created #{output} (#{bytes} bytes, #{files.size} files)"
-    rescue Error => e
-      abort "Error: #{e.message}"
-    rescue NotImplementedError => e
-      abort "Error: #{e.message}"
-    end
-
-    desc "lit-info FILE", "Show LIT file information"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
-    def lit_info(file)
-      setup_verbose(options[:verbose])
-
-      decompressor = LIT::Decompressor.new
-      header = decompressor.open(file)
-
-      puts "LIT File Information"
-      puts "=" * 50
-      puts "Filename: #{file}"
-      puts "Version: #{header.version}"
-      puts "Encrypted: #{header.encrypted? ? 'Yes (DES)' : 'No'}"
-      puts "Files: #{header.files.size}"
-      puts ""
-      puts "Files:"
-      header.files.each do |f|
-        compression = f.compressed? ? "LZX" : "none"
-        encryption = f.encrypted? ? " [encrypted]" : ""
-        puts "  #{f.filename}"
-        puts "    Size: #{f.length} bytes"
-        puts "    Compression: #{compression}#{encryption}"
-      end
-
-      decompressor.close(header)
-    rescue Error => e
-      abort "Error: #{e.message}"
-    rescue NotImplementedError => e
-      abort "Error: #{e.message}"
-    end
-
-    # OAB commands
-    desc "oab-extract INPUT OUTPUT", "Extract OAB (Outlook Address Book) file"
-    option :base, type: :string, desc: "Base file for incremental patch"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
-    def oab_extract(input, output)
-      setup_verbose(options[:verbose])
-
-      decompressor = OAB::Decompressor.new
-
-      if options[:base]
-        puts "Applying patch: #{input} + #{options[:base]} -> #{output}" if options[:verbose]
-        bytes = decompressor.decompress_incremental(input, options[:base],
-                                                    output)
-        puts "Applied patch: #{input} + #{options[:base]} -> #{output} (#{bytes} bytes)"
-      else
-        puts "Extracting: #{input} -> #{output}" if options[:verbose]
-        bytes = decompressor.decompress(input, output)
-        puts "Extracted #{input} -> #{output} (#{bytes} bytes)"
-      end
-    rescue Error => e
-      abort "Error: #{e.message}"
-    end
-
-    desc "oab-create INPUT OUTPUT", "Create compressed OAB file"
-    option :base, type: :string, desc: "Base file for incremental patch"
-    option :block_size, type: :numeric, default: 32_768,
-                        desc: "Block size (default: 32KB)"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
-    def oab_create(input, output)
-      setup_verbose(options[:verbose])
-
-      compressor = OAB::Compressor.new
-
-      if options[:base]
-        puts "Creating patch: #{input} (base: #{options[:base]}) -> #{output}" if options[:verbose]
-        bytes = compressor.compress_incremental(input, options[:base], output,
-                                                block_size: options[:block_size])
-        puts "Created patch: #{output} (#{bytes} bytes)"
-      else
-        puts "Compressing: #{input} -> #{output}" if options[:verbose]
-        bytes = compressor.compress(input, output,
-                                    block_size: options[:block_size])
-        puts "Created #{output} (#{bytes} bytes)"
-      end
-    rescue Error => e
-      abort "Error: #{e.message}"
-    end
-
-    desc "oab-info FILE", "Show OAB file information"
-    option :verbose, type: :boolean, aliases: "-v",
-                     desc: "Enable verbose output"
-    def oab_info(file)
-      setup_verbose(options[:verbose])
-
-      # Read and parse header
-      io_system = System::IOSystem.new
-      handle = io_system.open(file, Constants::MODE_READ)
-
-      begin
-        header_data = io_system.read(handle, 28) # Read full patch header size
-        io_system.close(handle)
-
-        # Try to parse as full header first
-        if header_data.length >= 16
-          full_header = Binary::OABStructures::FullHeader.read(header_data[0,
-                                                                           16])
-
-          if full_header.valid?
-            puts "OAB File Information (Full)"
-            puts "=" * 50
-            puts "Filename: #{file}"
-            puts "Version: #{full_header.version_hi}.#{full_header.version_lo}"
-            puts "Block size: #{full_header.block_max} bytes"
-            puts "Target size: #{full_header.target_size} bytes"
-          elsif header_data.length >= 28
-            # Try as patch header
-            patch_header = Binary::OABStructures::PatchHeader.read(header_data)
-
-            if patch_header.valid?
-              puts "OAB File Information (Patch)"
-              puts "=" * 50
-              puts "Filename: #{file}"
-              puts "Version: #{patch_header.version_hi}.#{patch_header.version_lo}"
-              puts "Block size: #{patch_header.block_max} bytes"
-              puts "Source size: #{patch_header.source_size} bytes"
-              puts "Target size: #{patch_header.target_size} bytes"
-              puts "Source CRC: 0x#{patch_header.source_crc.to_s(16)}"
-              puts "Target CRC: 0x#{patch_header.target_crc.to_s(16)}"
-            else
-              abort "Error: Not a valid OAB file"
-            end
-          else
-            abort "Error: Not a valid OAB file"
-          end
+        ext = File.extname(file)
+        if ext.length == 2
+          base = File.basename(file, ext)
+          output = "#{base}#{ext[0]}_"
         else
-          abort "Error: File too small to be OAB"
+          output = "#{file}_"
         end
-      rescue StandardError => e
-        io_system.close(handle) if handle
-        abort "Error: #{e.message}"
+        opts[:output] = output
       end
-    rescue Error => e
-      abort "Error: #{e.message}"
+      run_dispatcher(:create, output, [file], **opts)
+    end
+
+    # KWAJ legacy commands
+    desc "kwaj-extract FILE [OUTPUT]", "Extract KWAJ file (legacy, use: extract --format kwaj FILE OUTPUT)"
+    option :output, type: :string, aliases: "-o", desc: "Output file path"
+    option :verbose, type: :boolean, aliases: "-v", desc: "Enable verbose output"
+    def kwaj_extract(file, output = nil)
+      opts = { verbose: options[:verbose], output: options[:output], format: :kwaj }
+      run_dispatcher(:extract, file, nil, **opts)
+    end
+
+    desc "kwaj-info FILE", "Show KWAJ file information (legacy, use: info --format kwaj FILE)"
+    option :verbose, type: :boolean, aliases: "-v", desc: "Enable verbose output"
+    def kwaj_info(file)
+      run_with_format(:info, :kwaj, file, verbose: options[:verbose])
+    end
+
+    desc "kwaj-compress FILE [OUTPUT]", "Compress to KWAJ format (legacy, use: create --format kwaj OUTPUT FILE)"
+    option :output, type: :string, aliases: "-o", desc: "Output file path"
+    option :compression, type: :string, enum: %w[none xor szdd mszip], default: "szdd",
+                         desc: "Compression method"
+    option :include_length, type: :boolean, desc: "Include uncompressed length"
+    option :filename, type: :string, desc: "Original filename to embed"
+    option :extra_data, type: :string, desc: "Extra data to include"
+    option :verbose, type: :boolean, aliases: "-v", desc: "Enable verbose output"
+    def kwaj_compress(file, output = nil)
+      opts = {
+        verbose: options[:verbose],
+        output: options[:output] || "#{file}.kwj",
+        format: :kwaj,
+        compression: options[:compression],
+        include_length: options[:include_length],
+        filename: options[:filename],
+        extra_data: options[:extra_data]
+      }
+      run_dispatcher(:create, opts[:output], [file], **opts)
+    end
+
+    # HLP legacy commands
+    desc "hlp-extract FILE [OUTPUT_DIR]", "Extract HLP file (legacy, use: extract --format hlp FILE)"
+    option :output, type: :string, aliases: "-o", desc: "Output directory"
+    option :verbose, type: :boolean, aliases: "-v", desc: "Enable verbose output"
+    def hlp_extract(file, output_dir = nil)
+      opts = { verbose: options[:verbose], output: options[:output], format: :hlp }
+      run_dispatcher(:extract, file, output_dir, **opts)
+    end
+
+    desc "hlp-info FILE", "Show HLP file information (legacy, use: info --format hlp FILE)"
+    option :verbose, type: :boolean, aliases: "-v", desc: "Enable verbose output"
+    def hlp_info(file)
+      run_with_format(:info, :hlp, file, verbose: options[:verbose])
+    end
+
+    desc "hlp-create OUTPUT FILES...", "Create HLP file (legacy, use: create --format hlp OUTPUT FILES...)"
+    option :compress, type: :boolean, default: true, desc: "Compress files"
+    option :format, type: :string, enum: %w[quickhelp winhelp], default: "quickhelp",
+                    desc: "HLP format variant"
+    option :verbose, type: :boolean, aliases: "-v", desc: "Enable verbose output"
+    def hlp_create(output, *files)
+      opts = {
+        verbose: options[:verbose],
+        compress: options[:compress],
+        format: options[:format] || :hlp,
+        hlp_format: options[:format]
+      }
+      run_dispatcher(:create, output, files, **opts)
+    end
+
+    # LIT legacy commands
+    desc "lit-extract FILE [OUTPUT_DIR]", "Extract LIT file (legacy, use: extract --format lit FILE)"
+    option :output, type: :string, aliases: "-o", desc: "Output directory"
+    option :verbose, type: :boolean, aliases: "-v", desc: "Enable verbose output"
+    def lit_extract(file, output_dir = nil)
+      opts = { verbose: options[:verbose], output: options[:output], format: :lit }
+      run_dispatcher(:extract, file, output_dir, **opts)
+    end
+
+    desc "lit-info FILE", "Show LIT file information (legacy, use: info --format lit FILE)"
+    option :verbose, type: :boolean, aliases: "-v", desc: "Enable verbose output"
+    def lit_info(file)
+      run_with_format(:info, :lit, file, verbose: options[:verbose])
+    end
+
+    desc "lit-create OUTPUT FILES...", "Create LIT file (legacy, use: create --format lit OUTPUT FILES...)"
+    option :compress, type: :boolean, default: true, desc: "Compress files with LZX"
+    option :language_id, type: :string, desc: "Language ID (e.g., 0x409 for English)"
+    option :verbose, type: :boolean, aliases: "-v", desc: "Enable verbose output"
+    def lit_create(output, *files)
+      opts = {
+        verbose: options[:verbose],
+        compress: options[:compress],
+        format: :lit,
+        language_id: parse_language_id(options[:language_id])
+      }
+      run_dispatcher(:create, output, files, **opts)
+    end
+
+    # OAB legacy commands
+    desc "oab-extract INPUT OUTPUT", "Extract OAB file (legacy, use: extract --format oab INPUT --output OUTPUT)"
+    option :base, type: :string, desc: "Base file for incremental patch"
+    option :verbose, type: :boolean, aliases: "-v", desc: "Enable verbose output"
+    def oab_extract(input, output)
+      opts = {
+        verbose: options[:verbose],
+        output: output,
+        format: :oab,
+        base_file: options[:base]
+      }
+      run_dispatcher(:extract, input, nil, **opts)
+    end
+
+    desc "oab-info FILE", "Show OAB file information (legacy, use: info --format oab FILE)"
+    option :verbose, type: :boolean, aliases: "-v", desc: "Enable verbose output"
+    def oab_info(file)
+      run_with_format(:info, :oab, file, verbose: options[:verbose])
+    end
+
+    desc "oab-create INPUT OUTPUT", "Create OAB file (legacy, use: create --format oab OUTPUT INPUT)"
+    option :base, type: :string, desc: "Base file for incremental patch"
+    option :block_size, type: :numeric, default: 32_768, desc: "Block size"
+    option :verbose, type: :boolean, aliases: "-v", desc: "Enable verbose output"
+    def oab_create(input, output)
+      opts = {
+        verbose: options[:verbose],
+        format: :oab,
+        block_size: options[:block_size],
+        base_file: options[:base]
+      }
+      run_dispatcher(:create, output, [input], **opts)
     end
 
     desc "version", "Show version information"
@@ -689,88 +346,113 @@ module Cabriolet
 
     private
 
+    # Run command with unified dispatcher
+    #
+    # @param command [Symbol] Command to execute
+    # @param file [String] File path
+    # @param args [Array] Additional arguments
+    def run_dispatcher(command, file, *args, **options)
+      setup_verbose(options[:verbose])
+
+      dispatcher = Commands::CommandDispatcher.new(**options)
+      dispatcher.dispatch(command, file, *args, **options)
+    rescue Cabriolet::Error => e
+      abort "Error: #{e.message}"
+    end
+
+    # Run command with explicit format override
+    #
+    # @param command [Symbol] Command to execute
+    # @param format [Symbol] Format to force
+    # @param file [String] File path
+    # @param args [Array] Additional arguments
+    def run_with_format(command, format, file, *args, **options)
+      setup_verbose(options[:verbose])
+      options[:format] = format.to_s
+
+      dispatcher = Commands::CommandDispatcher.new(**options)
+      dispatcher.dispatch(command, file, *args, **options)
+    rescue Cabriolet::Error => e
+      abort "Error: #{e.message}"
+    end
+
+    # Detect format from output file extension
+    #
+    # @param output [String] Output file path
+    # @param manual_format [String, nil] Manually specified format
+    # @return [Symbol] Detected format symbol
+    def detect_format_from_output(output, manual_format)
+      return manual_format.to_sym if manual_format
+
+      ext = File.extname(output).downcase
+      format_map = {
+        ".cab" => :cab,
+        ".chm" => :chm,
+        ".hlp" => :hlp,
+        ".lit" => :lit,
+        ".oab" => :oab,
+        "._" => :szdd, # SZDD ends with underscore
+        ".kwj" => :kwaj
+      }
+
+      # Handle SZDD specially (ends with _)
+      if output.end_with?("_")
+        return :szdd
+      end
+
+      format_map[ext] || :cab # Default to CAB
+    end
+
+    # Normalize create options for different formats
+    #
+    # @param options [Hash] Raw options from Thor
+    # @return [Hash] Normalized options
+    def normalize_create_options(options)
+      normalized = {}
+      options.each do |key, value|
+        next if value.nil?
+
+        case key.to_s
+        when "szdd_format"
+          normalized[:szdd_format] = value.to_sym
+        when "kwaj_compression"
+          normalized[:compression] = value
+        when "kwaj_filename"
+          normalized[:filename] = value
+        when "hlp_format"
+          normalized[:hlp_format] = value.to_sym
+        when "language_id"
+          normalized[:language_id] = parse_language_id(value)
+        when "lit_version"
+          normalized[:version] = value
+        when "compress"
+          # Keep as-is for HLP/LIT
+          normalized[:compress] = value
+        else
+          normalized[key.to_sym] = value
+        end
+      end
+      normalized
+    end
+
+    # Parse language ID from string
+    #
+    # @param value [String, Integer, nil] Language ID value
+    # @return [Integer] Parsed language ID
+    def parse_language_id(value)
+      return 0x409 if value.nil? # Default to English
+
+      if value.is_a?(Integer)
+        value
+      elsif value.start_with?("0x")
+        value.to_i(16)
+      else
+        value.to_i
+      end
+    end
+
     def setup_verbose(verbose)
       Cabriolet.verbose = verbose
-    end
-
-    def display_cabinet_info(cabinet)
-      puts "Cabinet Information"
-      puts "=" * 50
-      puts "Filename: #{cabinet.filename}"
-      puts "Set ID: #{cabinet.set_id}"
-      puts "Set Index: #{cabinet.set_index}"
-      puts "Size: #{cabinet.length} bytes"
-      puts "Folders: #{cabinet.folder_count}"
-      puts "Files: #{cabinet.file_count}"
-      puts ""
-
-      puts "Folders:"
-      cabinet.folders.each_with_index do |folder, idx|
-        puts "  [#{idx}] #{folder.compression_name} (#{folder.num_blocks} blocks)"
-      end
-      puts ""
-
-      puts "Files:"
-      cabinet.files.each do |f|
-        puts "  #{f.filename}"
-        puts "    Size: #{f.length} bytes"
-        puts "    Modified: #{f.modification_time}" if f.modification_time
-        puts "    Attributes: #{file_attributes(f)}"
-      end
-    end
-
-    def file_attributes(file)
-      attrs = []
-      attrs << "readonly" if file.readonly?
-      attrs << "hidden" if file.hidden?
-      attrs << "system" if file.system?
-      attrs << "archive" if file.archived?
-      attrs << "executable" if file.executable?
-      attrs.empty? ? "none" : attrs.join(", ")
-    end
-
-    def display_chm_info(chm)
-      puts "CHM File Information"
-      puts "=" * 50
-      puts "Filename: #{chm.filename}"
-      puts "Version: #{chm.version}"
-      puts "Language ID: #{chm.language}"
-      puts "Timestamp: #{chm.timestamp}"
-      puts "Size: #{chm.length} bytes"
-      puts ""
-      puts "Directory:"
-      puts "  Offset: #{chm.dir_offset}"
-      puts "  Chunks: #{chm.num_chunks}"
-      puts "  Chunk Size: #{chm.chunk_size}"
-      puts "  First PMGL: #{chm.first_pmgl}"
-      puts "  Last PMGL: #{chm.last_pmgl}"
-      puts ""
-      puts "Sections:"
-      puts "  Section 0 (Uncompressed): offset #{chm.sec0.offset}"
-      puts "  Section 1 (MSCompressed): LZX compression"
-      puts ""
-
-      regular_files = chm.all_files
-      system_files = chm.all_sysfiles
-
-      puts "Files: #{regular_files.length} regular, #{system_files.length} system"
-      puts ""
-      puts "Regular Files:"
-      regular_files.each do |f|
-        section_name = f.section.id.zero? ? "Sec0" : "Sec1"
-        puts "  #{f.filename}"
-        puts "    Size: #{f.length} bytes (#{section_name})"
-      end
-
-      return unless system_files.any?
-
-      puts ""
-      puts "System Files:"
-      system_files.each do |f|
-        section_name = f.section.id.zero? ? "Sec0" : "Sec1"
-        puts "  #{f.filename}"
-        puts "    Size: #{f.length} bytes (#{section_name})"
-      end
     end
   end
 end

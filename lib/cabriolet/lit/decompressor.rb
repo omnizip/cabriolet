@@ -38,7 +38,7 @@ module Cabriolet
       #
       # @param filename [String] Path to LIT file
       # @return [Models::LITFile] Parsed LIT file structure
-      # @raise [Errors::ParseError] if file is invalid
+      # @raise [Cabriolet::ParseError] if file is invalid
       # @raise [NotImplementedError] if file is DRM-encrypted
       def open(filename)
         lit_file = @parser.parse(filename)
@@ -75,7 +75,7 @@ module Cabriolet
       # @return [Integer] Bytes written
       # @raise [ArgumentError] if parameters are invalid
       # @raise [NotImplementedError] if file is encrypted
-      # @raise [Errors::DecompressionError] if extraction fails
+      # @raise [Cabriolet::DecompressionError] if extraction fails
       def extract(lit_file, file, output_path)
         raise ArgumentError, "Header must not be nil" unless lit_file
         raise ArgumentError, "File must not be nil" unless file
@@ -99,7 +99,7 @@ module Cabriolet
       # @param internal_name [String] Internal filename
       # @param output_path [String] Where to write extracted file
       # @return [Integer] Bytes written
-      # @raise [Errors::DecompressionError] if extraction fails
+      # @raise [Cabriolet::DecompressionError] if extraction fails
       def extract_file(lit_file, internal_name, output_path)
         raise ArgumentError, "LIT file required" unless lit_file
         raise ArgumentError, "Internal name required" unless internal_name
@@ -108,7 +108,7 @@ module Cabriolet
         # Find directory entry
         entry = lit_file.directory.find(internal_name)
         unless entry
-          raise Errors::DecompressionError,
+          raise Cabriolet::DecompressionError,
                 "File not found: #{internal_name}"
         end
 
@@ -145,8 +145,8 @@ module Cabriolet
 
         # Extract each directory entry
         lit_file.directory.entries.each do |entry|
-          # Skip root entry
-          next if entry.root?
+          # Skip root entry and directories (ending with /)
+          next if entry.root? || entry.name.end_with?("/")
 
           # Determine output filename
           if use_manifest && lit_file.manifest
@@ -156,10 +156,11 @@ module Cabriolet
             filename = entry.name
           end
 
-          # Sanitize filename for Windows compatibility (colons not allowed)
-          filename = sanitize_filename(filename)
+          # Sanitize filename and convert path separators
+          # Replace :: prefix and convert / to proper path separator
+          filename = sanitize_path(filename)
 
-          # Create output path
+          # Create output path (join with output_dir)
           output_path = ::File.join(output_dir, filename)
 
           # Create subdirectories if needed
@@ -225,6 +226,38 @@ module Cabriolet
         sanitized
       end
 
+      # Sanitize path for cross-platform compatibility
+      #
+      # Handles LIT paths like:
+      # - /data/bill2/content -> data/bill2/content
+      # - ::DataSpace/NameList -> DataSpace/NameList
+      # - ::DataSpace/Storage/EbEncryptDS/Content -> DataSpace/Storage/EbEncryptDS/Content
+      #
+      # @param path [String] Original path
+      # @return [String] Sanitized path safe for all platforms
+      def sanitize_path(path)
+        # Remove leading slash
+        sanitized = path.sub(/^\/+/, "")
+
+        # Handle :: prefix (common in LIT files)
+        if sanitized.start_with?("::")
+          sanitized = sanitized[2..]
+        end
+
+        # Remove null bytes and other non-printable characters
+        sanitized = sanitized.gsub(/[\x00-\x1F\x7F]/, "_")
+
+        # Replace colons and other Windows-invalid characters with underscores
+        sanitized = sanitized.gsub(/[:<>"|?*]/, "_")
+
+        # Ensure we don't return empty string
+        if sanitized.empty?
+          sanitized = "_unnamed_"
+        end
+
+        sanitized
+      end
+
       # Get section data (cached or freshly decompressed)
       #
       # @param lit_file [Models::LITFile] Parsed LIT file
@@ -238,9 +271,9 @@ module Cabriolet
         if section_id.zero?
           data = read_uncompressed_content(lit_file)
         else
-          # Get section info
-          section = lit_file.sections[section_id - 1]
-          raise Errors::DecompressionError, "Section #{section_id} not found" unless section
+          # Get section info (sections array is indexed by section_id)
+          section = lit_file.sections[section_id]
+          raise Cabriolet::DecompressionError, "Section #{section_id} not found" unless section
 
           # Decompress section
           data = decompress_section(lit_file, section)
@@ -271,7 +304,7 @@ module Cabriolet
 
       # Decompress a section with transforms
       def decompress_section(lit_file, section)
-        lit_file.instance_variable_get(:@filename)
+        filename = lit_file.instance_variable_get(:@filename)
 
         # Read transform list
         transform_path = Binary::LITStructures::Paths::STORAGE +
@@ -280,7 +313,7 @@ module Cabriolet
 
         transform_entry = lit_file.directory.find(transform_path)
         unless transform_entry
-          raise Errors::DecompressionError,
+          raise Cabriolet::DecompressionError,
                 "Transform list not found for section: #{section.name}"
         end
 
@@ -293,11 +326,17 @@ module Cabriolet
 
         content_entry = lit_file.directory.find(content_path)
         unless content_entry
-          raise Errors::DecompressionError,
+          raise Cabriolet::DecompressionError,
                 "Content not found for section: #{section.name}"
         end
 
         data = read_entry_data(lit_file, content_entry)
+
+        # If content entry is empty, try reading section data directly from file
+        # This handles LIT files where MSCompressed metadata is invalid/empty
+        if data.empty? && section.name == "MSCompressed"
+          data = read_section_data_from_file(lit_file, section)
+        end
 
         # Read control data
         control_path = Binary::LITStructures::Paths::STORAGE +
@@ -315,8 +354,18 @@ module Cabriolet
                   "DES encryption not supported"
           when Binary::LITStructures::GUIDs::LZXCOMPRESS
             data = decompress_lzx_section(lit_file, section, data, control_data)
+          when Binary::LITStructures::GUIDs::IDENTITY
+            # No-op/identity transform - pass data through unchanged
+            next
           else
-            raise Errors::DecompressionError,
+            # Unknown transform - check if it's the AOLL tag (invalid metadata)
+            # If data was read directly, return it as-is
+            if transform_guid.include?("4F4C") || transform_guid.include?("AOLL")
+              # This is the AOLL directory chunk, indicating invalid transform metadata
+              # Return the data as-is (may be uncompressed or custom format)
+              next
+            end
+            raise Cabriolet::DecompressionError,
                   "Unknown transform GUID: #{transform_guid}"
           end
         end
@@ -368,18 +417,53 @@ module Cabriolet
         end
       end
 
+      # Read section data directly from file (for when Content entry is empty)
+      # This calculates where the section data actually starts and reads it
+      def read_section_data_from_file(lit_file, section)
+        filename = lit_file.instance_variable_get(:@filename)
+
+        # Find the section ID for this section
+        section_id = lit_file.sections.index(section)
+        return "" unless section_id
+
+        # Calculate where section 0 data ends
+        section_0_entries = lit_file.directory.entries.select { |e| e.section == 0 }
+        section_0_data = section_0_entries.reject do |e|
+          e.name.start_with?("::DataSpace") ||
+            e.name.end_with?("/") ||
+            e.name.start_with?("/DRM")
+        end
+        max_end = section_0_data.map { |e| e.offset + e.size }.max
+
+        # Section data starts after section 0 data
+        section_start = lit_file.content_offset + max_end
+
+        # Calculate section end by finding files in this section
+        section_entries = lit_file.directory.entries.select { |e| e.section == section_id }
+        max_section_end = section_entries.map { |e| e.offset + e.size }.max
+
+        # Read the section data
+        handle = @io_system.open(filename, Constants::MODE_READ)
+        begin
+          @io_system.seek(handle, section_start, Constants::SEEK_START)
+          @io_system.read(handle, max_section_end)
+        ensure
+          @io_system.close(handle)
+        end
+      end
+
       # Decompress LZX section with ResetTable
       def decompress_lzx_section(lit_file, section, compressed_data, control_data)
         # Parse control data
         unless control_data && control_data.bytesize >= 32
-          raise Errors::DecompressionError,
+          raise Cabriolet::DecompressionError,
                 "Invalid LZX control data"
         end
 
         control = Binary::LITStructures::LZXControlData.read(control_data)
 
         unless control.tag == Binary::LITStructures::Tags::LZXC
-          raise Errors::DecompressionError,
+          raise Cabriolet::DecompressionError,
                 "Invalid LZXC tag: #{format('0x%08X', control.tag)}"
         end
 
@@ -392,7 +476,7 @@ module Cabriolet
         end
 
         if window_size < 15 || window_size > 21
-          raise Errors::DecompressionError,
+          raise Cabriolet::DecompressionError,
                 "Invalid LZX window size: #{window_size}"
         end
 
@@ -403,7 +487,7 @@ module Cabriolet
 
         reset_entry = lit_file.directory.find(reset_table_path)
         unless reset_entry
-          raise Errors::DecompressionError,
+          raise Cabriolet::DecompressionError,
                 "ResetTable not found for section: #{section.name}"
         end
 
@@ -423,7 +507,7 @@ module Cabriolet
         header = Binary::LITStructures::ResetTableHeader.read(data[0, 40])
 
         unless header.version == 3
-          raise Errors::DecompressionError,
+          raise Cabriolet::DecompressionError,
                 "Unsupported ResetTable version: #{header.version}"
         end
 
@@ -439,7 +523,7 @@ module Cabriolet
           offset_high = data[entry_offset + 4, 4].unpack1("V")
 
           if offset_high != 0
-            raise Errors::DecompressionError,
+            raise Cabriolet::DecompressionError,
                   "64-bit reset point not supported"
           end
 

@@ -59,7 +59,18 @@ RSpec.describe Cabriolet::Models::SZDDHeader do
           missing_char: "t",
         )
 
-        expect(header.suggested_filename("file.tx_")).to eq("file.txt")
+        expect(header.suggested_filename("file.tx_")).to eq("file.txT")
+      end
+
+      it "uppercase the missing character for DOS filenames" do
+        # Real SZDD files have lowercase missing_char in header
+        # but DOS filenames are uppercase (e.g., .EXE, .HLP, .DLL)
+        header = described_class.new(
+          format: described_class::FORMAT_NORMAL,
+          missing_char: "p",  # lowercase in header
+        )
+
+        expect(header.suggested_filename("TBAVWIN.HL_")).to eq("TBAVWIN.HLP")
       end
 
       it "handles various file extensions" do
@@ -68,7 +79,7 @@ RSpec.describe Cabriolet::Models::SZDDHeader do
           missing_char: "l",
         )
 
-        expect(header.suggested_filename("setup.dl_")).to eq("setup.dll")
+        expect(header.suggested_filename("setup.dl_")).to eq("setup.dlL")
       end
     end
 

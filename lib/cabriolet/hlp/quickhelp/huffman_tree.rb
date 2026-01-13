@@ -78,10 +78,12 @@ module Cabriolet
               child0 = node_value / 2
               child1 = i + 1
 
-              unless child1 < child0 && child0 < n
-                raise Cabriolet::ParseError, "Invalid Huffman tree: invalid child node location"
+              # Validate child indices are within bounds
+              unless child0 < n && child1 < n
+                raise Cabriolet::ParseError, "Invalid Huffman tree: invalid child node location (child0=#{child0}, child1=#{child1}, n=#{n})"
               end
 
+              # Check for cycles by verifying left child hasn't been assigned yet
               if !nodes[child0].nil? && nodes[child0].left_child
                 raise Cabriolet::ParseError, "Invalid Huffman tree: cycle detected"
               end
