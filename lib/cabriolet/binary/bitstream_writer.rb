@@ -85,17 +85,14 @@ module Cabriolet
           return if @bits_in_buffer.zero?
 
           padding = (16 - @bits_in_buffer) % 16
-          if padding.positive?
-            write_bits(0, padding)
-          end
         else
           # LSB mode: align to 8-bit boundary
           return if @bits_accumulated.zero?
 
           padding = (8 - @bits_accumulated) % 8
-          if padding.positive?
-            write_bits(0, padding)
-          end
+        end
+        if padding.positive?
+          write_bits(0, padding)
         end
       end
 
@@ -134,7 +131,11 @@ module Cabriolet
       def write_byte(byte)
         data = [byte].pack("C")
         # DEBUG
-        $stderr.puts "DEBUG write_byte: pos=#{@bits_in_buffer} byte=#{byte} (#{byte.to_s(2).rjust(8, '0')})" if ENV['DEBUG_BITSTREAM']
+        if ENV["DEBUG_BITSTREAM"]
+          warn "DEBUG write_byte: pos=#{@bits_in_buffer} byte=#{byte} (#{byte.to_s(2).rjust(
+            8, '0'
+          )})"
+        end
         @io_system.write(@handle, data)
       end
 

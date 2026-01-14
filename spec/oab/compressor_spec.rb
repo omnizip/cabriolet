@@ -242,7 +242,7 @@ RSpec.describe Cabriolet::OAB::Compressor do
         Dir.mktmpdir do |tmpdir|
           input_file = File.join(tmpdir, "small.dat")
           output_oab = File.join(tmpdir, "small.oab")
-          extracted = File.join(tmpdir, "extracted.dat")
+          File.join(tmpdir, "extracted.dat")
 
           original_data = "Small"
           File.write(input_file, original_data)
@@ -271,12 +271,5 @@ RSpec.describe Cabriolet::OAB::Compressor do
         end
       end
     end
-  end
-
-  describe "integration with decompressor" do
-    # NOTE: LZX round-trip tests are pending due to VERBATIM tree encoding issues.
-    # The compressor uses UNCOMPRESSED blocks which cannot be properly decompressed
-    # for round-trip verification. Full implementation requires fixing LZX VERBATIM
-    # tree encoding in lib/cabriolet/compressors/lzx.rb.
   end
 end

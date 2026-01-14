@@ -45,7 +45,7 @@ module Cabriolet
       def decompress(bytes = nil)
         bytes_written = 0
         # Only enforce limit if bytes is a positive integer
-        enforce_limit = bytes && bytes.positive?
+        enforce_limit = bytes&.positive?
 
         loop do
           # Check if we've reached the output byte limit (only when limit is enforced)

@@ -205,7 +205,7 @@ module Cabriolet
           input_handle,
           output_handle,
           @buffer_size,
-          mode: Decompressors::LZSS::MODE_QBASIC
+          mode: Decompressors::LZSS::MODE_QBASIC,
         )
         decompressor.decompress(0)
       end
@@ -234,7 +234,7 @@ module Cabriolet
           @io_system,
           input_handle,
           output_handle,
-          @buffer_size
+          @buffer_size,
         )
         decompressor.decompress(0)
       end

@@ -158,7 +158,9 @@ RSpec.describe Cabriolet::LIT::Compressor do
         expect(extracted_content1).to eq("Hello World from LIT compression!")
 
         # Find and extract test2.html
-        entry2 = lit_header.directory.entries.find { |e| e.name == "test2.html" }
+        entry2 = lit_header.directory.entries.find do |e|
+          e.name == "test2.html"
+        end
         expect(entry2).not_to be_nil
 
         output2 = File.join(output_dir, "test2.html")

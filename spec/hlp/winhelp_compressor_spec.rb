@@ -111,7 +111,8 @@ RSpec.describe Cabriolet::HLP::WinHelp::Compressor do
           compressor.generate(file.path, version: :winhelp3)
 
           # Parse and verify
-          decompressor = Cabriolet::HLP::WinHelp::Decompressor.new(file.path, io_system)
+          decompressor = Cabriolet::HLP::WinHelp::Decompressor.new(file.path,
+                                                                   io_system)
           header = decompressor.parse
 
           expect(header.internal_filenames).to include("|SYSTEM", "|TOPIC")
@@ -149,7 +150,10 @@ RSpec.describe Cabriolet::HLP::WinHelp::Compressor do
       it "raises error when no files added" do
         file = Tempfile.new(["empty", ".hlp"])
         begin
-          expect { compressor.generate(file.path) }.to raise_error(ArgumentError, /No internal files/)
+          expect do
+            compressor.generate(file.path)
+          end.to raise_error(ArgumentError,
+                             /No internal files/)
         ensure
           file.unlink
         end
@@ -179,7 +183,8 @@ RSpec.describe Cabriolet::HLP::WinHelp::Compressor do
           compressor.generate(file.path)
 
           # Parse it back
-          decompressor = Cabriolet::HLP::WinHelp::Decompressor.new(file.path, io_system)
+          decompressor = Cabriolet::HLP::WinHelp::Decompressor.new(file.path,
+                                                                   io_system)
           header = decompressor.parse
 
           expect(header.version).to eq(:winhelp3)

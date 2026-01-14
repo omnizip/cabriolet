@@ -56,9 +56,12 @@ module Cabriolet
         end
 
         # Check GUIDs
-        unless header.guid1 == GUID1 && header.guid2 == GUID2
+        # Note: Some CHM files have both GUIDs set to GUID1 (unusual but valid)
+        # Standard files have GUID1 and GUID2 as expected
+        # We validate that guid2 matches either GUID1 or GUID2
+        unless [GUID1, GUID2].include?(header.guid2)
           raise SignatureError,
-                "Invalid CHM GUIDs"
+                "Invalid CHM GUIDs (guid2 should match CHM format GUID)"
         end
 
         @chm.version = header.version

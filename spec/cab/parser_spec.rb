@@ -124,8 +124,13 @@ RSpec.describe Cabriolet::CAB::Parser do
       describe "compression methods" do
         subject(:folders) { parsed.folders }
 
-        it { is_expected.to all(have_attributes(compression_method: be_a(Integer))) }
-        it { is_expected.to all(have_attributes(compression_name: be_a(String))) }
+        it {
+          expect(subject).to all(have_attributes(compression_method: be_a(Integer)))
+        }
+
+        it {
+          expect(subject).to all(have_attributes(compression_name: be_a(String)))
+        }
       end
     end
 
@@ -169,8 +174,9 @@ RSpec.describe Cabriolet::CAB::Parser do
   end
 
   describe "file attributes" do
-    let(:fixture) { Fixtures.for(:cab).path(:basic) }
     subject(:parsed) { parser.parse(fixture) }
+
+    let(:fixture) { Fixtures.for(:cab).path(:basic) }
 
     it "parses file attributes" do
       parsed.files.each do |file|
@@ -180,8 +186,9 @@ RSpec.describe Cabriolet::CAB::Parser do
   end
 
   describe "folder index handling" do
-    let(:fixture) { Fixtures.for(:cab).path(:basic) }
     subject(:parsed) { parser.parse(fixture) }
+
+    let(:fixture) { Fixtures.for(:cab).path(:basic) }
 
     it "has valid folder indices" do
       parsed.files.each do |file|

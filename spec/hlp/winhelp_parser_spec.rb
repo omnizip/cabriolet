@@ -24,7 +24,7 @@ RSpec.describe Cabriolet::HLP::WinHelp::Parser do
   describe "WinHelp 3.x parsing" do
     let(:winhelp3_data) do
       # WinHelp 3.x file header (28 bytes)
-      data = String.new
+      data = +""
       data << [0x35F3].pack("v")      # Magic number
       data << [0x0001].pack("v")      # Unknown/version
       data << [0x001C].pack("V")      # Directory offset (after header)
@@ -73,7 +73,9 @@ RSpec.describe Cabriolet::HLP::WinHelp::Parser do
         file.write(invalid_data)
         file.close
 
-        expect { parser.parse(file.path) }.to raise_error(Cabriolet::ParseError, /magic/)
+        expect do
+          parser.parse(file.path)
+        end.to raise_error(Cabriolet::ParseError, /magic/)
       ensure
         file.unlink
       end
@@ -82,13 +84,35 @@ RSpec.describe Cabriolet::HLP::WinHelp::Parser do
 
   describe "WinHelp 4.x parsing" do
     let(:winhelp4_data) do
-      # WinHelp 4.x file header (32 bytes)
-      data = String.new
+      # WinHelp 4.x file header (32 bytes) + minimal directory
+      data = +""
       data << [0x00003F5F].pack("V")  # Magic number (4 bytes)
       data << [0x00000020].pack("V")  # Directory offset (after header)
       data << [0x00000000].pack("V")  # Free list offset
       data << [0x00000200].pack("V")  # File size (512 bytes)
       data << ("\x00" * 16)           # Reserved
+
+      # WinHelp 4.x directory starts at offset 32 (0x20)
+      # FILEHEADER (9 bytes)
+      data << [0x0000].pack("v")      # Unknown (2 bytes)
+      data << [0x0000].pack("v")      # Unknown (2 bytes)
+      data << [0x0000].pack("v")      # Unknown (2 bytes)
+      data << [0x0000].pack("S")      # Free list index (2 bytes)
+      data << [0x00].pack("C")        # Flags (1 byte)
+
+      # BTREEHEADER (38 bytes) - matches WinHelpBTreeHeader structure
+      data << [0x293B].pack("v")      # B+ tree magic (2 bytes)
+      data << [0x0000].pack("v")      # Flags (2 bytes)
+      data << [0x0800].pack("v")      # Page size (2048 bytes) (2 bytes)
+      data << ("\x00" * 16) # Structure (16 bytes)
+      data << [0x0000].pack("s")      # Must be zero (2 bytes)
+      data << [0x0000].pack("s")      # Page splits (2 bytes)
+      data << [0x0000].pack("s")      # Root page (2 bytes)
+      data << [0xFFFF].pack("s")      # Must be -1 (2 bytes)
+      data << [0x0001].pack("s")      # Total pages (2 bytes)
+      data << [0x0001].pack("s")      # Number of levels (2 bytes)
+      data << [0x0000].pack("V")      # Total B+ tree entries (4 bytes)
+
       data
     end
 
@@ -126,7 +150,7 @@ RSpec.describe Cabriolet::HLP::WinHelp::Parser do
   describe "directory parsing" do
     it "parses internal file directory" do
       # Create WinHelp 3.x file with directory
-      data = String.new
+      data = +""
       data << [0x35F3].pack("v")      # Magic
       data << [0x0001].pack("v")      # Unknown
       data << [0x001C].pack("V")      # Directory offset
@@ -148,7 +172,7 @@ RSpec.describe Cabriolet::HLP::WinHelp::Parser do
       data << "\x00"                  # Alignment padding to even boundary
 
       # End of directory
-      data << [0x0000].pack("V")      # Zero size = end
+      data << [0x0000].pack("V") # Zero size = end
 
       file = Tempfile.new(["winhelp_dir", ".hlp"])
       begin
@@ -174,10 +198,10 @@ RSpec.describe Cabriolet::HLP::WinHelp::Parser do
 
     it "handles empty directory" do
       # WinHelp file with no directory (offset = 0)
-      data = String.new
+      data = +""
       data << [0x35F3].pack("v")
       data << [0x0001].pack("v")
-      data << [0x0000].pack("V")      # Directory offset = 0 (none)
+      data << [0x0000].pack("V") # Directory offset = 0 (none)
       data << [0x0000].pack("V")
       data << [0x001C].pack("V")
       data << ("\x00" * 12)
@@ -199,7 +223,7 @@ RSpec.describe Cabriolet::HLP::WinHelp::Parser do
     it "raises error for file too small" do
       file = Tempfile.new(["tiny", ".hlp"])
       begin
-        file.write("AB")  # Only 2 bytes
+        file.write("AB") # Only 2 bytes
         file.close
 
         expect { parser.parse(file.path) }.to raise_error(Cabriolet::ParseError)
@@ -209,13 +233,15 @@ RSpec.describe Cabriolet::HLP::WinHelp::Parser do
     end
 
     it "raises error for invalid magic number" do
-      data = "\xFF\xFF" + ("\x00" * 26)
+      data = "\xFF\xFF#{"\x00" * 26}"
       file = Tempfile.new(["invalid_magic", ".hlp"])
       begin
         file.write(data)
         file.close
 
-        expect { parser.parse(file.path) }.to raise_error(Cabriolet::ParseError, /magic/)
+        expect do
+          parser.parse(file.path)
+        end.to raise_error(Cabriolet::ParseError, /magic/)
       ensure
         file.unlink
       end

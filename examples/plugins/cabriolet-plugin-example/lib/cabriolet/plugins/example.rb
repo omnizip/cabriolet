@@ -62,13 +62,13 @@ module Cabriolet
       def setup
         # Register ROT13 compressor
         register_algorithm(:rot13, ROT13Compressor,
-                          category: :compressor,
-                          priority: 0)
+                           category: :compressor,
+                           priority: 0)
 
         # Register ROT13 decompressor
         register_algorithm(:rot13, ROT13Decompressor,
-                          category: :decompressor,
-                          priority: 0)
+                           category: :decompressor,
+                           priority: 0)
 
         puts "ExamplePlugin: Registered ROT13 algorithms" if @verbose
       end
@@ -184,7 +184,7 @@ module Cabriolet
           remaining = bytes
 
           # Read and transform data in chunks
-          while remaining > 0
+          while remaining.positive?
             chunk_size = [@buffer_size, remaining].min
             chunk = @input.read(chunk_size)
             break if chunk.nil? || chunk.empty?

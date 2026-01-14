@@ -20,7 +20,7 @@ module Cabriolet
       # @param file [String] Path to the SZDD file
       # @param options [Hash] Additional options (unused)
       # @return [void]
-      def list(file, options = {})
+      def list(file, _options = {})
         validate_file_exists(file)
 
         decompressor = Decompressor.new
@@ -73,14 +73,24 @@ module Cabriolet
       # @raise [ArgumentError] if no file specified or multiple files
       def create(output, files = [], options = {})
         raise ArgumentError, "No file specified" if files.empty?
-        raise ArgumentError, "SZDD format supports only one file at a time" if files.size > 1
+
+        if files.size > 1
+          raise ArgumentError,
+                "SZDD format supports only one file at a time"
+        end
 
         file = files.first
-        raise ArgumentError, "File does not exist: #{file}" unless File.exist?(file)
+        unless File.exist?(file)
+          raise ArgumentError,
+                "File does not exist: #{file}"
+        end
 
         format = parse_format_option(options[:szdd_format])
         compress_options = { format: format }
-        compress_options[:missing_char] = options[:missing_char] if options[:missing_char]
+        if options[:missing_char]
+          compress_options[:missing_char] =
+            options[:missing_char]
+        end
 
         # Auto-generate output name if not provided
         if output.nil?
@@ -100,7 +110,7 @@ module Cabriolet
       # @param file [String] Path to the SZDD file
       # @param options [Hash] Additional options (unused)
       # @return [void]
-      def info(file, options = {})
+      def info(file, _options = {})
         validate_file_exists(file)
 
         decompressor = Decompressor.new
@@ -118,7 +128,7 @@ module Cabriolet
       # @param file [String] Path to the SZDD file
       # @param options [Hash] Additional options (unused)
       # @return [void]
-      def test(file, options = {})
+      def test(file, _options = {})
         validate_file_exists(file)
 
         decompressor = Decompressor.new

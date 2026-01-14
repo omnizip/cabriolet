@@ -244,7 +244,10 @@ module Cabriolet
           # Calculate position in window
           window_pos = @window.bytesize - offset
 
-          raise Cabriolet::DecompressionError, "Invalid offset: #{offset}" if window_pos.negative?
+          if window_pos.negative?
+            raise Cabriolet::DecompressionError,
+                  "Invalid offset: #{offset}"
+          end
 
           # Copy bytes from window
           length.times do

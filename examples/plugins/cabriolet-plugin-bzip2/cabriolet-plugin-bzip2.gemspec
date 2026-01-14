@@ -22,4 +22,5 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency "cabriolet", "~> 0.1"
+  spec.metadata["rubygems_mfa_required"] = "true"
 end

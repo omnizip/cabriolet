@@ -23,9 +23,9 @@ RSpec.describe Cabriolet::CLI, "HLP commands" do
     end
 
     context "with non-existent file" do
-      it "exits with error" do
+      it "raises ArgumentError" do
         expect { invoke_command(:hlp_extract, "/nonexistent/file.hlp") }
-          .to raise_error(SystemExit)
+          .to raise_error(ArgumentError)
       end
     end
   end
@@ -36,9 +36,9 @@ RSpec.describe Cabriolet::CLI, "HLP commands" do
     end
 
     context "with non-existent file" do
-      it "exits with error" do
+      it "raises ArgumentError" do
         expect { invoke_command(:hlp_info, "/nonexistent/file.hlp") }
-          .to raise_error(SystemExit)
+          .to raise_error(ArgumentError)
       end
     end
 
@@ -120,7 +120,9 @@ RSpec.describe Cabriolet::CLI, "HLP commands" do
         Dir.mktmpdir do |tmp_dir|
           output_hlp = File.join(tmp_dir, "test.hlp")
 
-          expect { invoke_command(:hlp_create, output_hlp, "/nonexistent/file.txt") }
+          expect do
+            invoke_command(:hlp_create, output_hlp, "/nonexistent/file.txt")
+          end
             .to raise_error(ArgumentError)
         end
       end
@@ -141,7 +143,9 @@ RSpec.describe Cabriolet::CLI, "HLP commands" do
 
     context "with verbose option" do
       it "runs commands with verbose output" do
-        expect { invoke_command(:hlp_info, basic_fixture, options: { verbose: true }) }
+        expect do
+          invoke_command(:hlp_info, basic_fixture, options: { verbose: true })
+        end
           .not_to raise_error
       end
     end

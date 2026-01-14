@@ -149,8 +149,10 @@ RSpec.describe Cabriolet::LIT::Parser do
         expect(lit_file.sections).to be_a(Array)
 
         # If sections exist, check for compressed ones
-        if lit_file.sections.any?
-          compressed_sections = lit_file.sections.select(&:compressed)
+        # Filter out nil values before checking compression
+        valid_sections = lit_file.sections.compact
+        if valid_sections.any?
+          compressed_sections = valid_sections.select(&:compressed)
           # Some sections may be compressed, some may not - just verify structure
           expect(compressed_sections).to be_a(Array)
         end

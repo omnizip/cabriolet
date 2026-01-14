@@ -64,8 +64,12 @@ module Cabriolet
         def generate(output_file, **options)
           @version = options.fetch(:version, :winhelp3)
 
-          raise ArgumentError, "No internal files added" if @internal_files.empty?
-          raise ArgumentError, "Invalid version" unless %i[winhelp3 winhelp4].include?(@version)
+          if @internal_files.empty?
+            raise ArgumentError,
+                  "No internal files added"
+          end
+          raise ArgumentError, "Invalid version" unless %i[winhelp3
+                                                           winhelp4].include?(@version)
 
           # Build structure
           structure = build_structure
@@ -115,7 +119,8 @@ module Cabriolet
           structure[:directory_size] = dir_size
 
           # Calculate total file size
-          structure[:file_size] = header_size + dir_size + (block_number * BLOCK_SIZE)
+          structure[:file_size] =
+            header_size + dir_size + (block_number * BLOCK_SIZE)
 
           structure
         end
@@ -153,7 +158,8 @@ module Cabriolet
           # Pad to first block boundary
           padding_needed = BLOCK_SIZE - (bytes_written % BLOCK_SIZE)
           if padding_needed < BLOCK_SIZE
-            bytes_written += @io_system.write(output_handle, "\x00" * padding_needed)
+            bytes_written += @io_system.write(output_handle,
+                                              "\x00" * padding_needed)
           end
 
           # Write file data at block boundaries
@@ -219,7 +225,7 @@ module Cabriolet
         # @return [Integer] Bytes written
         def write_header_4x(output_handle, structure)
           header = Binary::HLPStructures::WinHelp4Header.new
-          header.magic = 0x00033F5F  # Magic with low 16 bits = 0x3F5F
+          header.magic = 0x00033F5F # Magic with low 16 bits = 0x3F5F
           header.directory_offset = structure[:directory_offset]
           header.free_list_offset = 0
           header.file_size = structure[:file_size]
@@ -239,13 +245,16 @@ module Cabriolet
 
           structure[:internal_files].each do |file|
             # Write file size (4 bytes)
-            bytes_written += @io_system.write(output_handle, [file[:size]].pack("V"))
+            bytes_written += @io_system.write(output_handle,
+                                              [file[:size]].pack("V"))
 
             # Write starting block (2 bytes)
-            bytes_written += @io_system.write(output_handle, [file[:starting_block]].pack("v"))
+            bytes_written += @io_system.write(output_handle,
+                                              [file[:starting_block]].pack("v"))
 
             # Write filename with null terminator
-            bytes_written += @io_system.write(output_handle, "#{file[:name]}\u0000")
+            bytes_written += @io_system.write(output_handle,
+                                              "#{file[:name]}\u0000")
 
             # Align to 2-byte boundary
             if bytes_written.odd?

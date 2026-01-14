@@ -77,7 +77,11 @@ module Cabriolet
 
           # Find topic by file index
           topic = header.topics[hlp_file.index] if hlp_file.respond_to?(:index)
-          topic ||= header.topics.find { |t| t.offset == hlp_file.offset } if hlp_file.respond_to?(:offset)
+          if hlp_file.respond_to?(:offset)
+            topic ||= header.topics.find do |t|
+              t.offset == hlp_file.offset
+            end
+          end
 
           unless topic
             raise Errors::DecompressionError, "Topic not found for file"
@@ -106,7 +110,11 @@ module Cabriolet
 
           # Find topic by file index
           topic = header.topics[hlp_file.index] if hlp_file.respond_to?(:index)
-          topic ||= header.topics.find { |t| t.offset == hlp_file.offset } if hlp_file.respond_to?(:offset)
+          if hlp_file.respond_to?(:offset)
+            topic ||= header.topics.find do |t|
+              t.offset == hlp_file.offset
+            end
+          end
 
           unless topic
             raise Errors::DecompressionError, "Topic not found for file"
@@ -124,7 +132,11 @@ module Cabriolet
         # @raise [Errors::DecompressionError] if extraction fails
         def extract_topic_by_index(header, topic_index)
           raise ArgumentError, "Header must not be nil" unless header
-          raise ArgumentError, "Topic index out of range" if topic_index.negative? || topic_index >= header.topic_count
+
+          if topic_index.negative? || topic_index >= header.topic_count
+            raise ArgumentError,
+                  "Topic index out of range"
+          end
 
           topic = header.topics[topic_index]
           extract_topic_text(header, topic)
@@ -138,7 +150,11 @@ module Cabriolet
         # @raise [Errors::DecompressionError] if extraction fails
         def extract_topic_by_context(header, context_string)
           raise ArgumentError, "Header must not be nil" unless header
-          raise ArgumentError, "Context string must not be nil" unless context_string
+
+          unless context_string
+            raise ArgumentError,
+                  "Context string must not be nil"
+          end
 
           # Find topic index from context map
           topic_index = find_topic_index(header, context_string)
@@ -172,7 +188,11 @@ module Cabriolet
         # @raise [Errors::DecompressionError] if extraction fails
         def extract_all(header, output_dir)
           raise ArgumentError, "Header must not be nil" unless header
-          raise ArgumentError, "Output directory must not be nil" unless output_dir
+
+          unless output_dir
+            raise ArgumentError,
+                  "Output directory must not be nil"
+          end
 
           # Create output directory if needed
           FileUtils.mkdir_p(output_dir)
@@ -184,7 +204,8 @@ module Cabriolet
             parse_topic_text(topic, decompressed_data, header.control_char)
 
             # Write topic to file
-            output_path = ::File.join(output_dir, "topic_#{index.to_s.rjust(4, '0')}.txt")
+            output_path = ::File.join(output_dir,
+                                      "topic_#{index.to_s.rjust(4, '0')}.txt")
             File.write(output_path, topic.plain_text)
             extracted += 1
           end
@@ -201,7 +222,13 @@ module Cabriolet
         # @return [Integer, nil] Topic index or nil if not found
         def find_topic_index(header, context_string)
           # Case-sensitive or case-insensitive comparison
-          comparer = header.case_sensitive? ? ->(a, b) { a == b } : ->(a, b) { a.downcase == b.downcase }
+          comparer = if header.case_sensitive?
+                       ->(a, b) { a == b }
+                     else
+                       ->(a, b) {
+                         a.downcase == b.downcase
+                       }
+                     end
 
           header.contexts.each_with_index do |ctx, idx|
             return header.context_map[idx] if comparer.call(ctx, context_string)
@@ -228,7 +255,8 @@ module Cabriolet
 
             # Parse decompressed length (first 2 bytes)
             if compressed_data.bytesize < 2
-              raise Cabriolet::DecompressionError, "Topic data too short for decompressed length"
+              raise Cabriolet::DecompressionError,
+                    "Topic data too short for decompressed length"
             end
 
             decompressed_length = compressed_data[0, 2].unpack1("v")
@@ -278,7 +306,8 @@ module Cabriolet
         def decompress_data(data, output_length, header)
           # Always use CompressionStream to decode escape sequences
           # (0x1A followed by a byte makes that byte literal)
-          compression_stream = CompressionStream.new(data, header.keywords || [])
+          compression_stream = CompressionStream.new(data,
+                                                     header.keywords || [])
           compression_stream.read(output_length)
         end
 
@@ -324,7 +353,10 @@ module Cabriolet
 
           # Read text length byte
           text_length = data.getbyte(pos)
-          raise Cabriolet::DecompressionError, "Unexpected EOF reading text length" if text_length.nil?
+          if text_length.nil?
+            raise Cabriolet::DecompressionError,
+                  "Unexpected EOF reading text length"
+          end
 
           pos += 1
 
@@ -341,7 +373,11 @@ module Cabriolet
 
           # Skip newline byte
           newline = data.getbyte(pos)
-          raise Cabriolet::DecompressionError, "Unexpected EOF reading newline" if newline.nil?
+          if newline.nil?
+            raise Cabriolet::DecompressionError,
+                  "Unexpected EOF reading newline"
+          end
+
           pos += 1
 
           # Create line with text
@@ -349,14 +385,18 @@ module Cabriolet
 
           # Read attribute length byte
           attr_length = data.getbyte(pos)
-          raise Cabriolet::DecompressionError, "Unexpected EOF reading attribute length" if attr_length.nil?
+          if attr_length.nil?
+            raise Cabriolet::DecompressionError,
+                  "Unexpected EOF reading attribute length"
+          end
 
           pos += 1
 
           # Read attribute data (length-1 bytes, excluding terminator)
           attr_bytes = attr_length - 1
           if pos + attr_bytes > data.bytesize
-            raise Cabriolet::DecompressionError, "Unexpected EOF reading attributes"
+            raise Cabriolet::DecompressionError,
+                  "Unexpected EOF reading attributes"
           end
 
           attr_data = data[pos, attr_bytes]

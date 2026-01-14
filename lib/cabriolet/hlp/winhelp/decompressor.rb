@@ -142,7 +142,8 @@ module Cabriolet
         # @return [String] Safe filename
         def sanitize_filename(filename)
           # Encode to ASCII, replacing non-ASCII and control characters with _
-          sanitized = filename.encode("ASCII", invalid: :replace, undef: :replace, replace: "_")
+          sanitized = filename.encode("ASCII", invalid: :replace,
+                                               undef: :replace, replace: "_")
 
           # Replace | with _pipe_ (after encoding to handle | correctly)
           sanitized = sanitized.gsub("|", "_pipe_")
@@ -151,7 +152,7 @@ module Cabriolet
           sanitized = sanitized.gsub(/[\/\\:<>"|?*]/, "_")
 
           # Replace multiple consecutive underscores with single underscore
-          sanitized = sanitized.gsub(/_+/, "_")
+          sanitized = sanitized.squeeze("_")
 
           # Remove leading/trailing underscores
           sanitized = sanitized.gsub(/^_+|_+$/, "")

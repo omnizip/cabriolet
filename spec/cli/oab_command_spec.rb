@@ -10,9 +10,9 @@ RSpec.describe Cabriolet::CLI, "OAB commands" do
 
   # Helper method to invoke Thor commands with options
   def invoke_command(command, *args, options: {})
-    # Set each option individually before calling the command
-    options.each { |key, value| cli.options[key] = value }
-    cli.public_send(command, *args)
+    # Use Thor's invoke method which properly handles options
+    # The options hash is passed as a parameter, not by modifying the frozen options
+    cli.invoke(command, args, options)
   end
 
   describe "#oab_info" do
@@ -33,17 +33,19 @@ RSpec.describe Cabriolet::CLI, "OAB commands" do
     end
 
     context "with non-existent file" do
-      it "exits with error" do
-        expect { cli.oab_info("/nonexistent/file.oab") }.to raise_error(SystemExit)
+      it "raises ArgumentError" do
+        expect do
+          cli.oab_info("/nonexistent/file.oab")
+        end.to raise_error(ArgumentError)
       end
     end
   end
 
   describe "#oab_extract" do
     context "with non-existent file" do
-      it "exits with error" do
+      it "raises ArgumentError" do
         expect { cli.oab_extract("/nonexistent/file.oab", "output.dat") }
-          .to raise_error(SystemExit)
+          .to raise_error(ArgumentError)
       end
     end
 
@@ -100,11 +102,16 @@ RSpec.describe Cabriolet::CLI, "OAB commands" do
     end
 
     it "supports custom block size" do
-      # NOTE: Thor options hash is frozen after initialization.
-      # Testing CLI option handling would require unfreezing the hash,
-      # which is not recommended. The underlying functionality with custom
-      # block_size is tested in spec/oab/compressor_spec.rb
-      skip "Thor options hash is frozen; block_size option tested in compressor spec"
+      Dir.mktmpdir do |tmp_dir|
+        output_oab = File.join(tmp_dir, "test.oab")
+        test_file = File.join(tmp_dir, "test.dat")
+        File.write(test_file, "Test content")
+
+        invoke_command(:oab_create, test_file, output_oab, options: { block_size: 16384 })
+
+        expect(File.exist?(output_oab)).to be(true)
+        expect(File.size(output_oab)).to be > 0
+      end
     end
 
     context "with no input file" do
@@ -112,8 +119,10 @@ RSpec.describe Cabriolet::CLI, "OAB commands" do
         Dir.mktmpdir do |tmp_dir|
           output_oab = File.join(tmp_dir, "test.oab")
 
-          expect { invoke_command(:oab_create, "/nonexistent/file.dat", output_oab) }
-            .to raise_error(SystemExit)
+          expect do
+            invoke_command(:oab_create, "/nonexistent/file.dat", output_oab)
+          end
+            .to raise_error(ArgumentError)
         end
       end
     end
@@ -144,15 +153,26 @@ RSpec.describe Cabriolet::CLI, "OAB commands" do
 
   describe "incremental patch support" do
     it "creates incremental patch" do
-      # NOTE: Thor options hash is frozen after initialization.
-      # Testing :base option handling would require unfreezing the hash.
-      # Incremental patch functionality is tested in spec/oab/compressor_spec.rb
-      skip "Thor options hash is frozen; incremental patch tested in compressor spec"
+      Dir.mktmpdir do |tmp_dir|
+        base_file = File.join(tmp_dir, "base.dat")
+        new_file = File.join(tmp_dir, "new.dat")
+        output_oab = File.join(tmp_dir, "patch.oab")
+
+        File.write(base_file, "Original data")
+        File.write(new_file, "New data - different from base")
+
+        invoke_command(:oab_create, new_file, output_oab, options: { base: base_file })
+
+        expect(File.exist?(output_oab)).to be(true)
+        expect(File.size(output_oab)).to be > 0
+      end
     end
 
     it "applies incremental patch" do
-      # NOTE: Thor options hash is frozen after initialization.
-      skip "Thor options hash is frozen; incremental patch tested in compressor spec"
+      # NOTE: OAB incremental patches use LZX compression.
+      # The LZX decompressor doesn't fully support all block types (VERBATIM, ALIGNED)
+      # required for proper patch extraction. This is a known feature gap.
+      skip "OAB incremental patch extraction depends on incomplete LZX VERBATIM implementation"
     end
   end
 

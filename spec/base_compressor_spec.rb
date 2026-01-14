@@ -42,7 +42,7 @@ RSpec.describe Cabriolet::BaseCompressor do
       @validation_called = true
     end
 
-    def post_generation_hook(output_file, structure, bytes_written)
+    def post_generation_hook(_output_file, _structure, _bytes_written)
       @post_hook_called = true
     end
   end

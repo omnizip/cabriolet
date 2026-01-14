@@ -12,8 +12,10 @@ RSpec.describe "libmspack CAB parity tests" do
     let(:decompressor) { Cabriolet::CAB::Decompressor.new(io_system) }
 
     it "raises IOError when file doesn't exist" do
-      expect { decompressor.open("!!!FILE_WHICH_DOES_NOT_EXIST") }.to raise_error(
-        Cabriolet::IOError
+      expect do
+        decompressor.open("!!!FILE_WHICH_DOES_NOT_EXIST")
+      end.to raise_error(
+        Cabriolet::IOError,
       )
     end
   end
@@ -25,7 +27,9 @@ RSpec.describe "libmspack CAB parity tests" do
   #
   # Cabinet: normal_2files_1folder.cab
   describe "cabd_open_test_02: header validation" do
-    let(:cabinet_path) { "spec/fixtures/libmspack/cabd/normal_2files_1folder.cab" }
+    let(:cabinet_path) do
+      "spec/fixtures/libmspack/cabd/normal_2files_1folder.cab"
+    end
     let(:io_system) { Cabriolet::System::IOSystem.new }
     let(:decompressor) { Cabriolet::CAB::Decompressor.new(io_system) }
     let(:cabinet) { decompressor.open(cabinet_path) }
@@ -113,7 +117,7 @@ RSpec.describe "libmspack CAB parity tests" do
       "reserve_H--.cab",  # Header reserve only
       "reserve_H-D.cab",  # Header + data reserves
       "reserve_HF-.cab",  # Header + folder reserves
-      "reserve_HFD.cab"   # All three reserves
+      "reserve_HFD.cab", # All three reserves
     ]
 
     test_files.each do |filename|
@@ -139,7 +143,10 @@ RSpec.describe "libmspack CAB parity tests" do
 
     it "rejects cabinet with bad signature" do
       cabinet_path = File.join(fixtures_dir, "bad_signature.cab")
-      expect { decompressor.open(cabinet_path) }.to raise_error(Cabriolet::ParseError, /signature/)
+      expect do
+        decompressor.open(cabinet_path)
+      end.to raise_error(Cabriolet::ParseError,
+                         /signature/)
     end
 
     it "rejects cabinet with zero folders" do
@@ -180,14 +187,14 @@ RSpec.describe "libmspack CAB parity tests" do
       "partial_shortfolder.cab",
       "partial_nofiles.cab",
       "partial_shortfile1.cab",
-      "partial_shortfile2.cab"
+      "partial_shortfile2.cab",
     ]
 
     partial_header_files.each do |filename|
       it "rejects #{filename} with truncated header" do
         cabinet_path = File.join(fixtures_dir, filename)
         expect { decompressor.open(cabinet_path) }.to raise_error(
-          Cabriolet::ParseError
+          Cabriolet::ParseError,
         )
       end
     end
@@ -203,14 +210,14 @@ RSpec.describe "libmspack CAB parity tests" do
       "partial_str_noninfo.cab",
       "partial_str_shortninfo.cab",
       "partial_str_nofname.cab",
-      "partial_str_shortfname.cab"
+      "partial_str_shortfname.cab",
     ]
 
     partial_string_files.each do |filename|
       it "rejects #{filename} with truncated strings" do
         cabinet_path = File.join(fixtures_dir, filename)
         expect { decompressor.open(cabinet_path) }.to raise_error(
-          Cabriolet::ParseError
+          Cabriolet::ParseError,
         )
       end
     end
@@ -260,7 +267,8 @@ RSpec.describe "libmspack CAB parity tests" do
     let(:fixtures_dir) { "spec/fixtures/libmspack/cabd" }
 
     it "handles cabinet with overlong filename without buffer overread" do
-      cabinet_path = File.join(fixtures_dir, "cve-2017-11423-fname-overread.cab")
+      cabinet_path = File.join(fixtures_dir,
+                               "cve-2017-11423-fname-overread.cab")
 
       # This cabinet has an overlong filename that could cause buffer overread
       # The fix ensures we don't read beyond allocated buffer
@@ -285,8 +293,10 @@ RSpec.describe "libmspack CAB parity tests" do
     let(:decompressor) { Cabriolet::CAB::Decompressor.new(io_system) }
 
     it "raises IOError when file doesn't exist" do
-      expect { decompressor.search("!!!FILE_WHICH_DOES_NOT_EXIST") }.to raise_error(
-        Cabriolet::IOError
+      expect do
+        decompressor.search("!!!FILE_WHICH_DOES_NOT_EXIST")
+      end.to raise_error(
+        Cabriolet::IOError,
       )
     end
   end
@@ -294,11 +304,6 @@ RSpec.describe "libmspack CAB parity tests" do
   # Port of cabd_search_test_02 from libmspack/test/cabd_test.c
   #
   # Tests search with 1-byte buffer (extreme edge case)
-  describe "cabd_search_test_02: search with minimal buffer" do
-    let(:io_system) { Cabriolet::System::IOSystem.new }
-    let(:decompressor) { Cabriolet::CAB::Decompressor.new(io_system) }
-    let(:fixtures_dir) { "spec/fixtures/libmspack/cabd" }
-  end
 
   # Port of cabd_search_test_03 from libmspack/test/cabd_test.c
   #
@@ -317,7 +322,7 @@ RSpec.describe "libmspack CAB parity tests" do
       cabinet = decompressor.search(cabinet_path)
 
       expect(cabinet).not_to be_nil
-      expect(cabinet.next).to be_nil  # Only one real cabinet
+      expect(cabinet.next).to be_nil # Only one real cabinet
       expect(cabinet.base_offset).to eq(4)
       expect(cabinet.files[0].filename).to eq("hello.c")
       expect(cabinet.files[1].filename).to eq("welcome.c")
@@ -332,8 +337,12 @@ RSpec.describe "libmspack CAB parity tests" do
     let(:decompressor) { Cabriolet::CAB::Decompressor.new(io_system) }
     let(:fixtures_dir) { "spec/fixtures/libmspack/cabd" }
 
-    let(:cab1) { decompressor.open(File.join(fixtures_dir, "multi_basic_pt1.cab")) }
-    let(:cab2) { decompressor.open(File.join(fixtures_dir, "multi_basic_pt2.cab")) }
+    let(:cab1) do
+      decompressor.open(File.join(fixtures_dir, "multi_basic_pt1.cab"))
+    end
+    let(:cab2) do
+      decompressor.open(File.join(fixtures_dir, "multi_basic_pt2.cab"))
+    end
 
     it "rejects append with nil next cabinet" do
       expect { decompressor.append(cab1, nil) }.to raise_error(ArgumentError)
@@ -495,7 +504,9 @@ RSpec.describe "libmspack CAB parity tests" do
   # - Folder 0 (MSZIP): mszip1.txt, mszip2.txt
   # - Folder 1 (LZX): lzx1.txt, lzx2.txt
   describe "cabd_extract_test_04: any order extraction" do
-    let(:cabinet_path) { "spec/fixtures/libmspack/cabd/normal_2files_2folders.cab" }
+    let(:cabinet_path) do
+      "spec/fixtures/libmspack/cabd/normal_2files_2folders.cab"
+    end
     let(:io_system) { Cabriolet::System::IOSystem.new }
     let(:decompressor) { Cabriolet::CAB::Decompressor.new(io_system) }
     let(:extractor) { Cabriolet::CAB::Extractor.new(io_system, decompressor) }
@@ -556,17 +567,16 @@ RSpec.describe "libmspack CAB parity tests" do
         extract_and_verify = ->(i) do
           md5 = extract_file_md5(extractor, files[i])
           expect(md5).to eq(ref_md5s[i]),
-            "File #{i} MD5 mismatch: got #{md5}, expected #{ref_md5s[i]}"
+                         "File #{i} MD5 mismatch: got #{md5}, expected #{ref_md5s[i]}"
         end
 
         # Test all 24 permutations (matching libmspack's order)
         # Original C code uses nested macros: T1(i) and T(a,b,c,d)
-        [[0,1,2,3], # baseline (already done above)
-         [0,1,3,2], [0,2,1,3], [0,2,3,1], [0,3,1,2], [0,3,2,1],
-         [1,0,2,3], [1,0,3,2], [1,2,0,3], [1,2,3,0], [1,3,0,2], [1,3,2,0],
-         [2,0,1,3], [2,0,3,1], [2,1,0,3], [2,1,3,0], [2,3,0,1], [2,3,1,0],
-         [3,0,1,2], [3,0,2,1], [3,1,0,2], [3,1,2,0], [3,2,0,1], [3,2,1,0]
-        ].each do |order|
+        [[0, 1, 2, 3], # baseline (already done above)
+         [0, 1, 3, 2], [0, 2, 1, 3], [0, 2, 3, 1], [0, 3, 1, 2], [0, 3, 2, 1],
+         [1, 0, 2, 3], [1, 0, 3, 2], [1, 2, 0, 3], [1, 2, 3, 0], [1, 3, 0, 2], [1, 3, 2, 0],
+         [2, 0, 1, 3], [2, 0, 3, 1], [2, 1, 0, 3], [2, 1, 3, 0], [2, 3, 0, 1], [2, 3, 1, 0],
+         [3, 0, 1, 2], [3, 0, 2, 1], [3, 1, 0, 2], [3, 1, 2, 0], [3, 2, 0, 1], [3, 2, 1, 0]].each do |order|
           order.each { |i| extract_and_verify.call(i) }
         end
       end
@@ -577,7 +587,7 @@ RSpec.describe "libmspack CAB parity tests" do
         # Get MSZIP reference MD5s
         mszip_md5s = [
           extract_file_md5(extractor, files[0]),
-          extract_file_md5(extractor, files[1])
+          extract_file_md5(extractor, files[1]),
         ]
 
         # Extract in mixed order: 0, 2, 1, 3, 0, 1
@@ -610,7 +620,7 @@ RSpec.describe "libmspack CAB parity tests" do
       "filename-read-violation-3.cab",
       "filename-read-violation-4.cab",
       "lzx-main-tree-no-lengths.cab",
-      "lzx-premature-matches.cab"
+      "lzx-premature-matches.cab",
     ]
 
     bad_cab_files.each do |filename|
@@ -623,8 +633,10 @@ RSpec.describe "libmspack CAB parity tests" do
 
           # But extraction should fail
           cabinet.files.each do |file|
-            expect { extractor.extract_file(file, "/tmp/test_output") }.to raise_error(
-              Cabriolet::DecompressionError
+            expect do
+              extractor.extract_file(file, "/tmp/test_output")
+            end.to raise_error(
+              Cabriolet::DecompressionError,
             )
           end
         rescue Cabriolet::ParseError
@@ -637,7 +649,8 @@ RSpec.describe "libmspack CAB parity tests" do
     # Special case: cve-2018-18584-qtm-max-size-block.cab
     # Our Quantum implementation handles this correctly, which is BETTER than expected
     it "handles cve-2018-18584-qtm-max-size-block.cab (better than libmspack)" do
-      cabinet_path = File.join(fixtures_dir, "cve-2018-18584-qtm-max-size-block.cab")
+      cabinet_path = File.join(fixtures_dir,
+                               "cve-2018-18584-qtm-max-size-block.cab")
 
       begin
         cabinet = decompressor.open(cabinet_path)
@@ -645,14 +658,12 @@ RSpec.describe "libmspack CAB parity tests" do
         # Our implementation may handle this CVE correctly
         # Either extraction fails (expected by libmspack) or succeeds (we're more robust)
         cabinet.files.each do |file|
-          begin
-            extractor.extract_file(file, "/tmp/test_output")
-            # Success is acceptable - means we're more robust
-            expect(true).to be true
-          rescue Cabriolet::DecompressionError
-            # Failure is also acceptable - matches libmspack behavior
-            expect(true).to be true
-          end
+          extractor.extract_file(file, "/tmp/test_output")
+          # Success is acceptable - means we're more robust
+          expect(true).to be true
+        rescue Cabriolet::DecompressionError
+          # Failure is also acceptable - matches libmspack behavior
+          expect(true).to be true
         end
       rescue Cabriolet::ParseError
         # Parse failure is acceptable
@@ -673,7 +684,8 @@ RSpec.describe "libmspack CAB parity tests" do
     let(:fixtures_dir) { "spec/fixtures/libmspack/cabd" }
 
     it "handles invalid folder without segfault when extracting in specific order" do
-      cabinet_path = File.join(fixtures_dir, "cve-2014-9732-folders-segfault.cab")
+      cabinet_path = File.join(fixtures_dir,
+                               "cve-2014-9732-folders-segfault.cab")
       cabinet = decompressor.open(cabinet_path)
 
       # First file belongs to valid folder
@@ -686,7 +698,7 @@ RSpec.describe "libmspack CAB parity tests" do
 
       # Extract file 2 (should fail gracefully, not segfault)
       expect { extract_file_md5(extractor, cabinet.files[1]) }.to raise_error(
-        Cabriolet::DecompressionError
+        Cabriolet::DecompressionError,
       )
 
       # Extract file 1 again (should succeed, proving no segfault/crash)

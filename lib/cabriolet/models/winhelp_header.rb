@@ -8,12 +8,7 @@ module Cabriolet
     # WinHelp files contain an internal file system with |SYSTEM, |TOPIC,
     # and other internal files.
     class WinHelpHeader
-      attr_accessor :version       # :winhelp3 or :winhelp4
-      attr_accessor :magic         # Magic number (0x35F3 or 0x3F5F0000)
-      attr_accessor :directory_offset
-      attr_accessor :free_list_offset
-      attr_accessor :file_size
-      attr_accessor :filename
+      attr_accessor :version, :magic, :directory_offset, :free_list_offset, :file_size, :filename # :winhelp3 or :winhelp4         # Magic number (0x35F3 or 0x3F5F0000)
 
       # Internal files in the help file
       # Array of hashes: { filename:, file_size:, starting_block: }

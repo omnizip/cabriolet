@@ -163,7 +163,7 @@ RSpec.describe Cabriolet::SZDD::Parser do
         basic_fixtures.each do |fixture|
           skip "Fixture not found: #{fixture}" unless File.exist?(fixture)
 
-          handle = io_system.open(fixture, Constants::MODE_READ)
+          handle = io_system.open(fixture, Cabriolet::Constants::MODE_READ)
           begin
             header = parser.parse_handle(handle, File.basename(fixture))
             expect(header).to be_a(Cabriolet::Models::SZDDHeader)
@@ -182,7 +182,7 @@ RSpec.describe Cabriolet::SZDD::Parser do
         fixtures.each do |fixture|
           skip "Fixture not found: #{fixture}" unless File.exist?(fixture)
 
-          handle = io_system.open(fixture, Constants::MODE_READ)
+          handle = io_system.open(fixture, Cabriolet::Constants::MODE_READ)
           begin
             header = parser.parse_handle(handle, File.basename(fixture))
             expect(header).to be_a(Cabriolet::Models::SZDDHeader)
@@ -201,7 +201,7 @@ RSpec.describe Cabriolet::SZDD::Parser do
         all_fixtures.each do |fixture|
           skip "Fixture not found: #{fixture}" unless File.exist?(fixture)
 
-          handle = io_system.open(fixture, Constants::MODE_READ)
+          handle = io_system.open(fixture, Cabriolet::Constants::MODE_READ)
           begin
             header = parser.parse_handle(handle, File.basename(fixture))
             expect(header).to be_a(Cabriolet::Models::SZDDHeader)

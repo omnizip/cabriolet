@@ -87,7 +87,8 @@ RSpec.describe Cabriolet::HLP::Compressor do
         begin
           compressor.add_data("Test content", "topic1", compress: true)
 
-          bytes_written = compressor.generate(output_file.path, database_name: "TestDB")
+          bytes_written = compressor.generate(output_file.path,
+                                              database_name: "TestDB")
 
           expect(bytes_written).to be > 0
           expect(File.exist?(output_file.path)).to be true
@@ -190,7 +191,8 @@ RSpec.describe Cabriolet::HLP::Compressor do
 
         all_fixtures.each do |fixture_path|
           header = decompressor.open(fixture_path)
-          expect(header).to be_a(Cabriolet::Models::HLPHeader)
+          # WinHelp 3.x returns HLPHeader, WinHelp 4.x returns WinHelpHeader
+          expect(header).to be_a(Cabriolet::Models::HLPHeader).or(be_a(Cabriolet::Models::WinHelpHeader))
           decompressor.close(header)
         end
       end

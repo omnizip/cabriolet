@@ -73,7 +73,11 @@ module Cabriolet
 
           raise ArgumentError, "No files added to archive" if @files.empty?
           raise ArgumentError, "Version must be 2" unless version == 2
-          raise ArgumentError, "Database name too long (max 13 chars)" if database_name.length > 13
+
+          if database_name.length > 13
+            raise ArgumentError,
+                  "Database name too long (max 13 chars)"
+          end
 
           # Prepare topics from files
           topics = prepare_topics
@@ -289,7 +293,8 @@ module Cabriolet
         # @param control_char [Integer] Control character
         # @param case_sensitive [Boolean] Case-sensitive contexts
         # @return [Hash] Complete structure ready for writing
-        def build_quickhelp_structure(topics, version, database_name, control_char, case_sensitive)
+        def build_quickhelp_structure(topics, version, database_name,
+control_char, case_sensitive)
           structure = {}
 
           # Compress topics
@@ -421,7 +426,7 @@ module Cabriolet
             if byte < 0x10 || byte == 0x1B || byte > 0x1A
               # Literal byte (except control range 0x10-0x1A)
               result << byte.chr
-            elsif byte >= 0x10 && byte <= 0x1A
+            elsif byte.between?(0x10, 0x1A)
               # Control byte - escape it
               result << 0x1A.chr << byte.chr
             else
@@ -490,7 +495,8 @@ module Cabriolet
         # @param control_char [Integer] Control character
         # @param case_sensitive [Boolean] Case-sensitive contexts
         # @return [Hash] Header information
-        def build_header(structure, version, database_name, control_char, case_sensitive)
+        def build_header(structure, version, database_name, control_char,
+case_sensitive)
           attributes = 0
           attributes |= Binary::HLPStructures::Attributes::CASE_SENSITIVE if case_sensitive
 
@@ -519,13 +525,16 @@ module Cabriolet
           bytes_written += write_file_header(output_handle, structure[:header])
 
           # Write topic index
-          bytes_written += write_topic_index(output_handle, structure[:header][:offsets])
+          bytes_written += write_topic_index(output_handle,
+                                             structure[:header][:offsets])
 
           # Write context strings
-          bytes_written += write_context_strings(output_handle, structure[:contexts])
+          bytes_written += write_context_strings(output_handle,
+                                                 structure[:contexts])
 
           # Write context map
-          bytes_written += write_context_map(output_handle, structure[:context_map])
+          bytes_written += write_context_map(output_handle,
+                                             structure[:context_map])
 
           # Write topic texts
           bytes_written += write_topic_texts(output_handle, structure[:topics])

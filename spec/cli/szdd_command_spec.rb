@@ -9,10 +9,19 @@ RSpec.describe Cabriolet::CLI, "SZDD commands" do
   let(:cli) { described_class.new }
   let(:basic_fixture) { Fixtures.for(:szdd).path(:muan_inst) }
 
+  # Helper method to invoke Thor commands with options
+  def invoke_command(command, *args, options: {})
+    # Use Thor's invoke method which properly handles options
+    # The options hash is passed as a parameter, not by modifying the frozen options
+    cli.invoke(command, args, options)
+  end
+
   describe "#szdd_info" do
     context "with non-existent file" do
-      it "exits with error" do
-        expect { cli.szdd_info("/nonexistent/file.ex_") }.to raise_error(SystemExit)
+      it "raises ArgumentError" do
+        expect do
+          cli.szdd_info("/nonexistent/file.ex_")
+        end.to raise_error(ArgumentError)
       end
     end
 
@@ -30,8 +39,10 @@ RSpec.describe Cabriolet::CLI, "SZDD commands" do
 
   describe "#expand" do
     context "with non-existent file" do
-      it "exits with error" do
-        expect { cli.expand("/nonexistent/file.ex_") }.to raise_error(SystemExit)
+      it "raises ArgumentError" do
+        expect do
+          cli.expand("/nonexistent/file.ex_")
+        end.to raise_error(ArgumentError)
       end
     end
 
@@ -88,24 +99,57 @@ RSpec.describe Cabriolet::CLI, "SZDD commands" do
     end
 
     it "generates correct output filename when not specified" do
-      # NOTE: The auto-generated filename logic needs to be fixed in the CLI.
-      # Currently the regex doesn't match multi-character extensions.
-      # The functionality is tested with explicit output filenames.
-      skip "Auto-filename generation needs fixing; tested with explicit output"
+      Dir.mktmpdir do |tmp_dir|
+        # Test with .txt extension (should become .tx_)
+        input_file = File.join(tmp_dir, "test.txt")
+        File.write(input_file, "Test content")
+
+        # Change to temp directory
+        original_dir = Dir.pwd
+        begin
+          Dir.chdir(tmp_dir)
+          cli.compress(input_file)
+
+          # Should create test.tx_
+          expect(File.exist?("test.tx_")).to be(true)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
     end
 
     it "supports custom missing character" do
-      # NOTE: Thor options hash is frozen after initialization.
-      # Testing CLI option handling would require unfreezing the hash.
-      # The missing_char option is tested in spec/szdd/compressor_spec.rb
-      skip "Thor options hash is frozen; missing_char tested in compressor spec"
+      Dir.mktmpdir do |tmp_dir|
+        input_file = File.join(tmp_dir, "test.txt")
+        output_szdd = File.join(tmp_dir, "test.tx_")
+        File.write(input_file, "Test content with special char: X")
+
+        # Use invoke_command to pass missing_char option
+        invoke_command(:compress, input_file, output_szdd, options: { missing_char: "X" })
+
+        expect(File.exist?(output_szdd)).to be(true)
+        expect(File.size(output_szdd)).to be > 0
+
+        # Verify the file can be read back
+        expect { cli.szdd_info(output_szdd) }.not_to raise_error
+      end
     end
 
     it "supports QBASIC format" do
-      # NOTE: Thor options hash is frozen after initialization.
-      # Testing CLI option handling would require unfreezing the hash.
-      # The QBASIC format is tested in spec/szdd/compressor_spec.rb
-      skip "Thor options hash is frozen; QBASIC format tested in compressor spec"
+      Dir.mktmpdir do |tmp_dir|
+        input_file = File.join(tmp_dir, "test.bas")
+        output_szdd = File.join(tmp_dir, "test.ba_")
+        File.write(input_file, "10 PRINT \"QBASIC test\"")
+
+        # Use invoke_command to pass format option
+        invoke_command(:compress, input_file, output_szdd, options: { format: "qbasic" })
+
+        expect(File.exist?(output_szdd)).to be(true)
+        expect(File.size(output_szdd)).to be > 0
+
+        # Verify the file can be read back
+        expect { cli.szdd_info(output_szdd) }.not_to raise_error
+      end
     end
   end
 

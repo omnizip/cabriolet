@@ -74,7 +74,8 @@ module Cabriolet
       # @param output [System::FileHandle, System::MemoryHandle] Output handle
       # @param buffer_size [Integer] Buffer size for I/O operations
       # @param window_bits [Integer] Window size parameter (10-21)
-      def initialize(io_system, input, output, buffer_size, window_bits: 10, **_kwargs)
+      def initialize(io_system, input, output, buffer_size, window_bits: 10,
+**_kwargs)
         super(io_system, input, output, buffer_size)
 
         # Validate window_bits

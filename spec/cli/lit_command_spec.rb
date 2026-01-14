@@ -25,8 +25,10 @@ RSpec.describe Cabriolet::CLI, "LIT commands" do
     end
 
     context "with non-existent file" do
-      it "exits with error" do
-        expect { cli.lit_info("/nonexistent/file.lit") }.to raise_error(SystemExit)
+      it "raises ArgumentError" do
+        expect do
+          cli.lit_info("/nonexistent/file.lit")
+        end.to raise_error(ArgumentError)
       end
     end
 
@@ -43,8 +45,10 @@ RSpec.describe Cabriolet::CLI, "LIT commands" do
 
   describe "#lit_extract" do
     context "with non-existent file" do
-      it "exits with error" do
-        expect { cli.lit_extract("/nonexistent/file.lit") }.to raise_error(SystemExit)
+      it "raises ArgumentError" do
+        expect do
+          cli.lit_extract("/nonexistent/file.lit")
+        end.to raise_error(ArgumentError)
       end
     end
 
@@ -61,7 +65,7 @@ RSpec.describe Cabriolet::CLI, "LIT commands" do
           # Extract - note: full extraction is not tested due to compressor/decompressor
           # incompatibility, but we verify the command structure works
           expect { cli.lit_extract(output_lit, tmp_dir) }
-            .to raise_error(SystemExit) # Expected due to known decompressor issue
+            .to raise_error(Cabriolet::DecompressionError) # Expected due to known decompressor issue
         end
       end
     end
@@ -133,7 +137,9 @@ RSpec.describe Cabriolet::CLI, "LIT commands" do
         Dir.mktmpdir do |tmp_dir|
           output_lit = File.join(tmp_dir, "test.lit")
 
-          expect { invoke_command(:lit_create, output_lit, "/nonexistent/file.txt") }
+          expect do
+            invoke_command(:lit_create, output_lit, "/nonexistent/file.txt")
+          end
             .to raise_error(ArgumentError, /File does not exist/)
         end
       end

@@ -257,7 +257,7 @@ target_remaining)
           window_bits: window_bits,
           reset_interval: 0,
           output_length: block_size,
-          is_delta: false
+          is_delta: false,
         )
 
         bytes_decompressed = lzx.decompress(block_size)
@@ -303,7 +303,7 @@ target_remaining)
           window_bits: window_bits,
           reset_interval: 0,
           output_length: block_header.target_size,
-          is_delta: true
+          is_delta: true,
         )
 
         # For patches, we'd need to set reference data in the LZX window
