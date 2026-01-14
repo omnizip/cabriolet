@@ -79,7 +79,10 @@ module Cabriolet
           @io_system.seek(handle, 0, Constants::SEEK_START)
           magic_data = @io_system.read(handle, 4)
 
-          raise Cabriolet::ParseError, "File too small for WinHelp header" if magic_data.nil? || magic_data.bytesize < 4
+          if magic_data.nil? || magic_data.bytesize < 4
+            raise Cabriolet::ParseError,
+                  "File too small for WinHelp header"
+          end
 
           # Check for WinHelp 3.x (little-endian 16-bit magic: 0x35F3)
           magic_word = magic_data[0..1].unpack1("v")
@@ -101,13 +104,17 @@ module Cabriolet
           @io_system.seek(handle, 0, Constants::SEEK_START)
           header_data = @io_system.read(handle, 28)
 
-          raise Cabriolet::ParseError, "File too small for WinHelp 3.x header" if header_data.bytesize < 28
+          if header_data.bytesize < 28
+            raise Cabriolet::ParseError,
+                  "File too small for WinHelp 3.x header"
+          end
 
           binary_header = Binary::HLPStructures::WinHelp3Header.read(header_data)
 
           # Validate magic
           unless binary_header.magic == 0x35F3
-            raise Cabriolet::ParseError, "Invalid WinHelp 3.x magic: 0x#{binary_header.magic.to_s(16)}"
+            raise Cabriolet::ParseError,
+                  "Invalid WinHelp 3.x magic: 0x#{binary_header.magic.to_i.to_s(16)}"
           end
 
           # Create header model
@@ -133,14 +140,18 @@ module Cabriolet
           @io_system.seek(handle, 0, Constants::SEEK_START)
           header_data = @io_system.read(handle, 32)
 
-          raise Cabriolet::ParseError, "File too small for WinHelp 4.x header" if header_data.bytesize < 32
+          if header_data.bytesize < 32
+            raise Cabriolet::ParseError,
+                  "File too small for WinHelp 4.x header"
+          end
 
           binary_header = Binary::HLPStructures::WinHelp4Header.read(header_data)
 
           # Validate magic (lower 16 bits should be 0x5F3F or 0x3F5F)
           magic_val = binary_header.magic.respond_to?(:to_i) ? binary_header.magic.to_i : binary_header.magic
           unless (magic_val & 0xFFFF) == 0x5F3F || (magic_val & 0xFFFF) == 0x3F5F
-            raise Cabriolet::ParseError, "Invalid WinHelp 4.x magic: 0x#{magic_val.to_s(16)}"
+            raise Cabriolet::ParseError,
+                  "Invalid WinHelp 4.x magic: 0x#{magic_val.to_s(16)}"
           end
 
           # Determine if directory_offset needs +2 adjustment
@@ -204,6 +215,7 @@ module Cabriolet
             # Read starting block (2 bytes)
             block_data = @io_system.read(handle, 2)
             break if block_data.nil? || block_data.bytesize < 2
+
             starting_block = block_data.unpack1("v")
 
             # Read filename (null-terminated, padded to even)
@@ -249,18 +261,25 @@ module Cabriolet
           @io_system.seek(handle, header.directory_offset, Constants::SEEK_START)
           file_header_data = @io_system.read(handle, 9) # FILEHEADER is 9 bytes
 
-          raise Cabriolet::ParseError, "Failed to read FILEHEADER" if file_header_data.nil? || file_header_data.bytesize < 9
+          if file_header_data.nil? || file_header_data.bytesize < 9
+            raise Cabriolet::ParseError,
+                  "Failed to read FILEHEADER"
+          end
 
           # Read BTREEHEADER (38 bytes according to helpdeco)
           btree_header_data = @io_system.read(handle, 38) # BTREEHEADER is 38 bytes
 
-          raise Cabriolet::ParseError, "Failed to read BTREEHEADER" if btree_header_data.nil? || btree_header_data.bytesize < 38
+          if btree_header_data.nil? || btree_header_data.bytesize < 38
+            raise Cabriolet::ParseError,
+                  "Failed to read BTREEHEADER"
+          end
 
           btree_header = Binary::HLPStructures::WinHelpBTreeHeader.read(btree_header_data)
 
           # Validate B+ tree magic
           unless btree_header.magic == 0x293B
-            raise Cabriolet::ParseError, "Invalid B+ tree magic: 0x#{btree_header.magic.to_s(16)}"
+            raise Cabriolet::ParseError,
+                  "Invalid B+ tree magic: 0x#{btree_header.magic.to_i.to_s(16)}"
           end
 
           # Store first page offset (where B+ tree pages start)
@@ -297,7 +316,8 @@ module Cabriolet
               # For index pages, the first page is always 0 (leftmost child)
               # The index header is followed by entries: (filename, page_number)
               # We want the leftmost (smallest filename), so we take the first entry's page
-              current_page = read_first_page_from_index(handle, index_header_data)
+              current_page = read_first_page_from_index(handle,
+                                                        index_header_data)
               break if current_page.nil?
             end
           end
@@ -338,12 +358,13 @@ module Cabriolet
               header.internal_files << {
                 filename: filename,
                 file_size: file_size,
-                file_offset: file_offset,  # Store actual offset, not block number
+                file_offset: file_offset, # Store actual offset, not block number
               }
             end
 
             # Move to next leaf page or exit
             break if leaf_header.next_page == -1
+
             current_page = leaf_header.next_page
           end
         end
@@ -353,7 +374,7 @@ module Cabriolet
         # @param handle [System::FileHandle] Open file handle
         # @param index_header_data [String] Index header data (6 bytes)
         # @return [Integer, nil] First page number or nil on error
-        def read_first_page_from_index(handle, index_header_data)
+        def read_first_page_from_index(handle, _index_header_data)
           # For index pages, we want the leftmost (smallest filename)
           # The index header is followed by entries: (filename, page_number)
           # We read the first filename and then the page number
@@ -401,6 +422,7 @@ module Cabriolet
             # Read starting block (2 bytes)
             block_data = @io_system.read(handle, 2)
             break if block_data.nil? || block_data.bytesize < 2
+
             starting_block = block_data.unpack1("v")
 
             # Read filename (null-terminated, padded to even)

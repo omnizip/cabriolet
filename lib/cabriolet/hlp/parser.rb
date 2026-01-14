@@ -70,7 +70,9 @@ module Cabriolet
 
           # Unknown format
           raise Cabriolet::ParseError,
-                "Unknown HLP signature: #{sig_data.bytes.map { |b| format('0x%02X', b) }.join(' ')}"
+                "Unknown HLP signature: #{sig_data.bytes.map do |b|
+                  format('0x%02X', b)
+                end.join(' ')}"
         ensure
           @io_system.close(handle)
         end

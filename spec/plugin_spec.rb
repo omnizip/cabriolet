@@ -57,7 +57,7 @@ RSpec.describe Cabriolet::Plugin do
 
   describe "#metadata" do
     it "raises NotImplementedError for base class" do
-      plugin = Cabriolet::Plugin.new
+      plugin = described_class.new
       expect { plugin.metadata }.to raise_error(NotImplementedError)
     end
 
@@ -88,7 +88,7 @@ RSpec.describe Cabriolet::Plugin do
 
   describe "#setup" do
     it "raises NotImplementedError for base class" do
-      plugin = Cabriolet::Plugin.new
+      plugin = described_class.new
       expect { plugin.setup }.to raise_error(NotImplementedError)
     end
 
@@ -189,7 +189,7 @@ RSpec.describe Cabriolet::Plugin do
           plugin_no_manager.send(:register_algorithm, :test, Object,
                                  category: :compressor)
         end.to raise_error(Cabriolet::PluginError,
-                          /Plugin manager not available/)
+                           /Plugin manager not available/)
       end
 
       it "registers algorithm with manager" do
@@ -200,7 +200,7 @@ RSpec.describe Cabriolet::Plugin do
           .with(:test, algo_class, category: :compressor)
 
         plugin.send(:register_algorithm, :test, algo_class,
-                   category: :compressor)
+                    category: :compressor)
       end
 
       it "supports priority option" do
@@ -210,7 +210,7 @@ RSpec.describe Cabriolet::Plugin do
           .with(:test, algo_class, category: :compressor, priority: 10)
 
         plugin.send(:register_algorithm, :test, algo_class,
-                   category: :compressor, priority: 10)
+                    category: :compressor, priority: 10)
       end
     end
 
@@ -220,7 +220,7 @@ RSpec.describe Cabriolet::Plugin do
         expect do
           plugin_no_manager.send(:register_format, :test, Object)
         end.to raise_error(Cabriolet::PluginError,
-                          /Plugin manager not available/)
+                           /Plugin manager not available/)
       end
 
       it "registers format with manager" do
@@ -237,7 +237,7 @@ RSpec.describe Cabriolet::Plugin do
   describe "constants" do
     it "defines valid plugin states" do
       expect(Cabriolet::Plugin::STATES).to eq(
-        %i[discovered loaded active failed disabled]
+        %i[discovered loaded active failed disabled],
       )
     end
   end

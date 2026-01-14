@@ -93,8 +93,8 @@ module Cabriolet
           chunk_size = [FRAME_SIZE, input_data.bytesize - pos].min
           chunk = input_data[pos, chunk_size]
 
-          if ENV['DEBUG_MSZIP_COMPRESS']
-            $stderr.puts "DEBUG compress: Frame #{frame_num}: pos=#{pos}, chunk_size=#{chunk_size}"
+          if ENV["DEBUG_MSZIP_COMPRESS"]
+            warn "DEBUG compress: Frame #{frame_num}: pos=#{pos}, chunk_size=#{chunk_size}"
           end
 
           # Write CK signature
@@ -107,8 +107,8 @@ module Cabriolet
           # Flush bitstream after each frame to ensure data is written
           @bitstream.flush
 
-          if ENV['DEBUG_MSZIP_COMPRESS']
-            $stderr.puts "DEBUG compress: Frame #{frame_num} complete, flushed"
+          if ENV["DEBUG_MSZIP_COMPRESS"]
+            warn "DEBUG compress: Frame #{frame_num} complete, flushed"
           end
 
           pos += chunk_size
@@ -142,18 +142,18 @@ module Cabriolet
       #
       # @return [void]
       def write_signature
-        if ENV['DEBUG_MSZIP_COMPRESS']
-          $stderr.puts "DEBUG write_signature: ENTRY"
+        if ENV["DEBUG_MSZIP_COMPRESS"]
+          warn "DEBUG write_signature: ENTRY"
         end
         @bitstream.byte_align
         SIGNATURE.each do |byte|
-          if ENV['DEBUG_MSZIP_COMPRESS']
-            $stderr.puts "DEBUG write_signature: Writing byte 0x#{byte.to_s(16)}"
+          if ENV["DEBUG_MSZIP_COMPRESS"]
+            warn "DEBUG write_signature: Writing byte 0x#{byte.to_s(16)}"
           end
           @bitstream.write_raw_byte(byte)
         end
-        if ENV['DEBUG_MSZIP_COMPRESS']
-          $stderr.puts "DEBUG write_signature: EXIT"
+        if ENV["DEBUG_MSZIP_COMPRESS"]
+          warn "DEBUG write_signature: EXIT"
         end
       end
 
@@ -163,8 +163,8 @@ module Cabriolet
       # @param is_last [Boolean] Whether this is the last block
       # @return [void]
       def compress_block(data, is_last)
-        if ENV['DEBUG_MSZIP_COMPRESS']
-          $stderr.puts "DEBUG compress_block: ENTRY data_size=#{data.bytesize} is_last=#{is_last}"
+        if ENV["DEBUG_MSZIP_COMPRESS"]
+          warn "DEBUG compress_block: ENTRY data_size=#{data.bytesize} is_last=#{is_last}"
         end
 
         # Write block header
@@ -180,8 +180,8 @@ module Cabriolet
         # Write end-of-block symbol (256)
         encode_literal(256)
 
-        if ENV['DEBUG_MSZIP_COMPRESS']
-          $stderr.puts "DEBUG compress_block: EXIT"
+        if ENV["DEBUG_MSZIP_COMPRESS"]
+          warn "DEBUG compress_block: EXIT"
         end
       end
 

@@ -21,7 +21,7 @@ module Cabriolet
       # @param file [String] Path to the HLP file
       # @param options [Hash] Additional options (unused)
       # @return [void]
-      def list(file, options = {})
+      def list(file, _options = {})
         validate_file_exists(file)
 
         decompressor = Decompressor.new
@@ -42,7 +42,7 @@ module Cabriolet
       # @param output_dir [String] Output directory path (default: current directory)
       # @param options [Hash] Additional options (unused)
       # @return [void]
-      def extract(file, output_dir = nil, options = {})
+      def extract(file, output_dir = nil, _options = {})
         validate_file_exists(file)
 
         output_dir ||= "."
@@ -91,7 +91,7 @@ module Cabriolet
       # @param file [String] Path to the HLP file
       # @param options [Hash] Additional options (unused)
       # @return [void]
-      def info(file, options = {})
+      def info(file, _options = {})
         validate_file_exists(file)
 
         decompressor = Decompressor.new
@@ -109,7 +109,7 @@ module Cabriolet
       # @param file [String] Path to the HLP file
       # @param options [Hash] Additional options (unused)
       # @return [void]
-      def test(file, options = {})
+      def test(file, _options = {})
         validate_file_exists(file)
 
         decompressor = Decompressor.new
@@ -118,18 +118,18 @@ module Cabriolet
         puts "Testing #{file}..."
         # TODO: Implement full integrity testing
         format_name = if header.respond_to?(:version)
-                       version_value = header.version
-                       # Convert BinData objects to integer for comparison
-                       version_int = version_value.to_i if version_value.respond_to?(:to_i)
+                        version_value = header.version
+                        # Convert BinData objects to integer for comparison
+                        version_int = version_value.to_i if version_value.respond_to?(:to_i)
 
-                       if version_value.is_a?(Integer) || (version_int && version_int > 0)
-                         "QUICKHELP v#{version_value}"
-                       elsif version_value.is_a?(Symbol)
-                         version_value.to_s.upcase.sub("WINHELP", "WinHelp ")
-                       else
-                         "unknown"
-                       end
-                     end
+                        if version_value.is_a?(Integer) || version_int&.positive?
+                          "QUICKHELP v#{version_value}"
+                        elsif version_value.is_a?(Symbol)
+                          version_value.to_s.upcase.sub("WINHELP", "WinHelp ")
+                        else
+                          "unknown"
+                        end
+                      end
         puts "OK: HLP file structure is valid (#{format_name} format)"
 
         decompressor.close(header)
@@ -144,18 +144,18 @@ module Cabriolet
       # @return [void]
       def display_header(header, file)
         format_name = if header.respond_to?(:version)
-                       version_value = header.version
-                       # Convert BinData objects to integer for comparison
-                       version_int = version_value.to_i if version_value.respond_to?(:to_i)
+                        version_value = header.version
+                        # Convert BinData objects to integer for comparison
+                        version_int = version_value.to_i if version_value.respond_to?(:to_i)
 
-                       if version_value.is_a?(Integer) || (version_int && version_int > 0)
-                         "QUICKHELP v#{version_value}"
-                       elsif header.version.is_a?(Symbol)
-                         header.version.to_s.upcase.sub("WINHELP", "WinHelp ")
-                       else
-                         header.version.to_s
-                       end
-                     end
+                        if version_value.is_a?(Integer) || version_int&.positive?
+                          "QUICKHELP v#{version_value}"
+                        elsif header.version.is_a?(Symbol)
+                          header.version.to_s.upcase.sub("WINHELP", "WinHelp ")
+                        else
+                          header.version.to_s
+                        end
+                      end
         puts "HLP File: #{file}"
         puts "Format: #{format_name || 'unknown'}"
         puts "\nFiles:"
@@ -166,7 +166,7 @@ module Cabriolet
       # @param decompressor [Decompressor] The decompressor instance
       # @param header [Object] The HLP header object
       # @return [void]
-      def display_files(decompressor, header)
+      def display_files(_decompressor, header)
         if header.respond_to?(:files)
           header.files.each do |f|
             puts "  #{f.filename} (#{f.length} bytes)"
@@ -191,13 +191,13 @@ module Cabriolet
           # Convert BinData objects to integer for comparison
           version_int = version_value.to_i if version_value.respond_to?(:to_i)
 
-          format_name = if version_value.is_a?(Integer) || (version_int && version_int > 0)
-                         "QUICKHELP v#{version_value}"
-                       elsif version_value.is_a?(Symbol)
-                         version_value.to_s.upcase.sub("WINHELP", "WinHelp ")
-                       else
-                         version_value.to_s
-                       end
+          format_name = if version_value.is_a?(Integer) || version_int&.positive?
+                          "QUICKHELP v#{version_value}"
+                        elsif version_value.is_a?(Symbol)
+                          version_value.to_s.upcase.sub("WINHELP", "WinHelp ")
+                        else
+                          version_value.to_s
+                        end
           puts "Format: #{format_name}"
         end
 
@@ -222,7 +222,7 @@ module Cabriolet
       # @param files [Array<String>] Input files
       # @param options [Hash] Additional options
       # @return [void]
-      def create_quickhelp(output, files, options)
+      def create_quickhelp(output, files, _options)
         compressor = Compressor.new
 
         files.each do |f|
@@ -242,7 +242,7 @@ module Cabriolet
       # @param files [Array<String>] Input files
       # @param options [Hash] Additional options
       # @return [void]
-      def create_winhelp(output, files, options)
+      def create_winhelp(output, files, _options)
         compressor = Compressor.create_winhelp
 
         files.each do |f|
@@ -265,6 +265,9 @@ module Cabriolet
 
         format = format_value.to_sym
         valid_formats = %i[quickhelp winhelp]
+
+        # Map :hlp to default :quickhelp format
+        format = :quickhelp if format == :hlp
 
         unless valid_formats.include?(format)
           raise ArgumentError,

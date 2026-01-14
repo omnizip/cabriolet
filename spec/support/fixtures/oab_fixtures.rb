@@ -5,7 +5,7 @@
 # Provides access to OAB (Offline Address Book) test files.
 
 module OabFixtures
-  FIXTURES_BASE = File.expand_path(File.join(__dir__, "../../../fixtures"))
+  FIXTURES_BASE = File.expand_path(File.join(__dir__, "../../fixtures"))
 
   # OAB test files
   FILES = {

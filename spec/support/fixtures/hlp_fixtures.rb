@@ -58,7 +58,8 @@ module HlpFixtures
     when :all
       all_files
     else
-      raise ArgumentError, "Unknown scenario: #{scenario}. Available: :winhelp, :all"
+      raise ArgumentError,
+            "Unknown scenario: #{scenario}. Available: :winhelp, :all"
     end
   end
 end

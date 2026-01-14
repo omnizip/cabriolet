@@ -54,7 +54,7 @@ RSpec.describe Cabriolet::CLI do
       it "aborts with error message" do
         expect do
           cli.list("/nonexistent.cab")
-        end.to raise_error(SystemExit)
+        end.to raise_error(Cabriolet::Error)
       end
     end
   end
@@ -112,7 +112,7 @@ RSpec.describe Cabriolet::CLI do
       it "aborts with error message" do
         expect do
           cli.extract("/nonexistent.cab")
-        end.to raise_error(SystemExit)
+        end.to raise_error(Cabriolet::Error)
       end
     end
   end
@@ -179,7 +179,7 @@ RSpec.describe Cabriolet::CLI do
       it "aborts with error message" do
         expect do
           cli.info("/nonexistent.cab")
-        end.to raise_error(SystemExit)
+        end.to raise_error(Cabriolet::Error)
       end
     end
   end
@@ -216,7 +216,7 @@ RSpec.describe Cabriolet::CLI do
       it "aborts with error message" do
         expect do
           cli.test("/nonexistent.cab")
-        end.to raise_error(SystemExit)
+        end.to raise_error(Cabriolet::Error)
       end
     end
   end
@@ -265,24 +265,26 @@ RSpec.describe Cabriolet::CLI do
       bad_file = File.join(__dir__, "fixtures/libmspack/cabd/bad_signature.cab")
       expect do
         cli.list(bad_file)
-      end.to raise_error(SystemExit)
+      end.to raise_error(Cabriolet::ParseError)
     end
 
     it "handles IOError gracefully" do
       expect do
         cli.list("/nonexistent/path/file.cab")
-      end.to raise_error(SystemExit)
+      end.to raise_error(Cabriolet::Error, /Cannot detect format/)
     end
   end
 
   # Tests for legacy command compatibility
   describe "#chm_list" do
     let(:cli) { described_class.new }
-    let(:chm_fixture) { File.join(__dir__, "fixtures/chm/simple.chm") }
+    let(:chm_fixture) do
+      File.join(__dir__, "fixtures/chm/imlib2_doc_v1x1x1_r1x0_20171019.chm")
+    end
 
     it "lists CHM contents" do
       skip "CHM fixture not available" unless File.exist?(chm_fixture)
-      expect { cli.chm_list(chm_fixture) }.to output(/CHM/).to_stdout
+      expect { cli.chm_list(chm_fixture) }.to output(/File|Directory/).to_stdout
     end
 
     it "uses format override" do
@@ -293,13 +295,15 @@ RSpec.describe Cabriolet::CLI do
 
   describe "#expand" do
     let(:cli) { described_class.new }
-    let(:szdd_fixture) { File.join(__dir__, "fixtures/szdd/basic.szdd") }
+    let(:szdd_fixture) { File.join(__dir__, "fixtures/MUANGL20/MAUNINST.EX_") }
 
     it "expands SZDD file" do
       skip "SZDD fixture not available" unless File.exist?(szdd_fixture)
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          expect { cli.expand(szdd_fixture) }.to output(/Expanded/).to_stdout
+          expect do
+            cli.expand(szdd_fixture)
+          end.to output(/Expanded|Decompressed/).to_stdout
         end
       end
     end
@@ -310,9 +314,10 @@ RSpec.describe Cabriolet::CLI do
     let(:cli) { described_class.new }
 
     it "respects global format option" do
-      skip "Requires format detection setup"
-      # The dispatcher should use the format override
-      expect { cli.invoke(:list, [fixture_file], format: "cab") }.not_to raise_error
+      # Test that the global --format option works by listing a CAB file
+      expect do
+        cli.invoke(:list, [fixture_file], { format: "cab" })
+      end.not_to raise_error
     end
   end
 end

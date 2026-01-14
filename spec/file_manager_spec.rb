@@ -78,8 +78,7 @@ RSpec.describe Cabriolet::FileManager do
       manager.add_data("data1", "file1.txt")
       manager.add_data("data2", "file2.txt")
 
-      paths = []
-      manager.each { |entry| paths << entry.archive_path }
+      paths = manager.map(&:archive_path)
 
       expect(paths).to eq(["file1.txt", "file2.txt"])
     end
@@ -89,7 +88,9 @@ RSpec.describe Cabriolet::FileManager do
       manager.add_data("data2", "file2.txt")
 
       expect(manager.map(&:archive_path)).to eq(["file1.txt", "file2.txt"])
-      expect(manager.select { |e| e.archive_path.start_with?("file") }.size).to eq(2)
+      expect(manager.select do |e|
+        e.archive_path.start_with?("file")
+      end.size).to eq(2)
     end
   end
 

@@ -61,7 +61,9 @@ RSpec.describe Cabriolet::Plugins::BZip2Plugin do
       plugin.setup
       plugin.instance_variable_set(:@config, { block_size: 99, level: 1 })
 
-      expect { plugin.activate }.to raise_error(Cabriolet::PluginError, /block_size/)
+      expect do
+        plugin.activate
+      end.to raise_error(Cabriolet::PluginError, /block_size/)
     end
   end
 
@@ -110,13 +112,13 @@ RSpec.describe Cabriolet::Plugins::BZip2Plugin do
 
       it "accepts custom block_size" do
         compressor = described_class.new(io_system, input, output, 4096,
-                                        block_size: 5)
+                                         block_size: 5)
         expect(compressor.instance_variable_get(:@block_size)).to eq(5)
       end
 
       it "accepts custom compression level" do
         compressor = described_class.new(io_system, input, output, 4096,
-                                        level: 7)
+                                         level: 7)
         expect(compressor.instance_variable_get(:@level)).to eq(7)
       end
 
@@ -133,9 +135,9 @@ RSpec.describe Cabriolet::Plugins::BZip2Plugin do
       end
 
       it "accepts progress callback" do
-        callback = ->(pct) { puts pct }
+        callback = ->(pct) {}
         compressor = described_class.new(io_system, input, output, 4096,
-                                        progress: callback)
+                                         progress: callback)
         expect(compressor.instance_variable_get(:@progress)).to eq(callback)
       end
     end
@@ -153,22 +155,24 @@ RSpec.describe Cabriolet::Plugins::BZip2Plugin do
 
       it "returns byte count" do
         bytes = compressor.compress
-        expect(bytes).to be > 0
+        expect(bytes).to be.positive?
       end
 
       it "handles empty input" do
         empty_input = io_system.open_memory("")
-        empty_compressor = described_class.new(io_system, empty_input, output, 4096)
+        empty_compressor = described_class.new(io_system, empty_input, output,
+                                               4096)
         bytes = empty_compressor.compress
-        expect(bytes).to be > 0 # At least header + EOS
+        expect(bytes).to be.positive? # At least header + EOS
       end
 
       it "processes large data" do
         large_data = "A" * 100000
         large_input = io_system.open_memory(large_data)
-        large_compressor = described_class.new(io_system, large_input, output, 8192)
+        large_compressor = described_class.new(io_system, large_input, output,
+                                               8192)
         bytes = large_compressor.compress
-        expect(bytes).to be > 0
+        expect(bytes).to be.positive?
       end
 
       it "calls progress callback" do
@@ -184,12 +188,16 @@ RSpec.describe Cabriolet::Plugins::BZip2Plugin do
 
       it "raises error on closed input" do
         input.close
-        expect { compressor.compress }.to raise_error(Cabriolet::CompressionError, /closed/)
+        expect do
+          compressor.compress
+        end.to raise_error(Cabriolet::CompressionError, /closed/)
       end
 
       it "raises error on closed output" do
         output.close
-        expect { compressor.compress }.to raise_error(Cabriolet::CompressionError, /closed/)
+        expect do
+          compressor.compress
+        end.to raise_error(Cabriolet::CompressionError, /closed/)
       end
     end
   end
@@ -200,8 +208,8 @@ RSpec.describe Cabriolet::Plugins::BZip2Plugin do
     # Create valid BZip2 header + stub data
     let(:compressed_data) do
       header = "BZh9" # Magic + version + block_size
-      block = "\x31\x41\x59\x26\x53\x59" + ("Test data" * 10)
-      eos = "\x17\x72\x45\x38\x50\x90" + "\x00" * 4
+      block = "1AY&SY#{'Test data' * 10}"
+      eos = "\u0017rE8P\x90#{"\x00" * 4}"
       header + block + eos
     end
 
@@ -215,9 +223,9 @@ RSpec.describe Cabriolet::Plugins::BZip2Plugin do
       end
 
       it "accepts progress callback" do
-        callback = ->(pct) { puts pct }
+        callback = ->(pct) {}
         decompressor = described_class.new(io_system, input, output, 4096,
-                                          progress: callback)
+                                           progress: callback)
         expect(decompressor.instance_variable_get(:@progress)).to eq(callback)
       end
     end
@@ -226,7 +234,7 @@ RSpec.describe Cabriolet::Plugins::BZip2Plugin do
       let(:decompressor) { described_class.new(io_system, input, output, 4096) }
 
       it "validates and reads header" do
-        bytes = decompressor.decompress(1000)
+        decompressor.decompress(1000)
         expect(decompressor.instance_variable_get(:@header_read)).to be true
       end
 
@@ -248,7 +256,8 @@ RSpec.describe Cabriolet::Plugins::BZip2Plugin do
 
       it "handles truncated header" do
         short_input = io_system.open_memory("BZ")
-        short_decompressor = described_class.new(io_system, short_input, output, 4096)
+        short_decompressor = described_class.new(io_system, short_input,
+                                                 output, 4096)
 
         expect do
           short_decompressor.decompress(100)
@@ -257,7 +266,8 @@ RSpec.describe Cabriolet::Plugins::BZip2Plugin do
 
       it "validates magic bytes" do
         invalid_input = io_system.open_memory("INVALID_DATA")
-        invalid_decompressor = described_class.new(io_system, invalid_input, output, 4096)
+        invalid_decompressor = described_class.new(io_system, invalid_input,
+                                                   output, 4096)
 
         expect do
           invalid_decompressor.decompress(100)
@@ -266,7 +276,8 @@ RSpec.describe Cabriolet::Plugins::BZip2Plugin do
 
       it "validates version" do
         invalid_version = io_system.open_memory("BZx9")
-        version_decompressor = described_class.new(io_system, invalid_version, output, 4096)
+        version_decompressor = described_class.new(io_system, invalid_version,
+                                                   output, 4096)
 
         expect do
           version_decompressor.decompress(100)
@@ -329,7 +340,7 @@ RSpec.describe Cabriolet::Plugins::BZip2Plugin do
       meta = plugin.metadata
       result = Cabriolet::PluginValidator.validate_version_compatibility(
         meta[:cabriolet_version],
-        Cabriolet::VERSION
+        Cabriolet::VERSION,
       )
       expect(result).to be_empty
     end
@@ -341,7 +352,8 @@ RSpec.describe Cabriolet::Plugins::BZip2Plugin do
     let(:output) { io_system.open_memory }
 
     it "handles compression errors gracefully" do
-      compressor = described_class::BZip2Compressor.new(io_system, input, output, 4096)
+      compressor = described_class::BZip2Compressor.new(io_system, input,
+                                                        output, 4096)
 
       # Simulate error by closing handles
       input.close
@@ -354,7 +366,8 @@ RSpec.describe Cabriolet::Plugins::BZip2Plugin do
 
     it "handles decompression errors gracefully" do
       invalid_data = io_system.open_memory("NOT_BZIP2")
-      decompressor = described_class::BZip2Decompressor.new(io_system, invalid_data, output, 4096)
+      decompressor = described_class::BZip2Decompressor.new(io_system,
+                                                            invalid_data, output, 4096)
 
       expect do
         decompressor.decompress(100)

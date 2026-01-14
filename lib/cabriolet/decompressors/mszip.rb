@@ -57,7 +57,8 @@ module Cabriolet
       # @param output [System::FileHandle, System::MemoryHandle] Output handle
       # @param buffer_size [Integer] Buffer size for I/O operations
       # @param fix_mszip [Boolean] Enable repair mode for corrupted data
-      def initialize(io_system, input, output, buffer_size, fix_mszip: false, salvage: false, **_kwargs)
+      def initialize(io_system, input, output, buffer_size, fix_mszip: false,
+salvage: false, **_kwargs)
         super(io_system, input, output, buffer_size)
         @fix_mszip = fix_mszip
 
@@ -65,10 +66,11 @@ module Cabriolet
         @window = "\0" * FRAME_SIZE
         @window_posn = 0
         @bytes_output = 0
-        @window_offset = 0  # Offset into window for unconsumed data (for multi-file CFDATA blocks)
+        @window_offset = 0 # Offset into window for unconsumed data (for multi-file CFDATA blocks)
 
         # Initialize bitstream
-        @bitstream = Binary::Bitstream.new(io_system, input, buffer_size, salvage: salvage)
+        @bitstream = Binary::Bitstream.new(io_system, input, buffer_size,
+                                           salvage: salvage)
 
         # Initialize Huffman trees
         @literal_lengths = Array.new(LITERAL_MAXSYMBOLS, 0)
@@ -84,15 +86,15 @@ module Cabriolet
       def decompress(bytes)
         total_written = 0
 
-        if ENV['DEBUG_MSZIP']
-          $stderr.puts "DEBUG MSZIP.decompress(#{bytes}): ENTRY bytes_output=#{@bytes_output} window_offset=#{@window_offset} window_posn=#{@window_posn}"
+        if ENV["DEBUG_MSZIP"]
+          warn "DEBUG MSZIP.decompress(#{bytes}): ENTRY bytes_output=#{@bytes_output} window_offset=#{@window_offset} window_posn=#{@window_posn}"
         end
 
         while bytes.positive?
           # Check if we have buffered data from previous inflate
           if @bytes_output.positive?
-            if ENV['DEBUG_MSZIP']
-              $stderr.puts "DEBUG MSZIP: Using buffered data: bytes_output=#{@bytes_output} window_offset=#{@window_offset}"
+            if ENV["DEBUG_MSZIP"]
+              warn "DEBUG MSZIP: Using buffered data: bytes_output=#{@bytes_output} window_offset=#{@window_offset}"
             end
 
             # Write from buffer
@@ -103,8 +105,8 @@ module Cabriolet
             @bytes_output -= write_amount
             @window_offset += write_amount
 
-            if ENV['DEBUG_MSZIP']
-              $stderr.puts "DEBUG MSZIP: After buffer write: total_written=#{total_written} bytes_remaining=#{bytes} bytes_output=#{@bytes_output}"
+            if ENV["DEBUG_MSZIP"]
+              warn "DEBUG MSZIP: After buffer write: total_written=#{total_written} bytes_remaining=#{bytes} bytes_output=#{@bytes_output}"
             end
 
             # Continue loop to check if we need more data
@@ -118,14 +120,14 @@ module Cabriolet
 
           # Read 'CK' signature (marks start of MSZIP frame)
           # Every MSZIP frame starts with a CK signature
-          if ENV['DEBUG_MSZIP']
-            $stderr.puts "DEBUG MSZIP: Reading CK signature (new MSZIP frame)"
+          if ENV["DEBUG_MSZIP"]
+            warn "DEBUG MSZIP: Reading CK signature (new MSZIP frame)"
           end
           read_signature
 
           # Inflate the MSZIP frame (processes deflate blocks until last_block or window full)
-          if ENV['DEBUG_MSZIP']
-            $stderr.puts "DEBUG MSZIP: Calling inflate_block"
+          if ENV["DEBUG_MSZIP"]
+            warn "DEBUG MSZIP: Calling inflate_block"
           end
 
           begin
@@ -140,15 +142,15 @@ module Cabriolet
             @bytes_output = FRAME_SIZE
           end
 
-          if ENV['DEBUG_MSZIP']
-            $stderr.puts "DEBUG MSZIP: After inflate_block: bytes_output=#{@bytes_output} window_posn=#{@window_posn}"
+          if ENV["DEBUG_MSZIP"]
+            warn "DEBUG MSZIP: After inflate_block: bytes_output=#{@bytes_output} window_posn=#{@window_posn}"
           end
 
           # Now we have data in the window buffer - loop back to write from it
         end
 
-        if ENV['DEBUG_MSZIP']
-          $stderr.puts "DEBUG MSZIP.decompress: EXIT total_written=#{total_written}"
+        if ENV["DEBUG_MSZIP"]
+          warn "DEBUG MSZIP.decompress: EXIT total_written=#{total_written}"
         end
 
         total_written
@@ -158,8 +160,8 @@ module Cabriolet
 
       # Read and verify 'CK' signature
       def read_signature
-        if ENV['DEBUG_MSZIP']
-          $stderr.puts "DEBUG read_signature: Before byte_align"
+        if ENV["DEBUG_MSZIP"]
+          warn "DEBUG read_signature: Before byte_align"
         end
 
         # Align to byte boundary
@@ -169,8 +171,8 @@ module Cabriolet
         c = @bitstream.read_bits(8)
         k = @bitstream.read_bits(8)
 
-        if ENV['DEBUG_MSZIP']
-          $stderr.puts "DEBUG read_signature: Read 0x#{c.to_s(16)} 0x#{k.to_s(16)} (expected 'C'=0x43 'K'=0x4B)"
+        if ENV["DEBUG_MSZIP"]
+          warn "DEBUG read_signature: Read 0x#{c.to_s(16)} 0x#{k.to_s(16)} (expected 'C'=0x43 'K'=0x4B)"
         end
 
         # If not CK, search for it (similar to libmspack's tolerant behavior)
@@ -186,8 +188,8 @@ module Cabriolet
 
             if c == SIGNATURE_BYTE_C && k == SIGNATURE_BYTE_K
               found = true
-              if ENV['DEBUG_MSZIP']
-                $stderr.puts "DEBUG read_signature: Found CK signature after searching"
+              if ENV["DEBUG_MSZIP"]
+                warn "DEBUG read_signature: Found CK signature after searching"
               end
               break
             end
@@ -209,8 +211,8 @@ module Cabriolet
         last_block = @bitstream.read_bits(1)
         block_type = @bitstream.read_bits(2)
 
-        if ENV['DEBUG_MSZIP']
-          $stderr.puts "DEBUG inflate_block: First block: last_block=#{last_block} block_type=#{block_type}"
+        if ENV["DEBUG_MSZIP"]
+          warn "DEBUG inflate_block: First block: last_block=#{last_block} block_type=#{block_type}"
         end
 
         loop do
@@ -228,8 +230,8 @@ module Cabriolet
             raise DecompressionError, "Invalid block type: #{block_type}"
           end
 
-          if ENV['DEBUG_MSZIP']
-            $stderr.puts "DEBUG inflate_block: After block: last_block=#{last_block} window_posn=#{@window_posn}"
+          if ENV["DEBUG_MSZIP"]
+            warn "DEBUG inflate_block: After block: last_block=#{last_block} window_posn=#{@window_posn}"
           end
 
           # Stop if this was the last block
@@ -381,8 +383,8 @@ module Cabriolet
       def inflate_huffman_block
         symbol_count = 0
         loop do
-          if ENV['DEBUG_MSZIP_SYMBOLS']
-            $stderr.puts "DEBUG inflate_huffman_block: window_posn=#{@window_posn} bytes_output=#{@bytes_output}"
+          if ENV["DEBUG_MSZIP_SYMBOLS"]
+            warn "DEBUG inflate_huffman_block: window_posn=#{@window_posn} bytes_output=#{@bytes_output}"
           end
 
           # Decode symbol from literal tree
@@ -392,8 +394,8 @@ module Cabriolet
           )
           symbol_count += 1
 
-          if ENV['DEBUG_MSZIP_SYMBOLS'] || ENV['DEBUG_MSZIP']
-            $stderr.puts "DEBUG inflate_huffman_block[#{symbol_count}]: decoded code=#{code} (#{'0x%02x' % code if code < 256})"
+          if ENV["DEBUG_MSZIP_SYMBOLS"] || ENV["DEBUG_MSZIP"]
+            warn "DEBUG inflate_huffman_block[#{symbol_count}]: decoded code=#{code} (#{'0x%02x' % code if code < 256})"
           end
 
           if code < 256
@@ -403,8 +405,8 @@ module Cabriolet
             flush_window if @window_posn == FRAME_SIZE
           elsif code == 256
             # End of block
-            if ENV['DEBUG_MSZIP'] || ENV['DEBUG_MSZIP_SYMBOLS']
-              $stderr.puts "DEBUG inflate_huffman_block: END OF BLOCK (window_posn=#{@window_posn})"
+            if ENV["DEBUG_MSZIP"] || ENV["DEBUG_MSZIP_SYMBOLS"]
+              warn "DEBUG inflate_huffman_block: END OF BLOCK (window_posn=#{@window_posn})"
             end
             break
           else

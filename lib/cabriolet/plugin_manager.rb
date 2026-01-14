@@ -52,11 +52,9 @@ module Cabriolet
         plugin_files = Gem.find_files("cabriolet/plugins/**/*.rb")
 
         plugin_files.each do |file|
-          begin
-            load_plugin_file(file)
-          rescue StandardError => e
-            warn "Failed to load plugin from #{file}: #{e.message}"
-          end
+          load_plugin_file(file)
+        rescue StandardError => e
+          warn "Failed to load plugin from #{file}: #{e.message}"
         end
 
         @plugins.keys
@@ -126,7 +124,7 @@ module Cabriolet
         entry = @plugins[name]
         raise PluginError, "Plugin '#{name}' not found" unless entry
 
-        if entry[:state] == :loaded || entry[:state] == :active
+        if %i[loaded active].include?(entry[:state])
           return true
         end
 
@@ -260,12 +258,12 @@ module Cabriolet
           end
         else
           @plugins.select { |_, entry| entry[:state] == state }
-                 .transform_values do |entry|
-            {
-              metadata: entry[:metadata],
-              state: entry[:state],
-              error: entry[:error],
-            }
+            .transform_values do |entry|
+              {
+                metadata: entry[:metadata],
+                state: entry[:state],
+                error: entry[:error],
+              }
           end
         end
       end
@@ -376,7 +374,7 @@ module Cabriolet
         end
 
         dep_entry = @plugins[dep_name]
-        unless dep_entry[:state] == :loaded || dep_entry[:state] == :active
+        unless %i[loaded active].include?(dep_entry[:state])
           raise PluginError,
                 "Dependency '#{dep_name}' not loaded"
         end

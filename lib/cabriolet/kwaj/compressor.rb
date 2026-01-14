@@ -381,7 +381,7 @@ module Cabriolet
           input_handle,
           output_handle,
           2048,
-          mode: Compressors::LZSS::MODE_QBASIC
+          mode: Compressors::LZSS::MODE_QBASIC,
         )
         compressor.compress
       end

@@ -34,11 +34,11 @@ module Cabriolet
     # @param initial_offset [Integer] Starting offset
     # @yield [item] Block that returns size for each item
     # @return [Array<Hash>] Items with their offsets
-    def cumulative_offsets(items, initial_offset = 0, &size_block)
+    def cumulative_offsets(items, initial_offset = 0)
       offset = initial_offset
       items.map do |item|
         current_offset = offset
-        item_size = size_block.call(item)
+        item_size = yield(item)
         offset += item_size
         { item: item, offset: current_offset, size: item_size }
       end

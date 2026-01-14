@@ -67,7 +67,7 @@ RSpec.describe Cabriolet::Models::SZDDHeader do
         # but DOS filenames are uppercase (e.g., .EXE, .HLP, .DLL)
         header = described_class.new(
           format: described_class::FORMAT_NORMAL,
-          missing_char: "p",  # lowercase in header
+          missing_char: "p", # lowercase in header
         )
 
         expect(header.suggested_filename("TBAVWIN.HL_")).to eq("TBAVWIN.HLP")

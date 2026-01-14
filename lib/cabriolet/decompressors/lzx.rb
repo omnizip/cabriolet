@@ -149,7 +149,8 @@ module Cabriolet
         @e8_buf = "\0" * FRAME_SIZE
 
         # Initialize bitstream (LZX uses MSB-first bit ordering per libmspack lzxd.c)
-        @bitstream = Binary::Bitstream.new(io_system, input, buffer_size, bit_order: :msb, salvage: salvage)
+        @bitstream = Binary::Bitstream.new(io_system, input, buffer_size,
+                                           bit_order: :msb, salvage: salvage)
 
         # Initialize Huffman trees
         initialize_trees
@@ -183,7 +184,7 @@ module Cabriolet
 
         while @frame < end_frame
           # Check reset interval - reset offset registers at frame boundaries
-          if @reset_interval.positive? && (@frame % @reset_interval).zero? && @frame > 0
+          if @reset_interval.positive? && (@frame % @reset_interval).zero? && @frame.positive?
             @r0 = @r1 = @r2 = 1
           end
 
@@ -362,7 +363,8 @@ module Cabriolet
         # Build aligned tree
         # Note: Aligned tree may be incomplete (Kraft sum < 1.0), which is valid
         # as long as the unused codes are never encountered in the bitstream
-        @aligned_tree = Huffman::Tree.new(@aligned_lengths, ALIGNED_MAXSYMBOLS, bit_order: :msb)
+        @aligned_tree = Huffman::Tree.new(@aligned_lengths, ALIGNED_MAXSYMBOLS,
+                                          bit_order: :msb)
         @aligned_tree.build_table(ALIGNED_TABLEBITS)
 
         # Read main and length trees (same as verbatim)
@@ -386,7 +388,8 @@ module Cabriolet
         read_lengths(@maintree_lengths, 256, @maintree_maxsymbols)
 
         # Build main tree
-        @maintree = Huffman::Tree.new(@maintree_lengths, @maintree_maxsymbols, bit_order: :msb)
+        @maintree = Huffman::Tree.new(@maintree_lengths, @maintree_maxsymbols,
+                                      bit_order: :msb)
         unless @maintree.build_table(LENGTH_TABLEBITS)
           raise DecompressionError,
                 "Failed to build main tree"
@@ -399,7 +402,8 @@ module Cabriolet
         read_lengths(@length_lengths, 0, NUM_SECONDARY_LENGTHS)
 
         # Build length tree (may be empty)
-        @length_tree = Huffman::Tree.new(@length_lengths, LENGTH_MAXSYMBOLS, bit_order: :msb)
+        @length_tree = Huffman::Tree.new(@length_lengths, LENGTH_MAXSYMBOLS,
+                                         bit_order: :msb)
         if @length_tree.build_table(LENGTH_TABLEBITS)
           @length_empty = false
         else
@@ -420,7 +424,8 @@ module Cabriolet
           @pretree_lengths[i] = @bitstream.read_bits(4)
         end
 
-        @pretree = Huffman::Tree.new(@pretree_lengths, PRETREE_MAXSYMBOLS, bit_order: :msb)
+        @pretree = Huffman::Tree.new(@pretree_lengths, PRETREE_MAXSYMBOLS,
+                                     bit_order: :msb)
         return if @pretree.build_table(PRETREE_TABLEBITS)
 
         raise DecompressionError, "Failed to build pretree"
@@ -640,7 +645,7 @@ module Cabriolet
           # Match wraps around window - validate it doesn't read beyond available data
           # Per libmspack lzxd.c lines 622-628: check if match offset goes beyond
           # what has been decompressed so far (accounting for any reference data)
-          ref_data_size = 0  # We don't support reference data yet (LZX DELTA feature)
+          ref_data_size = 0 # We don't support reference data yet (LZX DELTA feature)
           if offset > @offset && (offset - @window_posn) > ref_data_size
             raise DecompressionError, "Match offset beyond LZX stream"
           end

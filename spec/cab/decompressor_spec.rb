@@ -11,14 +11,19 @@ RSpec.describe Cabriolet::CAB::Decompressor do
       subject(:decompressor) { described_class.new }
 
       it { is_expected.to have_attributes(io_system: be_a(Cabriolet::System::IOSystem)) }
-      it { is_expected.to have_attributes(buffer_size: eq(Cabriolet.default_buffer_size)) }
+
+      it {
+        expect(subject).to have_attributes(buffer_size: eq(Cabriolet.default_buffer_size))
+      }
+
       it { is_expected.to have_attributes(fix_mszip: be(false)) }
       it { is_expected.to have_attributes(salvage: be(false)) }
     end
 
     context "with custom io_system" do
-      let(:custom_io) { Cabriolet::System::IOSystem.new }
       subject(:decompressor) { described_class.new(custom_io) }
+
+      let(:custom_io) { Cabriolet::System::IOSystem.new }
 
       it { is_expected.to have_attributes(io_system: eq(custom_io)) }
     end
@@ -103,7 +108,7 @@ RSpec.describe Cabriolet::CAB::Decompressor do
 
       it "can be set" do
         expect { decompressor.buffer_size = 8192 }
-          .to change { decompressor.buffer_size }
+          .to change(decompressor, :buffer_size)
           .to(8192)
       end
     end
@@ -115,12 +120,12 @@ RSpec.describe Cabriolet::CAB::Decompressor do
 
       it "can be toggled" do
         expect { decompressor.fix_mszip = true }
-          .to change { decompressor.fix_mszip }
+          .to change(decompressor, :fix_mszip)
           .from(false)
           .to(true)
 
         expect { decompressor.fix_mszip = false }
-          .to change { decompressor.fix_mszip }
+          .to change(decompressor, :fix_mszip)
           .from(true)
           .to(false)
       end
@@ -133,12 +138,12 @@ RSpec.describe Cabriolet::CAB::Decompressor do
 
       it "can be toggled" do
         expect { decompressor.salvage = true }
-          .to change { decompressor.salvage }
+          .to change(decompressor, :salvage)
           .from(false)
           .to(true)
 
         expect { decompressor.salvage = false }
-          .to change { decompressor.salvage }
+          .to change(decompressor, :salvage)
           .from(true)
           .to(false)
       end
@@ -285,7 +290,9 @@ RSpec.describe Cabriolet::CAB::Decompressor do
     end
 
     context "with CAB files with reserve data" do
-      let(:reserve_file) { File.join(__dir__, "../fixtures/libmspack/cabd/reserve_HFD.cab") }
+      let(:reserve_file) do
+        File.join(__dir__, "../fixtures/libmspack/cabd/reserve_HFD.cab")
+      end
 
       it "handles reserve data flag" do
         cabinet = decompressor.open(reserve_file)
@@ -306,7 +313,7 @@ RSpec.describe Cabriolet::CAB::Decompressor do
 
     context "fixture compatibility" do
       it "can open all basic fixture cabinets" do
-        basic_fixtures = [:basic, :simple]
+        basic_fixtures = %i[basic simple]
         basic_fixtures.each do |fixture_name|
           cabinet = decompressor.open(Fixtures.for(:cab).path(fixture_name))
           expect(cabinet.file_count).to be >= 0

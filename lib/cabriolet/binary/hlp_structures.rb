@@ -129,18 +129,20 @@ module Cabriolet
 
         # Check if this is a leaf node
         def leaf?
-          node_value < 0
+          node_value.negative?
         end
 
         # Get symbol for leaf node
         def symbol
           return nil unless leaf?
+
           node_value & 0xFF
         end
 
         # Get left child index for internal node
         def left_child_index
           return nil if leaf?
+
           node_value / 2
         end
       end
@@ -165,7 +167,7 @@ module Cabriolet
       class WinHelp3Header < BinData::Record
         endian :little
 
-        uint16 :magic           # 0x35F3
+        uint16 :magic # 0x35F3
         uint16 :unknown
         uint32 :directory_offset
         uint32 :free_list_offset
@@ -184,7 +186,7 @@ module Cabriolet
       class WinHelp4Header < BinData::Record
         endian :little
 
-        uint32 :magic           # 0x3F5F0000 or similar
+        uint32 :magic # 0x3F5F0000 or similar
         uint32 :directory_offset
         uint32 :free_list_offset
         uint32 :file_size
@@ -224,7 +226,7 @@ module Cabriolet
       class WinHelpBTreeHeader < BinData::Record
         endian :little
 
-        uint16 :magic           # 0x293B
+        uint16 :magic # 0x293B
         uint16 :flags
         uint16 :page_size
         string :structure, length: 16

@@ -98,7 +98,9 @@ RSpec.describe Cabriolet::LIT::Decompressor do
       header = Cabriolet::Models::LITFile.new
       header.drm_level = 1
       file = Cabriolet::Models::LITDirectoryEntry.new
-      expect { decompressor.extract(header, file, "output.txt") }.to raise_error(
+      expect do
+        decompressor.extract(header, file, "output.txt")
+      end.to raise_error(
         NotImplementedError,
         /Encrypted sections not yet supported/,
       )

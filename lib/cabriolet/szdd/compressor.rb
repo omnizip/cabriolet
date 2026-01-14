@@ -68,7 +68,7 @@ module Cabriolet
             input_handle,
             output_handle,
             2048,
-            mode: lzss_mode
+            mode: lzss_mode,
           )
 
           compressed_bytes = compressor.compress
@@ -122,7 +122,7 @@ module Cabriolet
                     Compressors::LZSS::MODE_EXPAND
                   else
                     Compressors::LZSS::MODE_QBASIC
-                  end
+                  end,
           )
 
           compressed_bytes = compressor.compress

@@ -94,14 +94,16 @@ RSpec.describe Cabriolet::Plugins::ExamplePlugin do
 
       it "handles empty input" do
         empty_input = io_system.open_memory("")
-        empty_compressor = described_class.new(io_system, empty_input, output, 4096)
+        empty_compressor = described_class.new(io_system, empty_input, output,
+                                               4096)
         bytes = empty_compressor.compress
         expect(bytes).to eq(0)
       end
 
       it "preserves non-letter characters" do
         special_input = io_system.open_memory("123!@#$%")
-        special_compressor = described_class.new(io_system, special_input, output, 4096)
+        special_compressor = described_class.new(io_system, special_input,
+                                                 output, 4096)
         bytes = special_compressor.compress
 
         output.seek(0)
@@ -112,7 +114,8 @@ RSpec.describe Cabriolet::Plugins::ExamplePlugin do
       it "handles large data in chunks" do
         large_data = "A" * 10000
         large_input = io_system.open_memory(large_data)
-        large_compressor = described_class.new(io_system, large_input, output, 1024)
+        large_compressor = described_class.new(io_system, large_input, output,
+                                               1024)
         bytes = large_compressor.compress
 
         expect(bytes).to eq(10000)
@@ -156,7 +159,8 @@ RSpec.describe Cabriolet::Plugins::ExamplePlugin do
 
       it "handles empty input" do
         empty_input = io_system.open_memory("")
-        empty_decompressor = described_class.new(io_system, empty_input, output, 4096)
+        empty_decompressor = described_class.new(io_system, empty_input,
+                                                 output, 4096)
         bytes = empty_decompressor.decompress(100)
         expect(bytes).to eq(0)
       end
@@ -164,7 +168,8 @@ RSpec.describe Cabriolet::Plugins::ExamplePlugin do
       it "handles large data" do
         large_data = "N" * 10000 # ROT13 of "A" * 10000
         large_input = io_system.open_memory(large_data)
-        large_decompressor = described_class.new(io_system, large_input, output, 1024)
+        large_decompressor = described_class.new(io_system, large_input,
+                                                 output, 1024)
         bytes = large_decompressor.decompress(10000)
 
         expect(bytes).to eq(10000)
@@ -189,13 +194,15 @@ RSpec.describe Cabriolet::Plugins::ExamplePlugin do
       # First compression
       input1 = io_system.open_memory(original)
       output1 = io_system.open_memory
-      compressor1 = described_class::ROT13Compressor.new(io_system, input1, output1, 4096)
+      compressor1 = described_class::ROT13Compressor.new(io_system, input1,
+                                                         output1, 4096)
       compressor1.compress
 
       # Second compression
       output1.seek(0)
       output2 = io_system.open_memory
-      compressor2 = described_class::ROT13Compressor.new(io_system, output1, output2, 4096)
+      compressor2 = described_class::ROT13Compressor.new(io_system, output1,
+                                                         output2, 4096)
       compressor2.compress
 
       # Should match original
@@ -208,13 +215,15 @@ RSpec.describe Cabriolet::Plugins::ExamplePlugin do
       # Compress
       input = io_system.open_memory(original)
       compressed = io_system.open_memory
-      compressor = described_class::ROT13Compressor.new(io_system, input, compressed, 4096)
+      compressor = described_class::ROT13Compressor.new(io_system, input,
+                                                        compressed, 4096)
       compressor.compress
 
       # Decompress
       compressed.seek(0)
       decompressed = io_system.open_memory
-      decompressor = described_class::ROT13Decompressor.new(io_system, compressed, decompressed, 4096)
+      decompressor = described_class::ROT13Decompressor.new(io_system,
+                                                            compressed, decompressed, 4096)
       decompressor.decompress(original.bytesize)
 
       # Should match original
@@ -235,7 +244,7 @@ RSpec.describe Cabriolet::Plugins::ExamplePlugin do
       meta = plugin.metadata
       result = Cabriolet::PluginValidator.validate_version_compatibility(
         meta[:cabriolet_version],
-        Cabriolet::VERSION
+        Cabriolet::VERSION,
       )
       expect(result).to be_empty
     end

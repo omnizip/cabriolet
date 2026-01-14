@@ -5,7 +5,7 @@
 # Provides access to SZDD-compressed executables from Windows 95/98 era software.
 
 module SzddFixtures
-  FIXTURES_BASE = File.expand_path(File.join(__dir__, "../../../fixtures"))
+  FIXTURES_BASE = File.expand_path(File.join(__dir__, "../../fixtures"))
 
   # SZDD-compressed files from MUANGL20 (M.U.A.N.G.E.L.O game)
   MUANGL20 = {

@@ -56,7 +56,8 @@ module Cabriolet
 
           n = node_values.length
           if n.even?
-            raise Cabriolet::ParseError, "Invalid Huffman tree: expected odd number of nodes"
+            raise Cabriolet::ParseError,
+                  "Invalid Huffman tree: expected odd number of nodes"
           end
 
           nodes = Array.new(n) { Node.new }
@@ -69,7 +70,8 @@ module Cabriolet
             if node_value.negative? # Leaf node (bit 15 set)
               symbol = node_value & 0xFF
               if symbol_exists[symbol]
-                raise Cabriolet::ParseError, "Invalid Huffman tree: symbol #{symbol} already encoded"
+                raise Cabriolet::ParseError,
+                      "Invalid Huffman tree: symbol #{symbol} already encoded"
               end
 
               node.symbol = symbol
@@ -80,12 +82,14 @@ module Cabriolet
 
               # Validate child indices are within bounds
               unless child0 < n && child1 < n
-                raise Cabriolet::ParseError, "Invalid Huffman tree: invalid child node location (child0=#{child0}, child1=#{child1}, n=#{n})"
+                raise Cabriolet::ParseError,
+                      "Invalid Huffman tree: invalid child node location (child0=#{child0}, child1=#{child1}, n=#{n})"
               end
 
               # Check for cycles by verifying left child hasn't been assigned yet
               if !nodes[child0].nil? && nodes[child0].left_child
-                raise Cabriolet::ParseError, "Invalid Huffman tree: cycle detected"
+                raise Cabriolet::ParseError,
+                      "Invalid Huffman tree: cycle detected"
               end
 
               node.left_child = nodes[child0]

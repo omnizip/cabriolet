@@ -60,8 +60,8 @@ RSpec.shared_examples "edge case handling" do |format|
         # Should either raise specific error or handle salvage mode
         expect { parser.parse(corrupted_fixture) }
           .to either raise_error(Cabriolet::ParseError)
-          .or raise_error(Cabriolet::CorruptionError)
-          .or be_a(Cabriolet::Models::Cabinet) # Salvageable
+            .or raise_error(Cabriolet::CorruptionError)
+            .or be_a(Cabriolet::Models::Cabinet) # Salvageable
       end
     end
   end

@@ -79,7 +79,7 @@ module Cabriolet
             input_handle,
             output_handle,
             @buffer_size,
-            mode: lzss_mode
+            mode: lzss_mode,
           )
 
           # Decompress (SZDD reads until EOF, no compressed size stored)
@@ -129,7 +129,7 @@ module Cabriolet
             input_handle,
             output_handle,
             @buffer_size,
-            mode: lzss_mode
+            mode: lzss_mode,
           )
 
           # Decompress (SZDD reads until EOF, no compressed size stored)
@@ -180,6 +180,9 @@ module Cabriolet
 
         # Use header's suggested filename method
         suggested = header.suggested_filename(base)
+
+        # Strip null bytes which can occur in malformed SZDD files
+        suggested = suggested.delete("\0")
 
         # Combine with original directory
         dir = ::File.dirname(input_path)

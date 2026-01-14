@@ -70,7 +70,7 @@ module Cabriolet
           if metadata[:cabriolet_version]
             version_errors = validate_version_compatibility(
               metadata[:cabriolet_version],
-              Cabriolet::VERSION
+              Cabriolet::VERSION,
             )
             errors.concat(version_errors)
           end
@@ -162,7 +162,7 @@ module Cabriolet
         # Validate field types and formats
         if metadata[:name]
           unless metadata[:name].is_a?(String) &&
-                 !metadata[:name].empty?
+              !metadata[:name].empty?
             errors << "Plugin name must be a non-empty string"
           end
 
@@ -174,44 +174,32 @@ module Cabriolet
           end
         end
 
-        if metadata[:version]
-          unless valid_version?(metadata[:version])
-            errors << "Plugin version must be a valid semantic version " \
-                      "(e.g., '1.0.0')"
-          end
+        if metadata[:version] && !valid_version?(metadata[:version])
+          errors << "Plugin version must be a valid semantic version " \
+                    "(e.g., '1.0.0')"
         end
 
-        if metadata[:author]
-          unless metadata[:author].is_a?(String) &&
-                 !metadata[:author].empty?
-            errors << "Plugin author must be a non-empty string"
-          end
+        if metadata[:author] && !(metadata[:author].is_a?(String) &&
+                 !metadata[:author].empty?)
+          errors << "Plugin author must be a non-empty string"
         end
 
-        if metadata[:description]
-          unless metadata[:description].is_a?(String) &&
-                 !metadata[:description].empty?
-            errors << "Plugin description must be a non-empty string"
-          end
+        if metadata[:description] && !(metadata[:description].is_a?(String) &&
+                 !metadata[:description].empty?)
+          errors << "Plugin description must be a non-empty string"
         end
 
         # Optional fields validation
-        if metadata[:homepage] && !metadata[:homepage].empty?
-          unless valid_url?(metadata[:homepage])
-            errors << "Plugin homepage must be a valid URL"
-          end
+        if metadata[:homepage] && !metadata[:homepage].empty? && !valid_url?(metadata[:homepage])
+          errors << "Plugin homepage must be a valid URL"
         end
 
-        if metadata[:dependencies]
-          unless metadata[:dependencies].is_a?(Array)
-            errors << "Plugin dependencies must be an array"
-          end
+        if metadata[:dependencies] && !metadata[:dependencies].is_a?(Array)
+          errors << "Plugin dependencies must be an array"
         end
 
-        if metadata[:tags]
-          unless metadata[:tags].is_a?(Array)
-            errors << "Plugin tags must be an array"
-          end
+        if metadata[:tags] && !metadata[:tags].is_a?(Array)
+          errors << "Plugin tags must be an array"
         end
 
         errors
@@ -257,7 +245,7 @@ module Cabriolet
           # Exact version
           required = plugin_version.sub("=", "").strip
           unless cabriolet_version == required
-            errors << "Plugin requires exact Cabriolet version #{required}, "\
+            errors << "Plugin requires exact Cabriolet version #{required}, " \
                       "but #{cabriolet_version} is installed"
           end
         end
@@ -296,7 +284,7 @@ module Cabriolet
           parts = dep.split
           if parts.empty?
             warnings << "Empty dependency specification"
-          elsif parts[0] !~ /^[a-z0-9_-]+$/
+          elsif !/^[a-z0-9_-]+$/.match?(parts[0])
             warnings << "Invalid dependency name: #{parts[0]}"
           end
         end
@@ -325,11 +313,10 @@ module Cabriolet
 
         # Get source location
         begin
-          methods_to_check = [:setup, :activate, :metadata]
+          methods_to_check = %i[setup activate metadata]
 
           methods_to_check.each do |method_name|
-            next unless plugin_class.instance_methods(false)
-                                    .include?(method_name)
+            next unless plugin_class.method_defined?(method_name, false)
 
             method_obj = plugin_class.instance_method(method_name)
             source_location = method_obj.source_location
@@ -339,7 +326,7 @@ module Cabriolet
 
               DANGEROUS_METHODS.each do |dangerous|
                 pattern = /\b#{Regexp.escape(dangerous)}\b/
-                if source =~ pattern
+                if source&.match?(pattern)
                   warnings << "Plugin uses potentially dangerous method " \
                               "'#{dangerous}' " \
                               "in #{source_location[0]}"
@@ -392,21 +379,20 @@ module Cabriolet
           # ~> 1.2 means >= 1.2 and < 2.0
           # ~> 1.2.3 means >= 1.2.3 and < 1.3
           return false if compare_versions(actual_parts,
-                                          required_parts) < 0
+                                           required_parts).negative?
 
+          upper = required_parts.dup
           if required_parts.length >= 3
             # Patch-level constraint
-            upper = required_parts.dup
             upper[1] += 1
             upper[2] = 0
           else
             # Minor-level constraint
-            upper = required_parts.dup
             upper[0] += 1
             upper[1] = 0
           end
 
-          compare_versions(actual_parts, upper) < 0
+          compare_versions(actual_parts, upper).negative?
         else
           false
         end

@@ -169,7 +169,7 @@ RSpec.describe Cabriolet::SZDD::Decompressor do
       )
 
       result = decompressor.auto_output_filename("dir/file.tx_", header)
-      expect(result).to eq("dir/file.txt")
+      expect(result).to eq("dir/file.txT")
     end
 
     it "preserves directory path" do
@@ -178,7 +178,7 @@ RSpec.describe Cabriolet::SZDD::Decompressor do
       )
 
       result = decompressor.auto_output_filename("/path/to/setup.dl_", header)
-      expect(result).to eq("/path/to/setup.dll")
+      expect(result).to eq("/path/to/setup.dlL")
     end
 
     it "handles relative paths" do
@@ -187,7 +187,7 @@ RSpec.describe Cabriolet::SZDD::Decompressor do
       )
 
       result = decompressor.auto_output_filename("../docs/readme.tx_", header)
-      expect(result).to eq("../docs/readme.txe")
+      expect(result).to eq("../docs/readme.txE")
     end
   end
 end

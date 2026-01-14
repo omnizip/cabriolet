@@ -133,7 +133,7 @@ module Cabriolet
       #
       # @return [Boolean] true if root entry
       def root?
-        name == "/" || name == ""
+        ["/", ""].include?(name)
       end
 
       # Get the directory portion of the name
@@ -206,7 +206,8 @@ module Cabriolet
 
     # Represents a single manifest mapping
     class LITManifestMapping
-      attr_accessor :offset, :internal_name, :original_name, :content_type, :group
+      attr_accessor :offset, :internal_name, :original_name, :content_type,
+                    :group
 
       def initialize
         @offset = 0

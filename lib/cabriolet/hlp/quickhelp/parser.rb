@@ -69,7 +69,10 @@ module Cabriolet
           parse_keywords(handle, header) if header.keywords_offset.positive?
 
           # Parse Huffman tree if present
-          parse_huffman_tree(handle, header) if header.huffman_tree_offset.positive?
+          if header.huffman_tree_offset.positive?
+            parse_huffman_tree(handle,
+                               header)
+          end
 
           # Calculate topic sizes from offsets
           populate_topics(header, topic_offsets)
@@ -87,7 +90,9 @@ module Cabriolet
           unless sig_data == Binary::HLPStructures::SIGNATURE
             raise Cabriolet::ParseError,
                   "Invalid QuickHelp signature: expected 'LN' (0x4C 0x4E), " \
-                  "got #{sig_data.bytes.map { |b| format('0x%02X', b) }.join(' ')}"
+                  "got #{sig_data.bytes.map do |b|
+                    format('0x%02X', b)
+                  end.join(' ')}"
           end
         end
 
@@ -98,7 +103,10 @@ module Cabriolet
         # @raise [Cabriolet::ParseError] if header is invalid
         def parse_header(handle)
           header_data = @io_system.read(handle, 68)
-          raise Cabriolet::ParseError, "File too small for QuickHelp header" if header_data.bytesize < 68
+          if header_data.bytesize < 68
+            raise Cabriolet::ParseError,
+                  "File too small for QuickHelp header"
+          end
 
           binary_header = Binary::HLPStructures::FileHeader.read(
             Binary::HLPStructures::SIGNATURE + header_data,
@@ -106,7 +114,8 @@ module Cabriolet
 
           # Validate version
           unless binary_header.version == 2
-            raise Cabriolet::ParseError, "Unsupported QuickHelp version: #{binary_header.version}"
+            raise Cabriolet::ParseError,
+                  "Unsupported QuickHelp version: #{binary_header.version}"
           end
 
           # Create header model
@@ -235,7 +244,8 @@ module Cabriolet
 
           # Validate node count (must be odd, representing a proper binary tree)
           if nodes.length.even? && !nodes.empty?
-            raise Cabriolet::ParseError, "Invalid Huffman tree: expected odd number of nodes"
+            raise Cabriolet::ParseError,
+                  "Invalid Huffman tree: expected odd number of nodes"
           end
 
           # Store raw node values (will be decoded during decompression)

@@ -106,10 +106,10 @@ RSpec.describe Cabriolet::PluginManager do
       expect do
         manager.register(Object.new)
       end.to raise_error(Cabriolet::PluginError,
-                        /must inherit from/)
+                         /must inherit from/)
     end
 
-   it "rejects duplicate plugin names" do
+    it "rejects duplicate plugin names" do
       plugin1 = TestPlugin1.new(manager)
       plugin2 = TestPlugin1.new(manager)
 

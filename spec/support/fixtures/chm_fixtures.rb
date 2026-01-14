@@ -86,13 +86,13 @@ module ChmFixtures
       [path(:encints_64bit_both), path(:encints_32bit_both)]
     when :edge_cases
       EDGE_CASES.values.select { |f| f.include?("cve") }
-                      .map { |f| File.join(FIXTURES_BASE, f) }
+        .map { |f| File.join(FIXTURES_BASE, f) }
     when :encoding
       EDGE_CASES.values.select { |f| f.include?("encints") }
-                      .map { |f| File.join(FIXTURES_BASE, f) }
+        .map { |f| File.join(FIXTURES_BASE, f) }
     when :cve
       EDGE_CASES.values.select { |f| f.include?("cve") }
-                      .map { |f| File.join(FIXTURES_BASE, f) }
+        .map { |f| File.join(FIXTURES_BASE, f) }
     else
       raise ArgumentError, "Unknown scenario: #{scenario}"
     end

@@ -68,7 +68,7 @@ module Cabriolet
           @buffer_size,
           fix_mszip: @fix_mszip,
           salvage: @salvage,
-          window_bits: folder.compression_level
+          window_bits: folder.compression_level,
         )
       end
 

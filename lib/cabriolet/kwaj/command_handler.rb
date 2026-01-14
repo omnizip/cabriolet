@@ -20,7 +20,7 @@ module Cabriolet
       # @param file [String] Path to the KWAJ file
       # @param options [Hash] Additional options (unused)
       # @return [void]
-      def list(file, options = {})
+      def list(file, _options = {})
         validate_file_exists(file)
 
         decompressor = Decompressor.new
@@ -83,17 +83,27 @@ module Cabriolet
       # @raise [ArgumentError] if no file specified or multiple files
       def create(output, files = [], options = {})
         raise ArgumentError, "No file specified" if files.empty?
-        raise ArgumentError, "KWAJ format supports only one file at a time" if files.size > 1
+
+        if files.size > 1
+          raise ArgumentError,
+                "KWAJ format supports only one file at a time"
+        end
 
         file = files.first
-        raise ArgumentError, "File does not exist: #{file}" unless File.exist?(file)
+        unless File.exist?(file)
+          raise ArgumentError,
+                "File does not exist: #{file}"
+        end
 
         compression = parse_compression_option(options[:compression])
         compress_options = { compression: compression }
 
         compress_options[:include_length] = true if options[:include_length]
         compress_options[:filename] = options[:filename] if options[:filename]
-        compress_options[:extra_data] = options[:extra_data] if options[:extra_data]
+        if options[:extra_data]
+          compress_options[:extra_data] =
+            options[:extra_data]
+        end
 
         # Auto-generate output name if not provided
         if output.nil?
@@ -113,7 +123,7 @@ module Cabriolet
       # @param file [String] Path to the KWAJ file
       # @param options [Hash] Additional options (unused)
       # @return [void]
-      def info(file, options = {})
+      def info(file, _options = {})
         validate_file_exists(file)
 
         decompressor = Decompressor.new
@@ -131,7 +141,7 @@ module Cabriolet
       # @param file [String] Path to the KWAJ file
       # @param options [Hash] Additional options (unused)
       # @return [void]
-      def test(file, options = {})
+      def test(file, _options = {})
         validate_file_exists(file)
 
         decompressor = Decompressor.new

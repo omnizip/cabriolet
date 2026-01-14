@@ -165,7 +165,7 @@ module Cabriolet
           input_handle,
           output_handle,
           4096,
-          window_bits: @window_bits
+          window_bits: @window_bits,
         )
 
         compressor.compress

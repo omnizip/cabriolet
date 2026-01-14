@@ -27,8 +27,10 @@ RSpec.describe Cabriolet::CLI, "KWAJ commands" do
     end
 
     context "with non-existent file" do
-      it "exits with error" do
-        expect { cli.kwaj_info("/nonexistent/file.kwj") }.to raise_error(SystemExit)
+      it "raises ArgumentError" do
+        expect do
+          cli.kwaj_info("/nonexistent/file.kwj")
+        end.to raise_error(ArgumentError)
       end
     end
 
@@ -47,7 +49,9 @@ RSpec.describe Cabriolet::CLI, "KWAJ commands" do
     it "extracts KWAJ file successfully" do
       Dir.mktmpdir do |output_dir|
         output_file = File.join(output_dir, "output.bin")
-        expect { cli.kwaj_extract(basic_fixture, output_file) }.not_to raise_error
+        expect do
+          cli.kwaj_extract(basic_fixture, output_file)
+        end.not_to raise_error
         expect(File.exist?(output_file)).to be(true)
       end
     end
@@ -74,8 +78,10 @@ RSpec.describe Cabriolet::CLI, "KWAJ commands" do
     end
 
     context "with non-existent file" do
-      it "exits with error" do
-        expect { cli.kwaj_extract("/nonexistent/file.kwj") }.to raise_error(SystemExit)
+      it "raises ArgumentError" do
+        expect do
+          cli.kwaj_extract("/nonexistent/file.kwj")
+        end.to raise_error(ArgumentError)
       end
     end
 
@@ -130,7 +136,8 @@ RSpec.describe Cabriolet::CLI, "KWAJ commands" do
         output_kwj = File.join(tmp_dir, "test.kwj")
         File.write(test_file, "Test data " * 20)
 
-        invoke_command(:kwaj_compress, test_file, output_kwj, options: { compression: "szdd" })
+        invoke_command(:kwaj_compress, test_file, output_kwj,
+                       options: { compression: "szdd" })
 
         expect(File.exist?(output_kwj)).to be(true)
       end
@@ -141,8 +148,10 @@ RSpec.describe Cabriolet::CLI, "KWAJ commands" do
         Dir.mktmpdir do |tmp_dir|
           output_kwj = File.join(tmp_dir, "test.kwj")
 
-          expect { invoke_command(:kwaj_compress, "/nonexistent/file.txt", output_kwj) }
-            .to raise_error(SystemExit)
+          expect do
+            invoke_command(:kwaj_compress, "/nonexistent/file.txt", output_kwj)
+          end
+            .to raise_error(ArgumentError)
         end
       end
     end
@@ -180,7 +189,8 @@ RSpec.describe Cabriolet::CLI, "KWAJ commands" do
         File.binwrite(input_file, binary_data)
 
         # Compress with XOR
-        invoke_command(:kwaj_compress, input_file, compressed, options: { compression: "xor" })
+        invoke_command(:kwaj_compress, input_file, compressed,
+                       options: { compression: "xor" })
 
         # Decompress
         cli.kwaj_extract(compressed, decompressed)
@@ -198,7 +208,7 @@ RSpec.describe Cabriolet::CLI, "KWAJ commands" do
         cve_fixture = Fixtures.for(:kwaj).edge_case(:cve_2018_14681)
 
         # CVE file has malformed headers, CLI should exit with error
-        expect { cli.kwaj_info(cve_fixture) }.to raise_error(SystemExit)
+        expect { cli.kwaj_info(cve_fixture) }.to raise_error(Cabriolet::ParseError)
       end
     end
   end

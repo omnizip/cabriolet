@@ -119,7 +119,7 @@ module Cabriolet
       # @return [String] The output directory path
       def ensure_output_dir(output_dir)
         require "fileutils"
-        FileUtils.mkdir_p(output_dir) unless Dir.exist?(output_dir)
+        FileUtils.mkdir_p(output_dir)
         output_dir
       end
     end
