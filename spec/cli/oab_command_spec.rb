@@ -10,9 +10,18 @@ RSpec.describe Cabriolet::CLI, "OAB commands" do
 
   # Helper method to invoke Thor commands with options
   def invoke_command(command, *args, options: {})
-    # Use Thor's invoke method which properly handles options
-    # The options hash is passed as a parameter, not by modifying the frozen options
-    cli.invoke(command, args, options)
+    cli.options = Thor::CoreExt::HashWithIndifferentAccess.new(options)
+    # For legacy commands and create command, call Thor methods directly
+    # because they have special pre-processing logic
+    # For unified commands, use run_dispatcher with options
+    if command.to_s.start_with?("oab_")
+      # Call legacy Thor methods directly
+      cli.send(command, *args)
+    else
+      first_arg = args.first
+      remaining_args = args[1..] || []
+      cli.send(:run_dispatcher, command, first_arg, *remaining_args, **options)
+    end
   end
 
   describe "#oab_info" do
