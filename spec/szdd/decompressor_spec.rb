@@ -169,7 +169,7 @@ RSpec.describe Cabriolet::SZDD::Decompressor do
       )
 
       result = decompressor.auto_output_filename("dir/file.tx_", header)
-      expect(result).to eq("dir/file.txT")
+      expect(result).to eq("dir/file.txt")
     end
 
     it "preserves directory path" do
@@ -178,16 +178,25 @@ RSpec.describe Cabriolet::SZDD::Decompressor do
       )
 
       result = decompressor.auto_output_filename("/path/to/setup.dl_", header)
-      expect(result).to eq("/path/to/setup.dlL")
+      expect(result).to eq("/path/to/setup.dll")
     end
 
     it "handles relative paths" do
       header = Cabriolet::Models::SZDDHeader.new(
-        missing_char: "e",
+        missing_char: "t", # Last char of original extension 'txt'
       )
 
       result = decompressor.auto_output_filename("../docs/readme.tx_", header)
-      expect(result).to eq("../docs/readme.txE")
+      expect(result).to eq("../docs/readme.txt")
+    end
+
+    it "handles uppercase extensions (DOS/Windows style)" do
+      header = Cabriolet::Models::SZDDHeader.new(
+        missing_char: "e",
+      )
+
+      result = decompressor.auto_output_filename("PROGRAM/INSTALL.EX_", header)
+      expect(result).to eq("PROGRAM/INSTALL.EXE")
     end
   end
 end
