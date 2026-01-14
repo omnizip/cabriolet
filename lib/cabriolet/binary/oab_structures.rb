@@ -94,7 +94,8 @@ module Cabriolet
 
       # OAB block header for patch files
       #
-      # Structure (16 bytes):
+      # Structure (20 bytes):
+      # - 4 bytes: flags (0=uncompressed, 1=LZX compressed)
       # - 4 bytes: patch_size (compressed patch data size)
       # - 4 bytes: target_size (decompressed output block size)
       # - 4 bytes: source_size (base data needed for this block)
@@ -102,10 +103,25 @@ module Cabriolet
       class PatchBlockHeader < BinData::Record
         endian :little
 
+        uint32 :flags
         uint32 :patch_size
         uint32 :target_size
         uint32 :source_size
         uint32 :crc
+
+        # Check if block is compressed
+        #
+        # @return [Boolean]
+        def compressed?
+          flags == 1
+        end
+
+        # Check if block is uncompressed
+        #
+        # @return [Boolean]
+        def uncompressed?
+          flags.zero?
+        end
       end
     end
   end

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "zeck_lz77"
+require_relative "btree_builder"
 
 module Cabriolet
   module HLP
@@ -241,6 +242,19 @@ module Cabriolet
         # @param structure [Hash] File structure
         # @return [Integer] Bytes written
         def write_directory(output_handle, structure)
+          if structure[:version] == :winhelp4
+            write_directory_btree(output_handle, structure)
+          else
+            write_directory_simple(output_handle, structure)
+          end
+        end
+
+        # Write simple directory (WinHelp 3.x format)
+        #
+        # @param output_handle [System::FileHandle] Output handle
+        # @param structure [Hash] File structure
+        # @return [Integer] Bytes written
+        def write_directory_simple(output_handle, structure)
           bytes_written = 0
 
           structure[:internal_files].each do |file|
@@ -264,6 +278,53 @@ module Cabriolet
 
           # Write end marker
           bytes_written += @io_system.write(output_handle, [0].pack("V"))
+
+          bytes_written
+        end
+
+        # Write B+ tree directory (WinHelp 4.x format)
+        #
+        # @param output_handle [System::FileHandle] Output handle
+        # @param structure [Hash] File structure
+        # @return [Integer] Bytes written
+        def write_directory_btree(output_handle, structure)
+          bytes_written = 0
+
+          # Build B+ tree from internal files
+          btree = BTreeBuilder.new
+          structure[:internal_files].each do |file|
+            # Add entry with filename, starting block (offset), and size
+            btree.add_entry(file[:name], file[:starting_block] * BLOCK_SIZE,
+                            file[:size])
+          end
+
+          # Build the tree
+          tree = btree.build
+
+          # Write FILEHEADER (9 bytes) before BTREEHEADER
+          # FILEHEADER structure:
+          # - 4 bytes: reserved_space (reserved space in help file incl. FILEHEADER)
+          # - 4 bytes: used_space (used space in help file excl. FILEHEADER)
+          # - 1 byte: file_flags (normally 4)
+          # For directory, we set these to 0 for now
+          file_header = Binary::HLPStructures::WinHelpFileHeader.new
+          file_header.reserved_space = 0
+          file_header.used_space = 0
+          file_header.file_flags = 4
+          file_header_data = file_header.to_binary_s
+          bytes_written += @io_system.write(output_handle, file_header_data)
+
+          # Write BTREEHEADER (38 bytes)
+          header = tree[:header]
+          header_data = header.to_binary_s
+          bytes_written += @io_system.write(output_handle, header_data)
+
+          # Write pages (sorted by page_num)
+          sorted_pages = tree[:pages].sort_by { |p| p[:page_num] }
+          sorted_pages.each do |page|
+            # Write page data
+            bytes_written += @io_system.write(output_handle, page[:data])
+          end
 
           bytes_written
         end

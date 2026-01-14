@@ -71,7 +71,6 @@ RSpec.describe "HLP Format Integration" do
 
   describe "Windows Help 4.x end-to-end" do
     it "creates and extracts WinHelp 4.x file successfully" do
-      skip "WinHelp 4.x compressor does not implement B+ tree directory format"
       compressor = Cabriolet::HLP::WinHelp::Compressor.new(io_system)
       compressor.add_system_file(title: "Test Help 4.x")
       compressor.add_topic_file(["Topic 1", "Topic 2"])

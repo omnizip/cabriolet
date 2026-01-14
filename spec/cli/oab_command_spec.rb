@@ -107,7 +107,8 @@ RSpec.describe Cabriolet::CLI, "OAB commands" do
         test_file = File.join(tmp_dir, "test.dat")
         File.write(test_file, "Test content")
 
-        invoke_command(:oab_create, test_file, output_oab, options: { block_size: 16384 })
+        invoke_command(:oab_create, test_file, output_oab,
+                       options: { block_size: 16384 })
 
         expect(File.exist?(output_oab)).to be(true)
         expect(File.size(output_oab)).to be > 0
@@ -161,7 +162,8 @@ RSpec.describe Cabriolet::CLI, "OAB commands" do
         File.write(base_file, "Original data")
         File.write(new_file, "New data - different from base")
 
-        invoke_command(:oab_create, new_file, output_oab, options: { base: base_file })
+        invoke_command(:oab_create, new_file, output_oab,
+                       options: { base: base_file })
 
         expect(File.exist?(output_oab)).to be(true)
         expect(File.size(output_oab)).to be > 0
@@ -169,10 +171,28 @@ RSpec.describe Cabriolet::CLI, "OAB commands" do
     end
 
     it "applies incremental patch" do
-      # NOTE: OAB incremental patches use LZX compression.
-      # The LZX decompressor doesn't fully support all block types (VERBATIM, ALIGNED)
-      # required for proper patch extraction. This is a known feature gap.
-      skip "OAB incremental patch extraction depends on incomplete LZX VERBATIM implementation"
+      Dir.mktmpdir do |tmp_dir|
+        base_file = File.join(tmp_dir, "base.dat")
+        new_file = File.join(tmp_dir, "new.dat")
+        patch_oab = File.join(tmp_dir, "patch.oab")
+        extracted = File.join(tmp_dir, "result.dat")
+
+        original_data = "Base file content"
+        new_data = "Modified content"
+        File.write(base_file, original_data)
+        File.write(new_file, new_data)
+
+        # Create patch
+        invoke_command(:oab_create, new_file, patch_oab,
+                       options: { base: base_file })
+
+        # Apply patch
+        invoke_command(:oab_extract, patch_oab, extracted,
+                       options: { base: base_file })
+
+        expect(File.exist?(extracted)).to be(true)
+        expect(File.read(extracted)).to eq(new_data)
+      end
     end
   end
 
