@@ -67,7 +67,8 @@ module Cabriolet
           @delegate.extract_file(header, hlp_file, output_path)
         when :winhelp
           # WinHelp uses different extraction model
-          raise NotImplementedError, "WinHelp file extraction not yet implemented via this API"
+          raise NotImplementedError,
+                "WinHelp file extraction not yet implemented via this API"
         end
       end
 
@@ -84,7 +85,8 @@ module Cabriolet
         when :quickhelp
           @delegate.extract_file_to_memory(header, hlp_file)
         when :winhelp
-          raise NotImplementedError, "WinHelp memory extraction not yet implemented via this API"
+          raise NotImplementedError,
+                "WinHelp memory extraction not yet implemented via this API"
         end
       end
 
@@ -95,7 +97,11 @@ module Cabriolet
       # @return [Integer] Number of files extracted
       def extract_all(header, output_dir)
         raise ArgumentError, "Header must not be nil" if header.nil?
-        raise ArgumentError, "Output directory must not be nil" if output_dir.nil?
+
+        if output_dir.nil?
+          raise ArgumentError,
+                "Output directory must not be nil"
+        end
 
         case @current_format
         when :quickhelp
@@ -140,7 +146,9 @@ module Cabriolet
           magic_dword = sig_data.unpack1("V")
           return :winhelp if (magic_dword & 0xFFFF) == 0x5F3F
 
-          raise Cabriolet::ParseError, "Unknown HLP format: #{sig_data.bytes.map { |b| format('0x%02X', b) }.join(' ')}"
+          raise Cabriolet::ParseError, "Unknown HLP format: #{sig_data.bytes.map do |b|
+            format('0x%02X', b)
+          end.join(' ')}"
         ensure
           @io_system.close(handle)
         end

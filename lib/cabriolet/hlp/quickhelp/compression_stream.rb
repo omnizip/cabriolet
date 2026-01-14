@@ -78,33 +78,46 @@ module Cabriolet
             elsif byte == 0x1A
               # Escape byte - next byte is literal
               escaped = read_byte
-              raise Cabriolet::DecompressionError, "Unexpected EOF after escape byte" if escaped.nil?
+              if escaped.nil?
+                raise Cabriolet::DecompressionError,
+                      "Unexpected EOF after escape byte"
+              end
 
               @buffer << escaped.chr
             elsif byte == 0x19
               # Run of bytes: REPEAT-BYTE, REPEAT-COUNT
               repeat_byte = read_byte
               repeat_count = read_byte
-              raise Cabriolet::DecompressionError, "Unexpected EOF in byte run" if repeat_byte.nil? || repeat_count.nil?
+              if repeat_byte.nil? || repeat_count.nil?
+                raise Cabriolet::DecompressionError,
+                      "Unexpected EOF in byte run"
+              end
 
               @buffer << (repeat_byte.chr * repeat_count)
             elsif byte == 0x18
               # Run of spaces: SPACE-COUNT
               space_count = read_byte
-              raise Cabriolet::DecompressionError, "Unexpected EOF in space run" if space_count.nil?
+              if space_count.nil?
+                raise Cabriolet::DecompressionError,
+                      "Unexpected EOF in space run"
+              end
 
               @buffer << (" " * space_count)
             else
               # Dictionary entry (0x10-0x17)
               dict_index_low = read_byte
-              raise Cabriolet::DecompressionError, "Unexpected EOF reading dictionary index" if dict_index_low.nil?
+              if dict_index_low.nil?
+                raise Cabriolet::DecompressionError,
+                      "Unexpected EOF reading dictionary index"
+              end
 
               # Extract append-space flag (bit 2) and index (bits 0-1 + next 8 bits)
               append_space = byte.anybits?(0x04)
               dict_index = ((byte & 0x03) << 8) | dict_index_low
 
               if dict_index >= @keywords.length
-                raise Cabriolet::DecompressionError, "Dictionary index #{dict_index} out of range (max #{@keywords.length - 1})"
+                raise Cabriolet::DecompressionError,
+                      "Dictionary index #{dict_index} out of range (max #{@keywords.length - 1})"
               end
 
               @buffer << @keywords[dict_index]

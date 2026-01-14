@@ -67,17 +67,19 @@ module Cabriolet
       def setup
         # Register BZip2 compressor with higher priority
         register_algorithm(:bzip2, BZip2Compressor,
-                          category: :compressor,
-                          priority: 10)
+                           category: :compressor,
+                           priority: 10)
 
         # Register BZip2 decompressor
         register_algorithm(:bzip2, BZip2Decompressor,
-                          category: :decompressor,
-                          priority: 10)
+                           category: :decompressor,
+                           priority: 10)
 
         @config = load_configuration
-        puts "BZip2Plugin: Registered with block_size=#{@config[:block_size]}, " \
-             "level=#{@config[:level]}" if @verbose
+        if @verbose
+          puts "BZip2Plugin: Registered with block_size=#{@config[:block_size]}, " \
+               "level=#{@config[:level]}"
+        end
       end
 
       # Activate the plugin
@@ -146,9 +148,9 @@ module Cabriolet
       #
       # @return [void]
       def report_statistics
-        return unless @compression_stats[:files] > 0
+        return unless @compression_stats[:files].positive?
 
-        ratio = if @compression_stats[:bytes_in] > 0
+        ratio = if @compression_stats[:bytes_in].positive?
                   ((@compression_stats[:bytes_out].to_f /
                     @compression_stats[:bytes_in]) * 100).round(2)
                 else
@@ -293,7 +295,7 @@ module Cabriolet
         def compress_block(block)
           # Stub: Real implementation would use BZip2 algorithm
           # For now, just return the block with a marker
-          "\x31\x41\x59\x26\x53\x59" + block # BZip2 block header + data
+          "1AY&SY#{block}" # BZip2 block header + data
         end
 
         # Write end-of-stream marker
@@ -301,7 +303,7 @@ module Cabriolet
         # @return [void]
         def write_eos_marker
           # BZip2 EOS marker
-          @output.write("\x17\x72\x45\x38\x50\x90" + "\x00" * 4)
+          @output.write("\u0017rE8P\x90#{"\x00" * 4}")
         end
 
         # Estimate input size for progress reporting
@@ -378,7 +380,7 @@ module Cabriolet
           remaining = bytes
 
           # Process compressed blocks
-          while remaining > 0
+          while remaining.positive?
             block = read_compressed_block
             break if block.nil? # End of stream
 
@@ -429,7 +431,10 @@ module Cabriolet
         # @return [void]
         def read_and_validate_header
           header = @input.read(4)
-          raise DecompressionError, "Truncated header" if header.nil? || header.size < 4
+          if header.nil? || header.size < 4
+            raise DecompressionError,
+                  "Truncated header"
+          end
 
           # Validate magic
           magic = header[0, 2]
@@ -480,7 +485,7 @@ module Cabriolet
         def decompress_block(block)
           # Stub: Real implementation would use BZip2 algorithm
           # Skip block header and return data
-          block[6..-1] if block && block.size > 6
+          block[6..] if block && block.size > 6
         end
 
         # Report decompression progress

@@ -7,9 +7,7 @@ module Cabriolet
     # Represents a single topic in a QuickHelp help database.
     # Each topic contains formatted text lines with styles and hyperlinks.
     class HLPTopic
-      attr_accessor :index, :offset, :size
-      attr_accessor :lines, :source_data
-      attr_accessor :metadata
+      attr_accessor :index, :offset, :size, :lines, :source_data, :metadata
 
       # Initialize a QuickHelp topic
       #
@@ -117,21 +115,21 @@ module Cabriolet
       #
       # @return [Boolean] true if bold
       def bold?
-        (@style & Binary::HLPStructures::TextStyle::BOLD) != 0
+        @style.anybits?(Binary::HLPStructures::TextStyle::BOLD)
       end
 
       # Check if character is italic
       #
       # @return [Boolean] true if italic
       def italic?
-        (@style & Binary::HLPStructures::TextStyle::ITALIC) != 0
+        @style.anybits?(Binary::HLPStructures::TextStyle::ITALIC)
       end
 
       # Check if character is underlined
       #
       # @return [Boolean] true if underlined
       def underline?
-        (@style & Binary::HLPStructures::TextStyle::UNDERLINE) != 0
+        @style.anybits?(Binary::HLPStructures::TextStyle::UNDERLINE)
       end
 
       # Check if character has a link

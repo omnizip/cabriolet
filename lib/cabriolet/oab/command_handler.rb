@@ -24,7 +24,7 @@ module Cabriolet
       # @param file [String] Path to the OAB file
       # @param options [Hash] Additional options (unused)
       # @return [void]
-      def list(file, options = {})
+      def list(file, _options = {})
         validate_file_exists(file)
 
         display_oab_info(file)
@@ -87,10 +87,17 @@ module Cabriolet
       # @raise [ArgumentError] if no file specified or multiple files
       def create(output, files = [], options = {})
         raise ArgumentError, "No file specified" if files.empty?
-        raise ArgumentError, "OAB format supports only one file at a time" if files.size > 1
+
+        if files.size > 1
+          raise ArgumentError,
+                "OAB format supports only one file at a time"
+        end
 
         file = files.first
-        raise ArgumentError, "File does not exist: #{file}" unless File.exist?(file)
+        unless File.exist?(file)
+          raise ArgumentError,
+                "File does not exist: #{file}"
+        end
 
         compressor = Compressor.new
 
@@ -101,10 +108,14 @@ module Cabriolet
 
         if options[:base_file]
           base_file = options[:base_file]
-          raise ArgumentError, "Base file does not exist: #{base_file}" unless File.exist?(base_file)
+          unless File.exist?(base_file)
+            raise ArgumentError,
+                  "Base file does not exist: #{base_file}"
+          end
 
           puts "Creating incremental patch: #{file} - #{base_file} -> #{output}" if verbose?
-          bytes = compressor.compress_incremental(file, base_file, output, **options)
+          bytes = compressor.compress_incremental(file, base_file, output,
+                                                  **options)
           puts "Created incremental patch #{output} (#{bytes} bytes)"
         else
           block_size = options[:block_size]
@@ -119,7 +130,7 @@ module Cabriolet
       # @param file [String] Path to the OAB file
       # @param options [Hash] Additional options (unused)
       # @return [void]
-      def info(file, options = {})
+      def info(file, _options = {})
         validate_file_exists(file)
 
         display_oab_info(file)
@@ -132,7 +143,7 @@ module Cabriolet
       # @param file [String] Path to the OAB file
       # @param options [Hash] Additional options (unused)
       # @return [void]
-      def test(file, options = {})
+      def test(file, _options = {})
         validate_file_exists(file)
 
         puts "Testing #{file}..."
@@ -195,7 +206,8 @@ module Cabriolet
           header_data = io_system.read(handle, 28) # Read enough for both header types
 
           # Try full file header first
-          full_header = Binary::OABStructures::FullHeader.read(header_data[0, 16])
+          full_header = Binary::OABStructures::FullHeader.read(header_data[0,
+                                                                           16])
           if full_header.valid?
             puts "Type: Full OAB file"
             puts "Version: #{full_header.version_hi}.#{full_header.version_lo}"
@@ -205,7 +217,8 @@ module Cabriolet
           end
 
           # Try patch file header
-          patch_header = Binary::OABStructures::PatchHeader.read(header_data[0, 28])
+          patch_header = Binary::OABStructures::PatchHeader.read(header_data[0,
+                                                                             28])
           if patch_header.valid?
             puts "Type: Incremental OAB patch"
             puts "Version: #{patch_header.version_hi}.#{patch_header.version_lo}"

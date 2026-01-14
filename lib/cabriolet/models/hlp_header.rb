@@ -8,18 +8,11 @@ module Cabriolet
     # HLP files contain topics, context strings, and optional compression
     # (keyword dictionary and Huffman coding).
     class HLPHeader
-      attr_accessor :magic, :version, :attributes, :control_character
-      attr_accessor :topic_count, :context_count, :display_width
-      attr_accessor :predefined_ctx_count, :database_name
-      attr_accessor :topic_index_offset, :context_strings_offset
-      attr_accessor :context_map_offset, :keywords_offset
-      attr_accessor :huffman_tree_offset, :topic_text_offset
-      attr_accessor :database_size
-      attr_accessor :filename
+      attr_accessor :magic, :version, :attributes, :control_character,
+                    :topic_count, :context_count, :display_width, :predefined_ctx_count, :database_name, :topic_index_offset, :context_strings_offset, :context_map_offset, :keywords_offset, :huffman_tree_offset, :topic_text_offset, :database_size, :filename, :keywords, :huffman_tree
 
       # Topics and context data
       attr_accessor :topics, :contexts, :context_map
-      attr_accessor :keywords, :huffman_tree
 
       # Initialize QuickHelp database header
       #
@@ -90,28 +83,28 @@ module Cabriolet
       #
       # @return [Boolean] true if case-sensitive
       def case_sensitive?
-        (@attributes & Binary::HLPStructures::Attributes::CASE_SENSITIVE) != 0
+        @attributes.anybits?(Binary::HLPStructures::Attributes::CASE_SENSITIVE)
       end
 
       # Check if database is locked (cannot be decoded by HELPMAKE)
       #
       # @return [Boolean] true if locked
       def locked?
-        (@attributes & Binary::HLPStructures::Attributes::LOCKED) != 0
+        @attributes.anybits?(Binary::HLPStructures::Attributes::LOCKED)
       end
 
       # Check if keyword compression is used
       #
       # @return [Boolean] true if keywords present
       def has_keywords?
-        @keywords_offset > 0 && !@keywords.empty?
+        @keywords_offset.positive? && !@keywords.empty?
       end
 
       # Check if Huffman compression is used
       #
       # @return [Boolean] true if Huffman tree present
       def has_huffman?
-        @huffman_tree_offset > 0 && !@huffman_tree.nil?
+        @huffman_tree_offset.positive? && !@huffman_tree.nil?
       end
 
       # Get control character as string

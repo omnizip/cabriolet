@@ -10,7 +10,7 @@ module FormatTestHelper
   #
   # @param format [Symbol] Format to test (:cab, :chm, etc.)
   # @param fixture [String] Path to fixture file
-  def test_list_command(format, fixture)
+  def test_list_command(_format, fixture)
     cli = Cabriolet::CLI.new
     expect { cli.list(fixture) }.not_to raise_error
   end
@@ -20,7 +20,7 @@ module FormatTestHelper
   # @param format [Symbol] Format to test
   # @param fixture [String] Path to fixture file
   # @param expected_count [Integer] Expected number of extracted files
-  def test_extract_command(format, fixture, expected_count: nil)
+  def test_extract_command(_format, fixture, expected_count: nil)
     cli = Cabriolet::CLI.new
     Dir.mktmpdir do |output_dir|
       cli.extract(fixture, output_dir)
@@ -38,7 +38,7 @@ module FormatTestHelper
   #
   # @param format [Symbol] Format to test
   # @param fixture [String] Path to fixture file
-  def test_info_command(format, fixture)
+  def test_info_command(_format, fixture)
     cli = Cabriolet::CLI.new
     expect { cli.info(fixture) }.not_to raise_error
   end
@@ -89,7 +89,7 @@ module FormatTestHelper
       first_file = parsed.files.first
       content = decompressor.extract_file(first_file)
       expect(content).not_to be_nil
-      expect(content.length).to be > 0 if first_file.size > 0
+      expect(content.length).to be > 0 if !first_file.empty?
     end
 
     decompressor.close
@@ -101,7 +101,7 @@ module FormatTestHelper
   # @param output [String] Output archive path
   # @param files [Array<String>] Input files to compress
   # @param options [Hash] Additional options for compression
-  def test_api_compressor(format, output, files, options = {})
+  def test_api_compressor(format, output, files, _options = {})
     compressor = compressor_for_format(format)
 
     files.each do |file|

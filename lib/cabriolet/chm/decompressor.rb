@@ -185,7 +185,10 @@ module Cabriolet
           raise Cabriolet::FormatError,
                 "MSCompressed Content file not found"
         end
-        raise Cabriolet::FormatError, "ControlData file not found" unless control
+        unless control
+          raise Cabriolet::FormatError,
+                "ControlData file not found"
+        end
 
         # Read control data
         control_data = read_system_file(control)
@@ -212,7 +215,8 @@ module Cabriolet
 
         # Validate reset interval
         if reset_interval.zero? || (reset_interval % LZX_FRAME_SIZE) != 0
-          raise Cabriolet::FormatError, "Invalid reset interval: #{reset_interval}"
+          raise Cabriolet::FormatError,
+                "Invalid reset interval: #{reset_interval}"
         end
 
         # Find reset table entry for this file
@@ -244,7 +248,7 @@ module Cabriolet
           4096,
           window_bits: window_bits,
           reset_interval: reset_interval / LZX_FRAME_SIZE,
-          output_length: length - @lzx_offset
+          output_length: length - @lzx_offset,
         )
       end
 
@@ -265,7 +269,8 @@ module Cabriolet
           reset_interval *= LZX_FRAME_SIZE
           window_size *= LZX_FRAME_SIZE
         elsif version != 1
-          raise Cabriolet::FormatError, "Unknown ControlData version: #{version}"
+          raise Cabriolet::FormatError,
+                "Unknown ControlData version: #{version}"
         end
 
         [window_size, reset_interval]
@@ -335,7 +340,10 @@ module Cabriolet
       # Read SpanInfo to get uncompressed length
       def read_spaninfo(spaninfo)
         data = read_system_file(spaninfo)
-        raise Cabriolet::FormatError, "SpanInfo wrong size" unless data.length == 8
+        unless data.length == 8
+          raise Cabriolet::FormatError,
+                "SpanInfo wrong size"
+        end
 
         length = data.unpack1("Q<")
         unless length.positive?

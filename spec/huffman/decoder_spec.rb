@@ -109,10 +109,6 @@ RSpec.describe Cabriolet::Huffman::Decoder do
       end
     end
 
-    context "with realistic code lengths" do
-      # Tree building tests are covered in tree_spec.rb
-    end
-
     context "with complete binary trees" do
       it "decodes from a complete tree correctly" do
         # A complete binary tree with 2 symbols

@@ -54,7 +54,8 @@ module Cabriolet
         lit_file = decompressor.open(file)
 
         use_manifest = options.fetch(:use_manifest, true)
-        count = decompressor.extract_all(lit_file, output_dir, use_manifest: use_manifest)
+        count = decompressor.extract_all(lit_file, output_dir,
+                                         use_manifest: use_manifest)
 
         decompressor.close(lit_file)
         puts "Extracted #{count} file(s) to #{output_dir}"
@@ -90,7 +91,8 @@ module Cabriolet
         end
 
         puts "Creating #{output} with #{files.size} file(s) (v#{version}, lang: 0x#{Integer(language_id).to_s(16)})" if verbose?
-        bytes = compressor.generate(output, version: version, language_id: language_id)
+        bytes = compressor.generate(output, version: version,
+                                            language_id: language_id)
         puts "Created #{output} (#{bytes} bytes, #{files.size} files)"
       end
 
@@ -102,7 +104,7 @@ module Cabriolet
       # @param file [String] Path to the LIT file
       # @param options [Hash] Additional options (unused)
       # @return [void]
-      def info(file, options = {})
+      def info(file, _options = {})
         validate_file_exists(file)
 
         decompressor = Decompressor.new
@@ -120,7 +122,7 @@ module Cabriolet
       # @param file [String] Path to the LIT file
       # @param options [Hash] Additional options (unused)
       # @return [void]
-      def test(file, options = {})
+      def test(file, _options = {})
         validate_file_exists(file)
 
         decompressor = Decompressor.new
@@ -186,22 +188,21 @@ module Cabriolet
         puts "Version: #{lit_file.version}"
         puts "Language ID: 0x#{Integer(lit_file.language_id).to_s(16).upcase}"
         puts "Creator ID: #{lit_file.creator_id}"
-        puts "Timestamp: #{Time.at(lit_file.timestamp).to_s}" if lit_file.respond_to?(:timestamp)
+        puts "Timestamp: #{Time.at(lit_file.timestamp)}" if lit_file.respond_to?(:timestamp)
 
+        puts ""
         if lit_file.encrypted?
-          puts ""
           puts "DRM Protection:"
           puts "  Status: ENCRYPTED"
           puts "  Level: #{lit_file.drm_level}"
           puts "  WARNING: DRM decryption is not supported"
         else
-          puts ""
           puts "DRM Protection: None"
         end
 
         puts ""
         puts "Sections: #{lit_file.sections.size}"
-        lit_file.sections.each_with_index do |section, idx|
+        lit_file.sections.compact.each_with_index do |section, idx|
           puts "  [#{idx}] #{section.name}"
           puts "      Transforms: #{section.transforms.join(', ')}" if section.transforms.any?
         end

@@ -34,7 +34,7 @@ RSpec.describe Cabriolet::HLP::WinHelp::Decompressor do
   describe "#parse" do
     it "parses WinHelp file and returns header" do
       # Create minimal WinHelp 3.x file
-      data = String.new
+      data = +""
       data << [0x35F3].pack("v")      # Magic
       data << [0x0001].pack("v")      # Unknown
       data << [0x001C].pack("V")      # Directory offset
@@ -70,12 +70,12 @@ RSpec.describe Cabriolet::HLP::WinHelp::Decompressor do
   describe "#extract_internal_file" do
     it "extracts internal file by name" do
       # Create WinHelp file with |SYSTEM file at block 1
-      data = String.new
+      data = +""
       data << [0x35F3].pack("v")
       data << [0x0001].pack("v")
       data << [0x001C].pack("V")
       data << [0x0000].pack("V")
-      data << [0x1000].pack("V")      # File size (4096 bytes)
+      data << [0x1000].pack("V") # File size (4096 bytes)
       data << ("\x00" * 12)
 
       # Directory
@@ -90,7 +90,7 @@ RSpec.describe Cabriolet::HLP::WinHelp::Decompressor do
       # |SYSTEM file data at block 1
       system_data = "SYSTEM FILE DATA"
       data << system_data
-      data << ("\x00" * (0x10 - system_data.bytesize))  # Pad to claimed size
+      data << ("\x00" * (0x10 - system_data.bytesize)) # Pad to claimed size
 
       file = Tempfile.new(["winhelp_extract", ".hlp"])
       begin
@@ -100,7 +100,7 @@ RSpec.describe Cabriolet::HLP::WinHelp::Decompressor do
         decompressor = described_class.new(file.path, io_system)
         extracted = decompressor.extract_internal_file("|SYSTEM")
 
-        expect(extracted).to_not be_nil
+        expect(extracted).not_to be_nil
         expect(extracted.bytesize).to eq(0x10)
         expect(extracted[0..15]).to eq("SYSTEM FILE DATA")
       ensure
@@ -109,14 +109,14 @@ RSpec.describe Cabriolet::HLP::WinHelp::Decompressor do
     end
 
     it "returns nil for non-existent file" do
-      data = String.new
+      data = +""
       data << [0x35F3].pack("v")
       data << [0x0001].pack("v")
       data << [0x001C].pack("V")
       data << [0x0000].pack("V")
       data << [0x0100].pack("V")
       data << ("\x00" * 12)
-      data << [0x0000].pack("V")  # Empty directory
+      data << [0x0000].pack("V") # Empty directory
 
       file = Tempfile.new(["winhelp_none", ".hlp"])
       begin
@@ -140,7 +140,7 @@ RSpec.describe Cabriolet::HLP::WinHelp::Decompressor do
         decompressor = described_class.new(file.path, io_system)
 
         # Create simple compressed data (all literals)
-        compressed = [0x00, *("HELLO".bytes)].pack("C*")
+        compressed = [0x00, *"HELLO".bytes].pack("C*")
         decompressed = decompressor.decompress_topic(compressed, 5)
 
         expect(decompressed).to eq("HELLO")
@@ -152,7 +152,7 @@ RSpec.describe Cabriolet::HLP::WinHelp::Decompressor do
 
   describe "#has_system_file?" do
     it "returns true when |SYSTEM exists" do
-      data = String.new
+      data = +""
       data << [0x35F3].pack("v")
       data << [0x0001].pack("v")
       data << [0x001C].pack("V")
@@ -181,7 +181,7 @@ RSpec.describe Cabriolet::HLP::WinHelp::Decompressor do
 
   describe "#internal_filenames" do
     it "returns list of internal files" do
-      data = String.new
+      data = +""
       data << [0x35F3].pack("v")
       data << [0x0001].pack("v")
       data << [0x001C].pack("V")
@@ -197,7 +197,7 @@ RSpec.describe Cabriolet::HLP::WinHelp::Decompressor do
       data << [0x0020].pack("V")
       data << [0x0002].pack("v")
       data << "|TOPIC\x00"
-      data << "\x00"  # Alignment
+      data << "\x00" # Alignment
 
       data << [0x0000].pack("V")
 

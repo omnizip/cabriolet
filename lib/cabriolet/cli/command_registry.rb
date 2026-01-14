@@ -71,7 +71,7 @@ module Cabriolet
           required_methods = %i[list extract create info test]
 
           required_methods.each do |method|
-            unless handler_class.instance_methods.include?(method)
+            unless handler_class.method_defined?(method)
               raise ArgumentError,
                     "Handler class #{handler_class} must implement ##{method}"
             end

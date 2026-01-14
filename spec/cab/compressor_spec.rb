@@ -32,8 +32,9 @@ RSpec.describe Cabriolet::CAB::Compressor do
     it { is_expected.to have_attributes(cabinet_index: eq(0)) }
 
     context "with custom io_system" do
-      let(:io_system) { Cabriolet::System::IOSystem.new }
       subject(:custom_compressor) { described_class.new(io_system) }
+
+      let(:io_system) { Cabriolet::System::IOSystem.new }
 
       it { is_expected.to have_attributes(io_system: eq(io_system)) }
     end
@@ -42,6 +43,7 @@ RSpec.describe Cabriolet::CAB::Compressor do
   describe "#add_file" do
     context "when adding valid file" do
       let(:test_file) { create_test_file("test1.txt", "Hello") }
+
       before { compressor.add_file(test_file) }
 
       it "adds file to cabinet" do
@@ -56,6 +58,7 @@ RSpec.describe Cabriolet::CAB::Compressor do
 
     context "with custom cabinet path" do
       let(:test_file) { create_test_file("test1.txt", "Hello") }
+
       before { compressor.add_file(test_file, "custom/path.txt") }
 
       it "uses custom path" do
@@ -142,10 +145,12 @@ RSpec.describe Cabriolet::CAB::Compressor do
     context "with different compression types" do
       let(:test_content) { "Hello, World! " * 100 }
       let(:test_file) { create_test_file("test.txt", test_content) }
+
       before { compressor.add_file(test_file) }
 
       context "with no compression" do
         let(:cab_file) { create_cab_file("none.cab") }
+
         before { compressor.generate(cab_file, compression: :none) }
 
         it "creates CAB with COMP_TYPE_NONE" do
@@ -159,6 +164,7 @@ RSpec.describe Cabriolet::CAB::Compressor do
 
       context "with MSZIP compression" do
         let(:cab_file) { create_cab_file("mszip.cab") }
+
         before { compressor.generate(cab_file, compression: :mszip) }
 
         it "creates CAB with COMP_TYPE_MSZIP" do

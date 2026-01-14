@@ -50,7 +50,8 @@ RSpec.describe Cabriolet::Commands::CommandDispatcher do
 
   before do
     # Register mock handler for testing
-    Cabriolet::Commands::CommandRegistry.register_format(:test, MockCommandHandler)
+    Cabriolet::Commands::CommandRegistry.register_format(:test,
+                                                         MockCommandHandler)
   end
 
   after do
@@ -99,7 +100,7 @@ RSpec.describe Cabriolet::Commands::CommandDispatcher do
       it "delegates to handler's list method" do
         dispatcher = described_class.new(format: :test)
         dispatcher.dispatch(:list, cab_fixture)
-        calls = MockCommandHandler.new.calls
+        MockCommandHandler.new.calls
         # Verify through the registry
         handler = Cabriolet::Commands::CommandRegistry.handler_for(:test)
         expect(handler).to eq(MockCommandHandler)
@@ -115,7 +116,8 @@ RSpec.describe Cabriolet::Commands::CommandDispatcher do
 
       it "passes options[:output] as output_dir when no output_dir given" do
         dispatcher = described_class.new(format: :test)
-        dispatcher.dispatch(:extract, cab_fixture, nil, output: "custom_output/")
+        dispatcher.dispatch(:extract, cab_fixture, nil,
+                            output: "custom_output/")
         # Command should complete without error
       end
     end
@@ -148,9 +150,9 @@ RSpec.describe Cabriolet::Commands::CommandDispatcher do
       it "raises error with supported formats in message" do
         allow_any_instance_of(Cabriolet::FormatDetector).to receive(:detect).and_return(nil)
 
-        expect {
+        expect do
           dispatcher.dispatch(:list, "unknown.bin")
-        }.to raise_error(Cabriolet::Error, /Cannot detect format/)
+        end.to raise_error(Cabriolet::Error, /Cannot detect format/)
       end
     end
 
@@ -161,16 +163,17 @@ RSpec.describe Cabriolet::Commands::CommandDispatcher do
       end
 
       it "raises error about missing handler" do
-        expect {
+        expect do
           dispatcher.dispatch(:list, "test.bin")
-        }.to raise_error(Cabriolet::Error, /No command handler registered/)
+        end.to raise_error(Cabriolet::Error, /No command handler registered/)
       end
     end
   end
 
   describe ".format_supported?" do
     before do
-      Cabriolet::Commands::CommandRegistry.register_format(:test, MockCommandHandler)
+      Cabriolet::Commands::CommandRegistry.register_format(:test,
+                                                           MockCommandHandler)
     end
 
     it "returns true for registered format" do
@@ -184,7 +187,8 @@ RSpec.describe Cabriolet::Commands::CommandDispatcher do
 
   describe ".supported_formats" do
     before do
-      Cabriolet::Commands::CommandRegistry.register_format(:test, MockCommandHandler)
+      Cabriolet::Commands::CommandRegistry.register_format(:test,
+                                                           MockCommandHandler)
     end
 
     it "returns list of registered formats" do

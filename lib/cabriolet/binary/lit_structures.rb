@@ -70,8 +70,8 @@ module Cabriolet
         endian :little
 
         # SECHDR block (152 bytes, no tag field)
-        uint32 :sechdr_version        # Should be 2
-        uint32 :sechdr_length          # Should be 152
+        uint32 :sechdr_version # Should be 2
+        uint32 :sechdr_length # Should be 152
 
         # Entry directory information
         uint32 :entry_aoli_idx
@@ -139,7 +139,7 @@ module Cabriolet
 
         uint32 :tag                    # 0x4D434649 ('IFCM')
         uint32 :version                # Typically 1
-        uint32 :chunk_size            # Chunk size (0x2000 or 0x200)
+        uint32 :chunk_size # Chunk size (0x2000 or 0x200)
         uint32 :param                  # 0x100000 or 0x20000
         uint32 :reserved1              # 0xFFFFFFFF
         uint32 :reserved2              # 0xFFFFFFFF
@@ -233,7 +233,7 @@ module Cabriolet
         string :original_name, read_length: :original_length
         uint8 :content_type_length
         string :content_type, read_length: :content_type_length
-        uint8 :terminator              # Always 0
+        uint8 :terminator # Always 0
       end
 
       # Constants
@@ -249,9 +249,9 @@ module Cabriolet
 
       # GUIDs
       module GUIDs
-        DESENCRYPT = "{67F6E4A2-60BF-11D3-8540-00C04F58C3CF}".freeze
-        LZXCOMPRESS = "{0A9007C6-4076-11D3-8789-0000F8105754}".freeze
-        IDENTITY = "{00000020-1000-FF00-FFFF-FFFFFFFFFF01}".freeze # No-op/identity transform
+        DESENCRYPT = "{67F6E4A2-60BF-11D3-8540-00C04F58C3CF}"
+        LZXCOMPRESS = "{0A9007C6-4076-11D3-8789-0000F8105754}"
+        IDENTITY = "{00000020-1000-FF00-FFFF-FFFFFFFFFF01}" # No-op/identity transform
         PIECE3 = [0xC3, 0x07, 0x90, 0x0A, 0x40, 0x76, 0x11, 0xD3,
                   0x87, 0x89, 0x00, 0x00, 0xF8, 0x10, 0x57, 0x54].pack("C*").freeze
         PIECE4 = [0xC4, 0x07, 0x90, 0x0A, 0x40, 0x76, 0x11, 0xD3,
@@ -265,7 +265,7 @@ module Cabriolet
         TRANSFORM_LIST = "/Transform/List"
         CONTENT = "/Content"
         CONTROL_DATA = "/ControlData"
-        RESET_TABLE = "/Transform/List/#{GUIDs::LZXCOMPRESS}/InstanceData/ResetTable"
+        RESET_TABLE = "/Transform/List/#{GUIDs::LZXCOMPRESS}/InstanceData/ResetTable".freeze
         MANIFEST = "/manifest"
       end
     end

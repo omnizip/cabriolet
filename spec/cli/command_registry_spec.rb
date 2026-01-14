@@ -7,11 +7,9 @@ RSpec.describe Cabriolet::Commands::CommandRegistry do
   describe ".handler_for" do
     context "when format is registered" do
       before do
+        # Clear registry first to start clean (before(:each) hook may have registered handlers)
+        described_class.clear
         described_class.register_format(:test, TestHandler)
-      end
-
-      after do
-        described_class.instance_variable_set(:@handlers, {})
       end
 
       it "returns the registered handler class" do
@@ -27,8 +25,9 @@ RSpec.describe Cabriolet::Commands::CommandRegistry do
   end
 
   describe ".register_format" do
-    after do
-      described_class.instance_variable_set(:@handlers, {})
+    before do
+      # Clear registry first to start clean
+      described_class.clear
     end
 
     context "with valid handler class" do
@@ -46,16 +45,17 @@ RSpec.describe Cabriolet::Commands::CommandRegistry do
 
     context "with invalid handler class" do
       it "raises error for class without required methods" do
-        expect {
+        expect do
           described_class.register_format(:test, InvalidHandler)
-        }.to raise_error(ArgumentError, /must implement/)
+        end.to raise_error(ArgumentError, /must implement/)
       end
     end
   end
 
   describe ".format_registered?" do
-    after do
-      described_class.instance_variable_set(:@handlers, {})
+    before do
+      # Clear registry first to start clean
+      described_class.clear
     end
 
     context "when format is registered" do
@@ -76,8 +76,9 @@ RSpec.describe Cabriolet::Commands::CommandRegistry do
   end
 
   describe ".registered_formats" do
-    after do
-      described_class.instance_variable_set(:@handlers, {})
+    before do
+      # Clear registry first to start clean
+      described_class.clear
     end
 
     context "when no formats are registered" do
@@ -101,7 +102,7 @@ RSpec.describe Cabriolet::Commands::CommandRegistry do
 
       it "returns formats in registration order" do
         formats = described_class.registered_formats
-        expect(formats).to eq([:cab, :chm, :szdd])
+        expect(formats).to eq(%i[cab chm szdd])
       end
     end
   end

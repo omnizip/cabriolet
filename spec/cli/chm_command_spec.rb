@@ -20,15 +20,17 @@ RSpec.describe Cabriolet::CLI, "CHM commands" do
     end
 
     context "with non-existent file" do
-      it "exits with error" do
-        expect { cli.chm_list("/nonexistent/file.chm") }.to raise_error(SystemExit)
+      it "raises ArgumentError" do
+        expect do
+          cli.chm_list("/nonexistent/file.chm")
+        end.to raise_error(ArgumentError)
       end
     end
   end
 
   describe "#chm_extract" do
     it "opens CHM file successfully" do
-      Dir.mktmpdir do |output_dir|
+      Dir.mktmpdir do |_output_dir|
         # Just verify it can open the file without errors
         decompressor = Cabriolet::CHM::Decompressor.new
         chm = decompressor.open(basic_fixture)
@@ -38,8 +40,10 @@ RSpec.describe Cabriolet::CLI, "CHM commands" do
     end
 
     context "with non-existent file" do
-      it "exits with error" do
-        expect { cli.chm_extract("/nonexistent/file.chm") }.to raise_error(SystemExit)
+      it "raises ArgumentError" do
+        expect do
+          cli.chm_extract("/nonexistent/file.chm")
+        end.to raise_error(ArgumentError)
       end
     end
   end
@@ -50,8 +54,10 @@ RSpec.describe Cabriolet::CLI, "CHM commands" do
     end
 
     context "with non-existent file" do
-      it "exits with error" do
-        expect { cli.chm_info("/nonexistent/file.chm") }.to raise_error(SystemExit)
+      it "raises ArgumentError" do
+        expect do
+          cli.chm_info("/nonexistent/file.chm")
+        end.to raise_error(ArgumentError)
       end
     end
 
@@ -112,7 +118,9 @@ RSpec.describe Cabriolet::CLI, "CHM commands" do
         Dir.mktmpdir do |tmp_dir|
           output_chm = File.join(tmp_dir, "test.chm")
 
-          expect { invoke_command(:chm_create, output_chm, "/nonexistent/file.html") }
+          expect do
+            invoke_command(:chm_create, output_chm, "/nonexistent/file.html")
+          end
             .to raise_error(ArgumentError)
         end
       end

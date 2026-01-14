@@ -186,7 +186,6 @@ module Cabriolet
         window_bits = case @compression
                       when :lzx then 15
                       when :quantum then 10
-                      else nil
                       end
 
         compressor = @algorithm_factory.create(
@@ -196,7 +195,7 @@ module Cabriolet
           input,
           output,
           data.bytesize,
-          window_bits: window_bits
+          window_bits: window_bits,
         )
 
         compressor.compress

@@ -65,7 +65,7 @@ RSpec.describe Cabriolet::PluginValidator do
 
     it "handles plugin instantiation errors" do
       plugin_class = Class.new(Cabriolet::Plugin) do
-        def initialize(*args)
+        def initialize(*_args)
           raise "Instantiation failed"
         end
       end
@@ -220,7 +220,7 @@ RSpec.describe Cabriolet::PluginValidator do
       it "accepts compatible version" do
         errors = described_class.validate_version_compatibility(
           "~> 0.1",
-          current_version
+          current_version,
         )
         expect(errors).to be_empty
       end
@@ -228,7 +228,7 @@ RSpec.describe Cabriolet::PluginValidator do
       it "rejects incompatible version" do
         errors = described_class.validate_version_compatibility(
           "~> 2.0",
-          current_version
+          current_version,
         )
         expect(errors).to include(/requires Cabriolet version/)
       end
@@ -238,7 +238,7 @@ RSpec.describe Cabriolet::PluginValidator do
       it "accepts higher version" do
         errors = described_class.validate_version_compatibility(
           ">= 0.1.0",
-          current_version
+          current_version,
         )
         expect(errors).to be_empty
       end
@@ -246,7 +246,7 @@ RSpec.describe Cabriolet::PluginValidator do
       it "rejects lower version" do
         errors = described_class.validate_version_compatibility(
           ">= 1.0.0",
-          current_version
+          current_version,
         )
         expect(errors).to include(/requires Cabriolet version/)
       end
@@ -256,7 +256,7 @@ RSpec.describe Cabriolet::PluginValidator do
       it "accepts exact match" do
         errors = described_class.validate_version_compatibility(
           "= 0.1.0",
-          current_version
+          current_version,
         )
         expect(errors).to be_empty
       end
@@ -264,7 +264,7 @@ RSpec.describe Cabriolet::PluginValidator do
       it "rejects different version" do
         errors = described_class.validate_version_compatibility(
           "= 1.0.0",
-          current_version
+          current_version,
         )
         expect(errors).to include(/requires exact Cabriolet version/)
       end
@@ -355,7 +355,7 @@ RSpec.describe Cabriolet::PluginValidator do
   describe "constants" do
     it "defines required metadata fields" do
       expect(Cabriolet::PluginValidator::REQUIRED_METADATA).to eq(
-        %i[name version author description cabriolet_version]
+        %i[name version author description cabriolet_version],
       )
     end
 

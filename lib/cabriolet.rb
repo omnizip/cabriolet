@@ -81,7 +81,6 @@ require_relative "cabriolet/models/lit_header"
 require_relative "cabriolet/models/oab_header"
 
 # Load errors first (needed by algorithm_factory)
-require_relative "cabriolet/errors"
 
 # Load plugin system
 require_relative "cabriolet/plugin"
@@ -92,32 +91,6 @@ require_relative "cabriolet/plugin_manager"
 require_relative "cabriolet/algorithm_factory"
 
 # Load core components
-require_relative "cabriolet/system/io_system"
-require_relative "cabriolet/system/file_handle"
-require_relative "cabriolet/system/memory_handle"
-
-require_relative "cabriolet/binary/structures"
-require_relative "cabriolet/binary/bitstream"
-require_relative "cabriolet/binary/bitstream_writer"
-require_relative "cabriolet/binary/chm_structures"
-require_relative "cabriolet/binary/szdd_structures"
-require_relative "cabriolet/binary/kwaj_structures"
-require_relative "cabriolet/binary/hlp_structures"
-require_relative "cabriolet/binary/lit_structures"
-require_relative "cabriolet/binary/oab_structures"
-
-require_relative "cabriolet/models/cabinet"
-require_relative "cabriolet/models/folder"
-require_relative "cabriolet/models/file"
-require_relative "cabriolet/models/chm_header"
-require_relative "cabriolet/models/chm_file"
-require_relative "cabriolet/models/chm_section"
-require_relative "cabriolet/models/szdd_header"
-require_relative "cabriolet/models/kwaj_header"
-require_relative "cabriolet/models/hlp_header"
-require_relative "cabriolet/models/hlp_file"
-require_relative "cabriolet/models/lit_header"
-require_relative "cabriolet/models/oab_header"
 
 require_relative "cabriolet/huffman/tree"
 require_relative "cabriolet/huffman/decoder"

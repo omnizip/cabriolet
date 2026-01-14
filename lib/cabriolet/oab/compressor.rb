@@ -49,7 +49,7 @@ module Cabriolet
       # @return [Integer] Bytes written
       # @raise [Error] if compression fails
       def compress(input_file, output_file, **options)
-        block_size = options.fetch(:block_size, @block_size)
+        block_size = options[:block_size] || @block_size
 
         input_handle = @io_system.open(input_file, Constants::MODE_READ)
         output_handle = @io_system.open(output_file, Constants::MODE_WRITE)
@@ -95,7 +95,7 @@ module Cabriolet
       # @return [Integer] Bytes written
       # @raise [Error] if compression fails
       def compress_data(data, output_file, **options)
-        block_size = options.fetch(:block_size, @block_size)
+        block_size = options[:block_size] || @block_size
 
         input_handle = System::MemoryHandle.new(data, Constants::MODE_READ)
         output_handle = @io_system.open(output_file, Constants::MODE_WRITE)
@@ -140,7 +140,7 @@ module Cabriolet
       # @return [Integer] Bytes written
       # @raise [Error] if compression fails
       def compress_incremental(input_file, base_file, output_file, **options)
-        block_size = options.fetch(:block_size, @block_size)
+        block_size = options[:block_size] || @block_size
 
         # For now, just compress the new file with patch header
         # A full implementation would generate binary diffs
@@ -296,7 +296,7 @@ module Cabriolet
           input_mem,
           output_mem,
           @buffer_size,
-          window_bits: window_bits
+          window_bits: window_bits,
         )
 
         compressor.compress

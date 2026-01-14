@@ -15,7 +15,7 @@ module CabFixtures
     simple: "cabextract/simple.cab",
 
     # Compression types
-    mszip: "libmspack/cabd/mszip_lzx_qtm.cab",  # Contains MSZIP, LZX, Quantum
+    mszip: "libmspack/cabd/mszip_lzx_qtm.cab", # Contains MSZIP, LZX, Quantum
 
     # Multi-part cabinets
     multi_pt1: "libmspack/cabd/multi_basic_pt1.cab",
@@ -112,11 +112,13 @@ module CabFixtures
     when :compression
       [path(:mszip)]
     when :multi
-      [path(:multi_pt1), path(:multi_pt2), path(:multi_pt3), path(:multi_pt4), path(:multi_pt5)]
+      [path(:multi_pt1), path(:multi_pt2), path(:multi_pt3), path(:multi_pt4),
+       path(:multi_pt5)]
     when :encoding
       [path(:encoding_ascii), path(:encoding_utf8), path(:encoding_koi8)]
     when :split
-      [path(:split_1), path(:split_2), path(:split_3), path(:split_4), path(:split_5)]
+      [path(:split_1), path(:split_2), path(:split_3), path(:split_4),
+       path(:split_5)]
     when :edge_cases
       EDGE_CASES.values.map { |f| File.join(FIXTURES_BASE, f) }
     else

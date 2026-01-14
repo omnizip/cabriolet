@@ -67,7 +67,8 @@ module Cabriolet
       # @param output [System::FileHandle, System::MemoryHandle] Output handle
       # @param buffer_size [Integer] Buffer size for I/O operations
       # @param window_bits [Integer] Window size (15-21 for regular LZX)
-      def initialize(io_system, input, output, buffer_size, window_bits: 15, **_kwargs)
+      def initialize(io_system, input, output, buffer_size, window_bits: 15,
+**_kwargs)
         super(io_system, input, output, buffer_size)
 
         # Validate window_bits
@@ -84,7 +85,8 @@ module Cabriolet
         @maintree_maxsymbols = NUM_CHARS + @num_offsets
 
         # Initialize bitstream writer (LZX uses MSB-first bit ordering per libmspack lzxd.c)
-        @bitstream = Binary::BitstreamWriter.new(io_system, output, buffer_size, bit_order: :msb)
+        @bitstream = Binary::BitstreamWriter.new(io_system, output,
+                                                 buffer_size, bit_order: :msb)
 
         # Initialize sliding window for LZ77
         @window = "\0" * @window_size
@@ -342,7 +344,9 @@ module Cabriolet
         lengths = Array.new(num_symbols, 0)
 
         # Get symbols with non-zero frequencies
-        non_zero_symbols = freqs.each_with_index.select { |freq, _| freq.positive? }.map { |_, sym| sym }
+        non_zero_symbols = freqs.each_with_index.select do |freq, _|
+          freq.positive?
+        end.map { |_, sym| sym }
 
         # Handle edge cases
         if non_zero_symbols.empty?
@@ -354,7 +358,7 @@ module Cabriolet
           # Single symbol: need at least 2 symbols for valid Huffman tree
           symbol = non_zero_symbols[0]
           lengths[symbol] = 1
-          dummy = symbol == 0 ? 1 : 0
+          dummy = symbol.zero? ? 1 : 0
           lengths[dummy] = 1
           return lengths
         end
@@ -403,7 +407,8 @@ module Cabriolet
         maintree_freq = @literal_freq + @match_freq
 
         # Step 2: Build main tree code lengths
-        @maintree_lengths = build_tree_lengths(maintree_freq, @maintree_maxsymbols)
+        @maintree_lengths = build_tree_lengths(maintree_freq,
+                                               @maintree_maxsymbols)
 
         # Step 3: Build length tree code lengths
         @length_lengths = build_tree_lengths(@length_freq, LENGTH_MAXSYMBOLS)
@@ -415,9 +420,12 @@ module Cabriolet
         @pretree_lengths = build_tree_lengths(pretree_freq, PRETREE_MAXSYMBOLS)
 
         # Step 6: Generate code tables from lengths
-        @maintree_codes = Huffman::Encoder.build_codes(@maintree_lengths, @maintree_maxsymbols)
-        @length_codes = Huffman::Encoder.build_codes(@length_lengths, LENGTH_MAXSYMBOLS)
-        @pretree_codes = Huffman::Encoder.build_codes(@pretree_lengths, PRETREE_MAXSYMBOLS)
+        @maintree_codes = Huffman::Encoder.build_codes(@maintree_lengths,
+                                                       @maintree_maxsymbols)
+        @length_codes = Huffman::Encoder.build_codes(@length_lengths,
+                                                     LENGTH_MAXSYMBOLS)
+        @pretree_codes = Huffman::Encoder.build_codes(@pretree_lengths,
+                                                      PRETREE_MAXSYMBOLS)
       end
 
       # Calculate pretree symbol frequencies
@@ -432,10 +440,12 @@ module Cabriolet
 
         # Count symbols needed to encode main tree (two parts)
         count_pretree_symbols(@maintree_lengths, 0, NUM_CHARS, pretree_freq)
-        count_pretree_symbols(@maintree_lengths, NUM_CHARS, @maintree_maxsymbols, pretree_freq)
+        count_pretree_symbols(@maintree_lengths, NUM_CHARS,
+                              @maintree_maxsymbols, pretree_freq)
 
         # Count symbols needed to encode length tree
-        count_pretree_symbols(@length_lengths, 0, NUM_SECONDARY_LENGTHS, pretree_freq)
+        count_pretree_symbols(@length_lengths, 0, NUM_SECONDARY_LENGTHS,
+                              pretree_freq)
 
         pretree_freq
       end
@@ -509,7 +519,7 @@ module Cabriolet
       def calculate_depths(node, depth, lengths)
         return unless node
 
-        freq, symbol, left, right, = node
+        _, symbol, left, right, = node
 
         if symbol.nil?
           # Internal node: recurse to children
@@ -530,7 +540,7 @@ module Cabriolet
       def calculate_code_lengths(node, depth, lengths)
         return unless node
 
-        freq, symbol, left, right = node
+        _, symbol, left, right = node
 
         if symbol.nil?
           # Internal node: recurse to children

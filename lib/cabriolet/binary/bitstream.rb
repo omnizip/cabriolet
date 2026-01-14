@@ -13,7 +13,8 @@ module Cabriolet
       # @param buffer_size [Integer] Size of the input buffer
       # @param bit_order [Symbol] Bit order (:lsb or :msb)
       # @param salvage [Boolean] Salvage mode - return 0 on EOF instead of raising
-      def initialize(io_system, handle, buffer_size = Cabriolet.default_buffer_size, bit_order: :lsb, salvage: false)
+      def initialize(io_system, handle,
+buffer_size = Cabriolet.default_buffer_size, bit_order: :lsb, salvage: false)
         @io_system = io_system
         @handle = handle
         @buffer_size = buffer_size
@@ -23,7 +24,7 @@ module Cabriolet
         @buffer_pos = 0
         @bit_buffer = 0
         @bits_left = 0
-        @input_end = false  # Track EOF state (matches libmspack's input_end flag)
+        @input_end = false # Track EOF state (matches libmspack's input_end flag)
 
         # For MSB mode, we need to know the bit width of the buffer
         # Ruby integers are arbitrary precision, so we use 32 bits as standard
@@ -64,7 +65,11 @@ module Cabriolet
           byte = 0 if byte.nil?
 
           # DEBUG
-          $stderr.puts "DEBUG LSB read_byte: buffer_pos=#{@buffer_pos} byte=#{byte} (#{byte.to_s(2).rjust(8, '0')}) bits_left=#{@bits_left}" if ENV['DEBUG_BITSTREAM']
+          if ENV["DEBUG_BITSTREAM"]
+            warn "DEBUG LSB read_byte: buffer_pos=#{@buffer_pos} byte=#{byte} (#{byte.to_s(2).rjust(
+              8, '0'
+            )}) bits_left=#{@bits_left}"
+          end
 
           # INJECT_BITS (LSB): append to the right
           @bit_buffer |= (byte << @bits_left)
@@ -78,7 +83,7 @@ module Cabriolet
         @bits_left -= num_bits
 
         # DEBUG
-        $stderr.puts "DEBUG LSB read_bits(#{num_bits}): result=#{result} buffer=#{@bit_buffer.to_s(16)} bits_left=#{@bits_left}" if ENV['DEBUG_BITSTREAM']
+        warn "DEBUG LSB read_bits(#{num_bits}): result=#{result} buffer=#{@bit_buffer.to_s(16)} bits_left=#{@bits_left}" if ENV["DEBUG_BITSTREAM"]
 
         result
       end
@@ -92,10 +97,10 @@ module Cabriolet
         while @bits_left < num_bits
           # Read 2 bytes at a time (little-endian), like libmspack
           byte0 = read_byte
-          if byte0.nil?
+          if byte0.nil? && (@salvage || @input_end)
             # First EOF: pad with zeros
             # Second EOF: read_byte will raise DecompressionError
-            byte0 = 0 if @salvage || @input_end
+            byte0 = 0
           end
 
           byte1 = read_byte
@@ -108,7 +113,7 @@ module Cabriolet
           word = byte0 | (byte1 << 8)
 
           # DEBUG
-          $stderr.puts "DEBUG MSB read_bytes: byte0=0x#{byte0.to_s(16)} byte1=0x#{byte1.to_s(16)} word=0x#{word.to_s(16)} bits_left=#{@bits_left}" if ENV['DEBUG_BITSTREAM']
+          warn "DEBUG MSB read_bytes: byte0=0x#{byte0.to_s(16)} byte1=0x#{byte1.to_s(16)} word=0x#{word.to_s(16)} bits_left=#{@bits_left}" if ENV["DEBUG_BITSTREAM"]
 
           # INJECT_BITS (MSB): inject at the left side
           # bit_buffer |= word << (BITBUF_WIDTH -16 - bits_left)
@@ -125,7 +130,7 @@ module Cabriolet
         @bits_left -= num_bits
 
         # DEBUG
-        $stderr.puts "DEBUG MSB read_bits(#{num_bits}) result=#{result} (0x#{result.to_s(16)}) buffer=0x#{@bit_buffer.to_s(16)} bits_left=#{@bits_left}" if ENV['DEBUG_BITSTREAM']
+        warn "DEBUG MSB read_bits(#{num_bits}) result=#{result} (0x#{result.to_s(16)}) buffer=0x#{@bit_buffer.to_s(16)} bits_left=#{@bits_left}" if ENV["DEBUG_BITSTREAM"]
 
         result
       end
@@ -151,13 +156,13 @@ module Cabriolet
               unless @salvage
                 raise DecompressionError, "Unexpected end of input stream"
               end
+
               # In salvage mode, keep returning nil
-              return nil
             else
               # First EOF: signal to pad with zeros (return nil)
               @input_end = true
-              return nil
             end
+            return nil
           end
         end
 

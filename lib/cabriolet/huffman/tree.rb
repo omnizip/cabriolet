@@ -62,7 +62,7 @@ module Cabriolet
 
             # Fill all possible lookups of this symbol
             fill = bit_mask
-            while fill > 0
+            while fill.positive?
               @table[leaf] = sym
               leaf += 1
               fill -= 1

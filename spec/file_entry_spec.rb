@@ -78,7 +78,7 @@ RSpec.describe Cabriolet::FileEntry do
       it "requires archive_path" do
         expect do
           described_class.new(data: "content")
-        end.to raise_error(ArgumentError)  # Will be keyword argument error from Ruby
+        end.to raise_error(ArgumentError) # Will be keyword argument error from Ruby
       end
     end
 

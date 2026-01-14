@@ -84,4 +84,3 @@ module KwajFixtures
     end
   end
 end
-

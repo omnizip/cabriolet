@@ -136,7 +136,7 @@ module Cabriolet
         # Secondary header: variable (sec_hdr_len)
         # Then pieces 0-4 data
         # Content starts after the last piece
-        if pieces && pieces.length > 0
+        if pieces&.length&.positive?
           last_piece = pieces.last
           lit_file.content_offset = last_piece[:offset] + last_piece[:size]
         else
@@ -314,12 +314,12 @@ module Cabriolet
 
         # Find unique section IDs from directory (excluding section 0 which is uncompressed)
         section_ids = lit_file.directory.entries.map(&:section).uniq.sort
-        section_ids.delete(0)  # Skip section 0 (uncompressed)
+        section_ids.delete(0) # Skip section 0 (uncompressed)
 
         # Build an array indexed by section_id
         # sections[section_id] gives the section for that ID
         max_section_id = section_ids.last || 0
-        sections = Array.new(max_section_id + 1)  # Create array with nil placeholders
+        sections = Array.new(max_section_id + 1) # Create array with nil placeholders
 
         section_ids.each do |section_id|
           # Create a section object
@@ -344,9 +344,9 @@ module Cabriolet
       def find_section_name(lit_file, section_id)
         # Get all storage section names from section 0
         storage_sections = lit_file.directory.entries.select do |e|
-          e.section == 0 &&
+          e.section.zero? &&
             e.name.start_with?("::DataSpace/Storage/") &&
-            e.name.count('/') == 3  # ::DataSpace/Storage/SectionName/
+            e.name.count("/") == 3 # ::DataSpace/Storage/SectionName/
         end.map do |e|
           e.name.match(/^::DataSpace\/Storage\/([^\/]+)\//)[1]
         end.uniq

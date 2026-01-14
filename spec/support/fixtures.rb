@@ -32,7 +32,7 @@ module Fixtures
     kwaj: KwajFixtures,
     hlp: HlpFixtures,
     lit: LitFixtures,
-    oab: OabFixtures
+    oab: OabFixtures,
   }.freeze
 
   # Get fixture accessor for a specific format
@@ -42,7 +42,11 @@ module Fixtures
   # @raise [ArgumentError] if format is not supported
   def self.for(format)
     fixture_class = FORMATS[format]
-    raise ArgumentError, "Unknown format: #{format}. Supported: #{FORMATS.keys.join(', ')}" unless fixture_class
+    unless fixture_class
+      raise ArgumentError,
+            "Unknown format: #{format}. Supported: #{FORMATS.keys.join(', ')}"
+    end
+
     fixture_class
   end
 

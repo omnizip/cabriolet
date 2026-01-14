@@ -20,7 +20,7 @@ module Cabriolet
       # @param file [String] Path to the CAB file
       # @param options [Hash] Additional options (unused)
       # @return [void]
-      def list(file, options = {})
+      def list(file, _options = {})
         validate_file_exists(file)
 
         decompressor = Decompressor.new
@@ -90,7 +90,7 @@ module Cabriolet
       # @param file [String] Path to the CAB file
       # @param options [Hash] Additional options (unused)
       # @return [void]
-      def info(file, options = {})
+      def info(file, _options = {})
         validate_file_exists(file)
 
         decompressor = Decompressor.new
@@ -107,7 +107,7 @@ module Cabriolet
       # @param file [String] Path to the CAB file
       # @param options [Hash] Additional options (unused)
       # @return [void]
-      def test(file, options = {})
+      def test(file, _options = {})
         validate_file_exists(file)
 
         decompressor = Decompressor.new

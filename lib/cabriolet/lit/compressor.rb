@@ -63,7 +63,8 @@ module Cabriolet
         file_data = prepare_files
 
         # Build LIT structure
-        lit_structure = build_lit_structure(file_data, version, language_id, creator_id)
+        lit_structure = build_lit_structure(file_data, version, language_id,
+                                            creator_id)
 
         # Write to output file
         output_handle = @io_system.open(output_file, Constants::MODE_WRITE)
@@ -120,7 +121,8 @@ module Cabriolet
         bytes_written = write_primary_header(output_handle, structure)
 
         # Write piece structures (5 * 16 bytes = 80 bytes)
-        bytes_written += write_piece_structures(output_handle, structure[:pieces])
+        bytes_written += write_piece_structures(output_handle,
+                                                structure[:pieces])
 
         # Write secondary header
         bytes_written += write_secondary_header_block(

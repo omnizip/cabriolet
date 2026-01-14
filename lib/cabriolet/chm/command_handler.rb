@@ -20,7 +20,7 @@ module Cabriolet
       # @param file [String] Path to the CHM file
       # @param options [Hash] Additional options (unused)
       # @return [void]
-      def list(file, options = {})
+      def list(file, _options = {})
         validate_file_exists(file)
 
         decompressor = Decompressor.new
@@ -41,7 +41,7 @@ module Cabriolet
       # @param output_dir [String] Output directory path (default: current directory)
       # @param options [Hash] Additional options (unused)
       # @return [void]
-      def extract(file, output_dir = nil, options = {})
+      def extract(file, output_dir = nil, _options = {})
         validate_file_exists(file)
 
         output_dir ||= "."
@@ -106,7 +106,7 @@ module Cabriolet
       # @param file [String] Path to the CHM file
       # @param options [Hash] Additional options (unused)
       # @return [void]
-      def info(file, options = {})
+      def info(file, _options = {})
         validate_file_exists(file)
 
         decompressor = Decompressor.new
@@ -124,7 +124,7 @@ module Cabriolet
       # @param file [String] Path to the CHM file
       # @param options [Hash] Additional options (unused)
       # @return [void]
-      def test(file, options = {})
+      def test(file, _options = {})
         validate_file_exists(file)
 
         decompressor = Decompressor.new

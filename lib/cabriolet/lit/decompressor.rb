@@ -144,7 +144,11 @@ module Cabriolet
       # @return [Integer] Number of files extracted
       def extract_all(lit_file, output_dir, use_manifest: true)
         raise ArgumentError, "Header must not be nil" unless lit_file
-        raise ArgumentError, "Output directory must not be nil" unless output_dir
+
+        unless output_dir
+          raise ArgumentError,
+                "Output directory must not be nil"
+        end
 
         ::FileUtils.mkdir_p(output_dir)
 
@@ -280,7 +284,10 @@ module Cabriolet
         else
           # Get section info (sections array is indexed by section_id)
           section = lit_file.sections[section_id]
-          raise Cabriolet::DecompressionError, "Section #{section_id} not found" unless section
+          unless section
+            raise Cabriolet::DecompressionError,
+                  "Section #{section_id} not found"
+          end
 
           # Decompress section
           data = decompress_section(lit_file, section)
@@ -311,7 +318,7 @@ module Cabriolet
 
       # Decompress a section with transforms
       def decompress_section(lit_file, section)
-        filename = lit_file.instance_variable_get(:@filename)
+        lit_file.instance_variable_get(:@filename)
 
         # Read transform list
         transform_path = Binary::LITStructures::Paths::STORAGE +
@@ -351,7 +358,10 @@ module Cabriolet
           Binary::LITStructures::Paths::CONTROL_DATA
 
         control_entry = lit_file.directory.find(control_path)
-        control_data = control_entry ? read_entry_data(lit_file, control_entry) : nil
+        control_data = if control_entry
+                         read_entry_data(lit_file,
+                                         control_entry)
+                       end
 
         # Apply transforms in order
         transforms.each do |transform_guid|
@@ -372,6 +382,7 @@ module Cabriolet
               # Return the data as-is (may be uncompressed or custom format)
               next
             end
+
             raise Cabriolet::DecompressionError,
                   "Unknown transform GUID: #{transform_guid}"
           end
@@ -434,7 +445,9 @@ module Cabriolet
         return "" unless section_id
 
         # Calculate where section 0 data ends
-        section_0_entries = lit_file.directory.entries.select { |e| e.section == 0 }
+        section_0_entries = lit_file.directory.entries.select do |e|
+          e.section.zero?
+        end
         section_0_data = section_0_entries.reject do |e|
           e.name.start_with?("::DataSpace") ||
             e.name.end_with?("/") ||
@@ -446,7 +459,9 @@ module Cabriolet
         section_start = lit_file.content_offset + max_end
 
         # Calculate section end by finding files in this section
-        section_entries = lit_file.directory.entries.select { |e| e.section == section_id }
+        section_entries = lit_file.directory.entries.select do |e|
+          e.section == section_id
+        end
         max_section_end = section_entries.map { |e| e.offset + e.size }.max
 
         # Read the section data
@@ -460,7 +475,8 @@ module Cabriolet
       end
 
       # Decompress LZX section with ResetTable
-      def decompress_lzx_section(lit_file, section, compressed_data, control_data)
+      def decompress_lzx_section(lit_file, section, compressed_data,
+control_data)
         # Parse control data
         unless control_data && control_data.bytesize >= 32
           raise Cabriolet::DecompressionError,

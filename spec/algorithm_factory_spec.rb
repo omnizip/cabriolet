@@ -493,11 +493,12 @@ RSpec.describe Cabriolet::AlgorithmFactory do
         Cabriolet.algorithm_factory.register(
           :custom_reverse,
           CustomReverseDecompressor,
-          category: :decompressor
+          category: :decompressor,
         )
 
         # Verify registration
-        expect(Cabriolet.algorithm_factory.registered?(:custom_reverse, :decompressor)).to be true
+        expect(Cabriolet.algorithm_factory.registered?(:custom_reverse,
+                                                       :decompressor)).to be true
 
         # Use in a format handler
         input_data = "Hello, World!"
@@ -510,7 +511,7 @@ RSpec.describe Cabriolet::AlgorithmFactory do
           io_system,
           input_handle,
           output_handle,
-          input_data.bytesize
+          input_data.bytesize,
         )
 
         decompressor.decompress(input_data.bytesize, input_data.bytesize)
@@ -532,14 +533,16 @@ RSpec.describe Cabriolet::AlgorithmFactory do
         custom_factory.register(
           :custom_reverse,
           CustomReverseDecompressor,
-          category: :decompressor
+          category: :decompressor,
         )
 
         # Verify custom factory has the algorithm
-        expect(custom_factory.registered?(:custom_reverse, :decompressor)).to be true
+        expect(custom_factory.registered?(:custom_reverse,
+                                          :decompressor)).to be true
 
         # Verify global factory does NOT have it (isolation)
-        expect(Cabriolet.algorithm_factory.registered?(:custom_reverse, :decompressor)).to be false
+        expect(Cabriolet.algorithm_factory.registered?(:custom_reverse,
+                                                       :decompressor)).to be false
 
         # Use custom factory
         input_data = "Test Data"
@@ -552,7 +555,7 @@ RSpec.describe Cabriolet::AlgorithmFactory do
           io_system,
           input_handle,
           output_handle,
-          input_data.bytesize
+          input_data.bytesize,
         )
 
         decompressor.decompress(input_data.bytesize, input_data.bytesize)
@@ -568,13 +571,14 @@ RSpec.describe Cabriolet::AlgorithmFactory do
         test_factory.register(
           :test_algo,
           CustomReverseDecompressor,
-          category: :decompressor
+          category: :decompressor,
         )
 
         # This demonstrates how format handlers could accept custom factories
         # (showing the pattern, even though CAB::Decompressor doesn't currently support it)
         expect(test_factory.registered?(:test_algo, :decompressor)).to be true
-        expect(Cabriolet.algorithm_factory.registered?(:test_algo, :decompressor)).to be false
+        expect(Cabriolet.algorithm_factory.registered?(:test_algo,
+                                                       :decompressor)).to be false
       end
     end
 
@@ -599,7 +603,7 @@ RSpec.describe Cabriolet::AlgorithmFactory do
         Cabriolet.algorithm_factory.register(
           :custom_upcase,
           CustomUpcaseCompressor,
-          category: :compressor
+          category: :compressor,
         )
 
         input_data = "hello world"
@@ -612,7 +616,7 @@ RSpec.describe Cabriolet::AlgorithmFactory do
           io_system,
           input_handle,
           output_handle,
-          input_data.bytesize
+          input_data.bytesize,
         )
 
         compressor.compress
@@ -649,12 +653,12 @@ RSpec.describe Cabriolet::AlgorithmFactory do
         Cabriolet.algorithm_factory.register(
           :reverse,
           ReverseCompressor,
-          category: :compressor
+          category: :compressor,
         )
         Cabriolet.algorithm_factory.register(
           :reverse,
           ReverseDecompressor,
-          category: :decompressor
+          category: :decompressor,
         )
 
         # Compress
@@ -668,7 +672,7 @@ RSpec.describe Cabriolet::AlgorithmFactory do
           io_system,
           compress_input,
           compress_output,
-          original.bytesize
+          original.bytesize,
         )
         compressor.compress
 
@@ -676,7 +680,8 @@ RSpec.describe Cabriolet::AlgorithmFactory do
         compress_output.rewind
         compressed_data = compress_output.read
 
-        decompress_input = Cabriolet::System::MemoryHandle.new(compressed_data, Cabriolet::Constants::MODE_READ)
+        decompress_input = Cabriolet::System::MemoryHandle.new(compressed_data,
+                                                               Cabriolet::Constants::MODE_READ)
         decompress_output = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
 
         decompressor = Cabriolet.algorithm_factory.create(
@@ -685,7 +690,7 @@ RSpec.describe Cabriolet::AlgorithmFactory do
           io_system,
           decompress_input,
           decompress_output,
-          compressed_data.bytesize
+          compressed_data.bytesize,
         )
         decompressor.decompress(compressed_data.bytesize, original.bytesize)
 
@@ -704,7 +709,7 @@ RSpec.describe Cabriolet::AlgorithmFactory do
       # Hypothetical optimized LZSS implementation
       let(:optimized_lzss_class) do
         Class.new(Cabriolet::Decompressors::Base) do
-          def decompress(input_size, output_size)
+          def decompress(_input_size, _output_size)
             # Hypothetical optimized implementation
             @output.write("OPTIMIZED")
             9
@@ -718,24 +723,27 @@ RSpec.describe Cabriolet::AlgorithmFactory do
 
       it "allows replacing built-in algorithm with custom implementation" do
         # Save original for restoration
-        original_registered = Cabriolet.algorithm_factory.registered?(:lzss, :decompressor)
+        original_registered = Cabriolet.algorithm_factory.registered?(:lzss,
+                                                                      :decompressor)
 
         # Unregister built-in
         Cabriolet.algorithm_factory.unregister(:lzss, :decompressor)
 
         # Verify unregistered
-        expect(Cabriolet.algorithm_factory.registered?(:lzss, :decompressor)).to be false
+        expect(Cabriolet.algorithm_factory.registered?(:lzss,
+                                                       :decompressor)).to be false
 
         # Register optimized version
         Cabriolet.algorithm_factory.register(
           :lzss,
           OptimizedLZSS,
           category: :decompressor,
-          priority: 10
+          priority: 10,
         )
 
         # Verify custom version is registered
-        expect(Cabriolet.algorithm_factory.registered?(:lzss, :decompressor)).to be true
+        expect(Cabriolet.algorithm_factory.registered?(:lzss,
+                                                       :decompressor)).to be true
 
         # Create instance and verify it's the custom class
         input_handle = Cabriolet::System::MemoryHandle.new("dummy", Cabriolet::Constants::MODE_READ)
@@ -747,7 +755,7 @@ RSpec.describe Cabriolet::AlgorithmFactory do
           io_system,
           input_handle,
           output_handle,
-          100
+          100,
         )
 
         expect(decompressor).to be_a(OptimizedLZSS)
@@ -764,7 +772,7 @@ RSpec.describe Cabriolet::AlgorithmFactory do
           Cabriolet.algorithm_factory.register(
             :lzss,
             Cabriolet::Decompressors::LZSS,
-            category: :decompressor
+            category: :decompressor,
           )
         end
       end
@@ -793,19 +801,21 @@ RSpec.describe Cabriolet::AlgorithmFactory do
           :custom_algo,
           StandardAlgo,
           category: :compressor,
-          priority: 0
+          priority: 0,
         )
 
         Cabriolet.algorithm_factory.register(
           :custom_algo_opt,
           OptimizedAlgo,
           category: :compressor,
-          priority: 10
+          priority: 10,
         )
 
         # Verify both are registered
-        expect(Cabriolet.algorithm_factory.registered?(:custom_algo, :compressor)).to be true
-        expect(Cabriolet.algorithm_factory.registered?(:custom_algo_opt, :compressor)).to be true
+        expect(Cabriolet.algorithm_factory.registered?(:custom_algo,
+                                                       :compressor)).to be true
+        expect(Cabriolet.algorithm_factory.registered?(:custom_algo_opt,
+                                                       :compressor)).to be true
 
         # Check priority values
         info_standard = Cabriolet.algorithm_factory.list(:compressor)[:custom_algo]
@@ -823,7 +833,7 @@ RSpec.describe Cabriolet::AlgorithmFactory do
     describe "format-specific algorithm registration" do
       let(:cab_specific_algo) do
         Class.new(Cabriolet::Decompressors::Base) do
-          def decompress(input_size, output_size)
+          def decompress(_input_size, _output_size)
             @output.write("CAB-SPECIFIC")
             12
           end
@@ -839,7 +849,7 @@ RSpec.describe Cabriolet::AlgorithmFactory do
           :custom_cab_lzx,
           CABSpecificAlgo,
           category: :decompressor,
-          format: :cab
+          format: :cab,
         )
 
         info = Cabriolet.algorithm_factory.list(:decompressor)[:custom_cab_lzx]
@@ -874,21 +884,21 @@ RSpec.describe Cabriolet::AlgorithmFactory do
           :custom_format_algo,
           CABSpecificAlgo,
           category: :decompressor,
-          format: :cab
+          format: :cab,
         )
 
         Cabriolet.algorithm_factory.register(
           :custom_format_algo_chm,
           CHMAlgo,
           category: :compressor,
-          format: :chm
+          format: :chm,
         )
 
         Cabriolet.algorithm_factory.register(
           :custom_format_algo_szdd,
           SZDDAlgo,
           category: :compressor,
-          format: :szdd
+          format: :szdd,
         )
 
         # Verify all are registered with correct format
@@ -901,9 +911,12 @@ RSpec.describe Cabriolet::AlgorithmFactory do
         expect(szdd_info[:format]).to eq(:szdd)
 
         # Cleanup
-        Cabriolet.algorithm_factory.unregister(:custom_format_algo, :decompressor)
-        Cabriolet.algorithm_factory.unregister(:custom_format_algo_chm, :compressor)
-        Cabriolet.algorithm_factory.unregister(:custom_format_algo_szdd, :compressor)
+        Cabriolet.algorithm_factory.unregister(:custom_format_algo,
+                                               :decompressor)
+        Cabriolet.algorithm_factory.unregister(:custom_format_algo_chm,
+                                               :compressor)
+        Cabriolet.algorithm_factory.unregister(:custom_format_algo_szdd,
+                                               :compressor)
       end
     end
 
@@ -925,10 +938,12 @@ RSpec.describe Cabriolet::AlgorithmFactory do
 
         # Verify isolation
         expect(test_factory.registered?(:test, :compressor)).to be true
-        expect(Cabriolet.algorithm_factory.registered?(:test, :compressor)).to be false
+        expect(Cabriolet.algorithm_factory.registered?(:test,
+                                                       :compressor)).to be false
 
         # Global factory still has all built-in algorithms
-        expect(Cabriolet.algorithm_factory.registered?(:mszip, :compressor)).to be true
+        expect(Cabriolet.algorithm_factory.registered?(:mszip,
+                                                       :compressor)).to be true
         expect(test_factory.registered?(:mszip, :compressor)).to be false
       end
 
@@ -952,20 +967,26 @@ RSpec.describe Cabriolet::AlgorithmFactory do
         stub_const("Implementation2", impl2)
 
         benchmark_factory = described_class.new(auto_register: false)
-        benchmark_factory.register(:impl1, Implementation1, category: :compressor)
-        benchmark_factory.register(:impl2, Implementation2, category: :compressor)
+        benchmark_factory.register(:impl1, Implementation1,
+                                   category: :compressor)
+        benchmark_factory.register(:impl2, Implementation2,
+                                   category: :compressor)
 
         # Both implementations are available for comparison
-        expect(benchmark_factory.list(:compressor).keys).to contain_exactly(:impl1, :impl2)
+        expect(benchmark_factory.list(:compressor).keys).to contain_exactly(
+          :impl1, :impl2
+        )
 
         # Can create instances of each for benchmarking
         input = Cabriolet::System::MemoryHandle.new("test", Cabriolet::Constants::MODE_READ)
         output1 = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
         output2 = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
 
-        comp1 = benchmark_factory.create(:impl1, :compressor, io_system, input, output1, 4)
+        comp1 = benchmark_factory.create(:impl1, :compressor, io_system, input,
+                                         output1, 4)
         input.rewind
-        comp2 = benchmark_factory.create(:impl2, :compressor, io_system, input, output2, 4)
+        comp2 = benchmark_factory.create(:impl2, :compressor, io_system, input,
+                                         output2, 4)
 
         expect(comp1).to be_a(Implementation1)
         expect(comp2).to be_a(Implementation2)

@@ -327,8 +327,7 @@ RSpec.describe Cabriolet::Compressors::LZX do
 
       # Should complete without error (compression may be minimal)
       expect(compressed_size).to be > 0
-      compression_ratio = (compressed_size.to_f / original_size) * 100
-      puts "Compression ratio for repetitive data: #{compression_ratio.round(2)}%"
+      (compressed_size.to_f / original_size) * 100
     end
   end
 end
