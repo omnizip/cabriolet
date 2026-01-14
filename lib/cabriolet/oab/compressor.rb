@@ -251,7 +251,8 @@ module Cabriolet
         compressed_data = compress_with_lzx(block_data)
 
         # Use compressed data (or original if compression fails)
-        patch_data = compressed_data && compressed_data.bytesize < block_data.bytesize ? compressed_data : block_data
+        is_compressed = compressed_data && compressed_data.bytesize < block_data.bytesize
+        patch_data = is_compressed ? compressed_data : block_data
         patch_size = patch_data.bytesize
 
         # Calculate CRC
@@ -259,6 +260,7 @@ module Cabriolet
 
         # Write patch block header
         block_header = Binary::OABStructures::PatchBlockHeader.new
+        block_header.flags = is_compressed ? 1 : 0
         block_header.patch_size = patch_size
         block_header.target_size = block_size
         block_header.source_size = source_size

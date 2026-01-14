@@ -125,7 +125,8 @@ RSpec.describe Cabriolet::CLI, "SZDD commands" do
         File.write(input_file, "Test content with special char: X")
 
         # Use invoke_command to pass missing_char option
-        invoke_command(:compress, input_file, output_szdd, options: { missing_char: "X" })
+        invoke_command(:compress, input_file, output_szdd,
+                       options: { missing_char: "X" })
 
         expect(File.exist?(output_szdd)).to be(true)
         expect(File.size(output_szdd)).to be > 0
@@ -142,7 +143,8 @@ RSpec.describe Cabriolet::CLI, "SZDD commands" do
         File.write(input_file, "10 PRINT \"QBASIC test\"")
 
         # Use invoke_command to pass format option
-        invoke_command(:compress, input_file, output_szdd, options: { format: "qbasic" })
+        invoke_command(:compress, input_file, output_szdd,
+                       options: { format: "qbasic" })
 
         expect(File.exist?(output_szdd)).to be(true)
         expect(File.size(output_szdd)).to be > 0

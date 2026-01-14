@@ -225,8 +225,8 @@ module Cabriolet
       opts = {
         verbose: options[:verbose],
         output: options[:output],
-        format: :szdd,  # Always SZDD format
-        szdd_format: szdd_variant.to_sym,  # Pass variant as szdd_format
+        format: :szdd, # Always SZDD format
+        szdd_format: szdd_variant.to_sym, # Pass variant as szdd_format
         missing_char: options[:missing_char],
       }
       # SZDD convention: auto-generate output name
