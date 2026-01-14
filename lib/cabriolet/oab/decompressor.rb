@@ -163,9 +163,9 @@ target_remaining)
       # @return [Integer] Bytes written
       def decompress_patch_block(patch_handle, base_handle, output_handle,
                                  block_max, target_remaining)
-        # Read patch block header
-        block_data = @io_system.read(patch_handle, 16)
-        if block_data.length < 16
+        # Read patch block header (20 bytes with flags field)
+        block_data = @io_system.read(patch_handle, 20)
+        if block_data.length < 20
           raise Error,
                 "Failed to read patch block header"
         end
@@ -179,6 +179,25 @@ target_remaining)
           raise Error, "Invalid patch block header"
         end
 
+        # Check if data is compressed or uncompressed
+        if block_header.uncompressed?
+          # Uncompressed data - read and write directly
+          data = @io_system.read(patch_handle, block_header.patch_size)
+          if data.length < block_header.patch_size
+            raise Error, "Failed to read uncompressed patch data"
+          end
+
+          # Verify CRC
+          actual_crc = Zlib.crc32(data)
+          if actual_crc != block_header.crc
+            raise Error, "CRC mismatch in patch block"
+          end
+
+          @io_system.write(output_handle, data)
+          return block_header.target_size
+        end
+
+        # Compressed data - use LZX decompression
         # Calculate window size for LZX
         window_size = ((block_header.source_size + 32_767) & ~32_767) +
           block_header.target_size
