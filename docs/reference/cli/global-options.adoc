@@ -48,7 +48,7 @@ Supported formats: `cab`, `chm`, `szdd`, `kwaj`, `hlp`, `lit`, `oab`
 ----
 cabriolet --format FORMAT COMMAND FILE [ARGS]
 cabriolet COMMAND --format FORMAT FILE [ARGS]
------
+----
 
 ===== Examples
 

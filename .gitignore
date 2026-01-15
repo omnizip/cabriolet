@@ -30,4 +30,5 @@ old-docs/
 # Cached rubocop configs
 .rubocop-https---*
 
-docs/_site/
+# Documentation
+_site
