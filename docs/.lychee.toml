@@ -44,7 +44,11 @@ exclude = [
 
   # Exclude all internal site links - they work on deployed site
   # but fail when checking local files due to baseurl path issues
-  "https?://omnizip\\.github\\.io/cabriolet/.*"
+  "https?://omnizip\\.github\\.io/cabriolet/.*",
+
+  # Exclude root-relative links with baseurl (local checking issue)
+  # These work when deployed but fail on local file system checks
+  "^/cabriolet/.*"
 ]
 
 # Cache responses to avoid repeated checks
