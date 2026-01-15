@@ -53,7 +53,7 @@ color_scheme_toggle:
   enabled: true
 
 # Logo
-logo: "/assets/cabriolet-logo.svg"
+logo: "/assets/logo.svg"
 
 # Auxiliary links
 aux_links:
