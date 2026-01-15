@@ -1,0 +1,526 @@
+---
+title: HLP Commands
+parent: CLI Reference
+grand_parent: Reference
+nav_order: 5
+---
+
+== HLP Commands Reference
+
+=== Purpose
+
+Complete command-line reference for all HLP (Windows Help) format operations. This document provides detailed syntax, options, and examples for the 3 HLP commands.
+
+=== References
+
+* <<../../guides/formats/hlp-format#,HLP Format Guide>>
+* <<../api/hlp-api#,HLP API Reference>>
+* <<global-options#,Global Options>>
+
+=== Concepts
+
+HLP commands operate on Windows Help files containing multiple internal files compressed with LZSS MODE_MSHELP. Each command handles the internal filesystem and selective compression.
+
+=== Command Overview
+
+[cols="1,3"]
+|===
+|Command |Purpose
+
+|<<hlp-extract,hlp-extract>>
+|Extract internal files from HLP file
+
+|<<hlp-create,hlp-create>>
+|Create HLP file from source files
+
+|<<hlp-info,hlp-info>>
+|Show HLP file information
+|===
+
+'''
+
+[[hlp-extract]]
+=== hlp-extract - Extract HLP Files
+
+Extract all internal files from a Windows Help file.
+
+==== Syntax
+
+[source,text]
+----
+cabriolet hlp-extract [OPTIONS] FILE [OUTPUT_DIR]
+----
+
+==== Parameters
+
+`FILE`:: (required) Path to the HLP file to extract
+
+`OUTPUT_DIR`:: (optional) Directory to extract files to (default: current directory)
+
+==== Options
+
+`--output, -o`:: Output directory (alternative to positional argument)
+
+`--verbose, -v`:: Show extraction progress for each file
+
+==== Returns
+
+* Exit code 0 on success
+* Exit code 1 on error
+* Exit code 3 if file not found
+* Exit code 4 if permission denied
+
+==== Description
+
+The `hlp-extract` command extracts all internal files from an HLP archive, including system files (starting with `|`) and regular content files. Files are decompressed automatically if they use LZSS compression.
+
+==== Examples
+
+.Extract to current directory
+[source,bash]
+----
+cabriolet hlp-extract help.hlp
+----
+
+.Output
+[source,text]
+----
+Extracted 8 file(s) to .
+----
+
+.Extract to specific directory
+[source,bash]
+----
+cabriolet hlp-extract help.hlp output/
+----
+
+.Extract with verbose output
+[source,bash]
+----
+cabriolet hlp-extract --verbose help.hlp extracted/
+----
+
+.Output
+[source,text]
+----
+Extracting 8 files from help.hlp
+
+  |SYSTEM (2,048 bytes, LZSS)... OK
+  |TOPIC (32,768 bytes, LZSS)... OK
+  |Phrases (4,096 bytes, LZSS)... OK
+  |CONTEXT (1,024 bytes, uncompressed)... OK
+  |FONT (512 bytes, uncompressed)... OK
+  content.dat (8,192 bytes, LZSS)... OK
+  index.dat (2,048 bytes, uncompressed)... OK
+  image.bmp (16,384 bytes, uncompressed)... OK
+
+Extracted 8 file(s) to extracted/
+----
+
+.Using output option
+[source,bash]
+----
+cabriolet hlp-extract -o docs/ help.hlp
+----
+
+==== Common Errors
+
+* **Invalid HLP signature**: File is not a valid HLP file
+* **Cannot create output directory**: Verify write permissions
+* **Decompression failed**: Internal file is corrupted
+* **Unsupported HLP version**: HLP version not supported
+
+==== See Also
+
+* <<hlp-create,hlp-create>> - Create HLP files
+* <<hlp-info,hlp-info>> - Show file information
+* <<../../guides/formats/hlp-format#extracting-hlp-files,HLP Format Guide - Extracting>>
+
+'''
+
+[[hlp-create]]
+=== hlp-create - Create HLP File
+
+Create a new Windows Help file from source files.
+
+==== Syntax
+
+[source,text]
+----
+cabriolet hlp-create [OPTIONS] OUTPUT FILES...
+----
+
+==== Parameters
+
+`OUTPUT`:: (required) Path for the new HLP file
+
+`FILES...`:: (required) One or more files to add (with internal names)
+
+==== Options
+
+`--compress`:: Compress files with LZSS MODE_MSHELP (default: true)
+
+`--no-compress`:: Do not compress files
+
+`--verbose, -v`:: Show creation progress
+
+==== Returns
+
+* Exit code 0 on success
+* Exit code 1 on error
+* Exit code 2 if no files specified
+* Exit code 3 if source files not found
+* Exit code 4 if permission denied
+
+==== Description
+
+The `hlp-create` command builds a new HLP file from source files. Files can be added with custom internal names (especially for system files starting with `|`). Compression is applied by default using LZSS MODE_MSHELP.
+
+==== Examples
+
+.Create with default compression
+[source,bash]
+----
+cabriolet hlp-create help.hlp system.dat topic.dat phrases.dat
+----
+
+.Output
+[source,text]
+----
+Created help.hlp (24,576 bytes, 3 files)
+----
+
+.Create without compression
+[source,bash]
+----
+cabriolet hlp-create --no-compress help.hlp file1.dat file2.dat
+----
+
+.Create with verbose output
+[source,bash]
+----
+cabriolet hlp-create --verbose help.hlp system.dat topic.dat
+----
+
+.Output
+[source,text]
+----
+Creating help.hlp with 2 file(s)
+
+Adding files:
+  system.dat -> system.dat (compressed)
+    Original: 2,048 bytes
+    Compressed: 1,024 bytes
+    Ratio: 50.0%
+
+  topic.dat -> topic.dat (compressed)
+    Original: 32,768 bytes
+    Compressed: 16,384 bytes
+    Ratio: 50.0%
+
+Writing HLP structure...
+  Header: 16 bytes
+  Directory: 128 bytes
+  Data: 17,408 bytes
+
+Created help.hlp (17,552 bytes, 2 files)
+----
+
+.Create with mixed compression
+[source,bash]
+----
+# Note: This requires API usage for fine control
+# CLI creates all files with same compression setting
+cabriolet hlp-create --compress help.hlp system.dat topic.dat
+----
+
+==== Common Errors
+
+* **No files specified**: Provide at least one file to add
+* **Cannot create output file**: Verify write permissions and disk space
+* **Source file not found**: Check all file paths are correct
+* **Compression failed**: Input file may be unreadable
+
+==== See Also
+
+* <<hlp-extract,hlp-extract>> - Extract HLP files
+* <<../../guides/formats/hlp-format#creating-hlp-files,HLP Format Guide - Creating>>
+* <<../../guides/compression/lzss-compression#mode-mshelp,LZSS MODE_MSHELP>>
+
+'''
+
+[[hlp-info]]
+=== hlp-info - Show HLP Information
+
+Display detailed information about a Windows Help file.
+
+==== Syntax
+
+[source,text]
+----
+cabriolet hlp-info [OPTIONS] FILE
+----
+
+==== Parameters
+
+`FILE`:: (required) Path to the HLP file to analyze
+
+==== Options
+
+`--verbose, -v`:: Show additional technical details
+
+==== Returns
+
+* Exit code 0 on success
+* Exit code 1 on error
+* Exit code 3 if file not found
+
+==== Description
+
+The `hlp-info` command displays metadata about an HLP file, including version, internal files, compression status, and sizes.
+
+==== Examples
+
+.Basic information
+[source,bash]
+----
+cabriolet hlp-info help.hlp
+----
+
+.Output
+[source,text]
+----
+HLP File Information
+==================================================
+Filename: help.hlp
+Version: 3
+Files: 8
+
+Files:
+  |SYSTEM
+    Uncompressed: 2,048 bytes
+    Compressed: 1,024 bytes (LZSS)
+  |TOPIC
+    Uncompressed: 32,768 bytes
+    Compressed: 16,384 bytes (LZSS)
+  |Phrases
+    Uncompressed: 4,096 bytes
+    Compressed: 2,048 bytes (LZSS)
+----
+
+.Verbose information
+[source,bash]
+----
+cabriolet hlp-info --verbose help.hlp
+----
+
+.Output
+[source,text]
+----
+HLP File Information
+==================================================
+Filename: help.hlp
+Version: 3 (Windows 3.x Help format)
+Total files: 8
+
+System Files (4):
+  |SYSTEM
+    Uncompressed: 2,048 bytes
+    Compressed: 1,024 bytes (LZSS)
+    Compression ratio: 50.0%
+
+  |TOPIC
+    Uncompressed: 32,768 bytes
+    Compressed: 16,384 bytes (LZSS)
+    Compression ratio: 50.0%
+
+  |Phrases
+    Uncompressed: 4,096 bytes
+    Compressed: 2,048 bytes (LZSS)
+    Compression ratio: 50.0%
+
+  |CONTEXT
+    Uncompressed: 1,024 bytes
+    Compressed: 0 bytes (uncompressed)
+
+Content Files (4):
+  content.dat
+    Uncompressed: 8,192 bytes
+    Compressed: 4,096 bytes (LZSS)
+    Compression ratio: 50.0%
+
+  index.dat
+    Uncompressed: 2,048 bytes
+    Compressed: 0 bytes (uncompressed)
+
+  image.bmp
+    Uncompressed: 16,384 bytes
+    Compressed: 0 bytes (uncompressed)
+
+Overall Statistics:
+  Total uncompressed: 66,560 bytes
+  Total compressed: 23,552 bytes
+  Overall compression: 64.6%
+
+  Compressed files: 5
+  Uncompressed files: 3
+----
+
+.Check multiple files
+[source,bash]
+----
+for file in *.hlp; do
+  echo "=== $file ==="
+  cabriolet hlp-info "$file"
+  echo
+done
+----
+
+==== Common Errors
+
+* **Invalid HLP signature**: File is not a valid HLP file
+* **Unsupported HLP version**: HLP version not recognized
+
+==== See Also
+
+* <<hlp-extract,hlp-extract>> - Extract HLP files
+* <<../../guides/formats/hlp-format#getting-hlp-information,HLP Format Guide - Info>>
+
+'''
+
+=== Global Options
+
+All HLP commands support these global options:
+
+`--verbose, -v`:: Enable verbose output with detailed progress
+
+`--help, -h`:: Display command help
+
+`--version`:: Show Cabriolet version
+
+See <<global-options#,Global Options>> for complete details.
+
+=== Exit Codes
+
+[cols="1,3"]
+|===
+|Code |Meaning
+
+|0
+|Success
+
+|1
+|General error
+
+|2
+|Invalid arguments
+
+|3
+|File not found
+
+|4
+|Permission denied
+
+|5
+|Corrupt file
+
+|6
+|Unsupported format
+|===
+
+=== Common Workflows
+
+==== Extract Legacy Help Files
+
+[source,bash]
+----
+# Extract all HLP files from old software
+mkdir -p extracted-help
+for file in *.hlp; do
+  dir="extracted-help/$(basename "$file" .hlp)"
+  mkdir -p "$dir"
+  cabriolet hlp-extract "$file" "$dir"
+done
+----
+
+==== Convert Help Files
+
+[source,bash]
+----
+# Extract and convert to modern format
+for file in legacy/*.hlp; do
+  base=$(basename "$file" .hlp)
+
+  # Extract internal files
+  cabriolet hlp-extract "$file" "temp/$base"
+
+  # Process files...
+  # (Convert to HTML, CHM, or other format)
+done
+----
+
+==== Analyze Help Structure
+
+[source,bash]
+----
+# Analyze all HLP files in directory
+echo "HLP File Analysis Report" > report.txt
+echo "========================" >> report.txt
+echo >> report.txt
+
+for file in *.hlp; do
+  echo "File: $file" >> report.txt
+  cabriolet hlp-info "$file" >> report.txt
+  echo >> report.txt
+done
+
+echo "Analysis complete. See report.txt"
+----
+
+==== Create Custom Help File
+
+[source,bash]
+----
+# Create HLP from prepared files
+# Note: Files should be properly formatted for HLP
+
+cabriolet hlp-create \
+  custom-help.hlp \
+  system-data.bin \
+  topic-data.bin \
+  phrases-data.bin
+----
+
+=== Internal File Naming
+
+HLP files use specific naming conventions:
+
+==== System Files (start with `|`)
+
+* `|SYSTEM` - Help system configuration
+* `|TOPIC` - Topic content and text
+* `|Phrases` - Phrase compression dictionary
+* `|CONTEXT` - Context ID mappings
+* `|FONT` - Font table
+* `|CTXOMAP` - Context offset map
+* `|KWDATA` - Keyword data
+* `|KWMAP` - Keyword map
+
+==== Content Files
+
+* Any other name - Regular content files
+* Usually .dat, .bmp, .txt extensions
+* May contain graphics, tables, or data
+
+=== Next Steps
+
+* Review <<../../guides/formats/hlp-format#,HLP Format Guide>> for usage examples
+* Study <<../api/hlp-api#,HLP API Reference>> for Ruby integration
+* Learn about <<../../guides/compression/lzss-compression#mode-mshelp,LZSS MODE_MSHELP>>
+
+=== Bibliography
+
+* <<../../guides/formats/hlp-format#,HLP Format Guide>>
+* <<../api/hlp-api#,HLP API Reference>>
+* http://www.helpmaster.info/hlp-developmentkit/[HLP Development Kit Documentation]
+* https://en.wikipedia.org/wiki/WinHelp[Wikipedia: WinHelp]

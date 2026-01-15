@@ -1,0 +1,139 @@
+---
+layout: default
+title: SZDD API
+parent: API Reference
+grand_parent: Reference
+nav_order: 3
+---
+
+== SZDD API Reference
+:toc:
+
+=== Purpose
+
+API reference for [`Cabriolet::SZDD::Decompressor`](lib/cabriolet/szdd/decompressor.rb) and [`Cabriolet::SZDD::Compressor`](lib/cabriolet/szdd/compressor.rb) classes for SZDD compressed files.
+
+=== References
+
+* xref:../../guides/formats/szdd-format.adoc[SZDD Format Guide]
+* xref:../../reference/cli/szdd-commands.adoc[SZDD Commands]
+
+== SZDD::Decompressor
+
+=== Constructor
+
+==== `new(source, options = {})`
+
+**Parameters:**
+* `source` (String, IO, Handle) - SZDD file path or handle
+* `options` (Hash) - Configuration options
+
+**Example:**
+[source,ruby]
+----
+decompressor = Cabriolet::SZDD::Decompressor.new('file.ex_')
+----
+
+=== Instance Methods
+
+==== `header`
+
+Returns SZDD header information.
+
+**Returns:** [`Cabriolet::Models::SZDDHeader`](lib/cabriolet/models/szdd_header.rb)
+
+**Example:**
+[source,ruby]
+----
+header = decompressor.header
+puts "Original filename: #{header.original_filename}"
+puts "Compression mode: #{header.compression_mode}"
+----
+
+==== `extract(output_path)`
+
+Decompresses file.
+
+**Parameters:**
+* `output_path` (String) - Output file path
+
+**Example:**
+[source,ruby]
+----
+decompressor.extract('file.exe')
+----
+
+==== `extract_to_memory`
+
+Decompresses to memory.
+
+**Returns:** `String` (binary) - Decompressed data
+
+**Example:**
+[source,ruby]
+----
+data = decompressor.extract_to_memory
+File.binwrite('output.exe', data)
+----
+
+==== `original_filename`
+
+Returns the original filename before compression.
+
+**Returns:** `String` - Original filename
+
+== SZDD::Compressor
+
+=== Constructor
+
+==== `new(options = {})`
+
+**Options:**
+* `:compression_mode` (Symbol) - Mode `:lzss_a` or `:lzss_b` (default: `:lzss_a`)
+
+**Example:**
+[source,ruby]
+----
+compressor = Cabriolet::SZDD::Compressor.new
+----
+
+=== Instance Methods
+
+==== `compress(input_path, output_path)`
+
+Compresses a file.
+
+**Parameters:**
+* `input_path` (String) - Input file
+* `output_path` (String) - Output compressed file
+
+**Example:**
+[source,ruby]
+----
+compressor.compress('file.exe', 'file.ex_')
+----
+
+==== `compress_from_memory(data, output_path, original_name = nil)`
+
+Compresses from memory.
+
+**Parameters:**
+* `data` (String) - Data to compress
+* `output_path` (String) - Output file
+* `original_name` (String) - Original filename to store
+
+**Example:**
+[source,ruby]
+----
+data = File.binread('file.exe')
+compressor.compress_from_memory(data, 'file.ex_', 'file.exe')
+----
+
+=== Notes
+
+SZDD format is primarily used for single-file compression in Microsoft installers and driver packages.
+
+=== Bibliography
+
+* xref:../../guides/formats/szdd-format.adoc[SZDD Format Guide]
+* xref:../../guides/compression/lzss-compression.adoc[LZSS Compression]

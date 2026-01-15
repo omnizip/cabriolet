@@ -1,0 +1,26 @@
+---
+layout: default
+title: Compression Layer
+parent: Architecture
+nav_order: 4
+---
+
+== Compression Layer
+
+=== Decompressor Architecture
+
+Base class with algorithm-specific implementations:
+
+* **Base**: Common decompression interface
+* **MSZIP**: DEFLATE implementation
+* **LZX**: Advanced dictionary compression
+* **Quantum**: Arithmetic coding
+* **LZSS**: Simple dictionary compression
+
+=== Design Pattern
+
+Strategy pattern for compression algorithms.
+
+=== Bibliography
+
+* xref:../concepts/compression-algorithms.adoc[Compression Algorithms]

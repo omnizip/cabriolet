@@ -1,0 +1,603 @@
+---
+layout: default
+title: Compression Type Codes
+parent: Format Specifications
+grand_parent: Formats
+---
+
+== Compression Type Codes Reference
+
+=== Overview
+
+This document provides a comprehensive reference for compression algorithm identifiers used across Microsoft compression formats. Each compression type is identified by a numeric code and may include algorithm-specific parameters.
+
+=== CAB Format Compression Types
+
+The CAB format [`CFFOLDER`](cab-specification.html#cffolder-structure) structure uses a 16-bit `typeCompress` field to specify the compression algorithm.
+
+==== Field Structure
+
+[source]
+----
+Bits 0-3:   Compression algorithm (0-15)
+Bits 4-7:   Algorithm-specific parameters
+Bits 8-15:  Must be zero (reserved for future use)
+----
+
+==== Standard Compression Types
+
+[cols="1,1,1,3", options="header"]
+|===
+| Code | Name | Hex Value | Description
+
+| 0
+| `TYPE_NONE`
+| 0x0000
+| No compression. Data stored verbatim (copy mode).
+
+| 1
+| `TYPE_MSZIP`
+| 0x0001
+| Microsoft ZIP (Deflate). Block-based compression with independent frames.
+
+| 2
+| `TYPE_QUANTUM`
+| 0x0002-0x001F
+| Quantum compression. Memory level encoded in bits 4-7.
+
+| 3
+| `TYPE_LZX`
+| 0x0003-0x0013
+| LZX compression. Window size encoded in bits 4-7.
+
+| 4-15
+| Reserved
+| 0x0004+
+| Reserved for future Microsoft compression algorithms.
+|===
+
+=== Type 0: No Compression (Store)
+
+**Type Code**: `0x0000`
+
+**Description**: Files are stored without compression. Data blocks are copied verbatim.
+
+**Parameters**: None
+
+**Use Cases**:
+* Pre-compressed files (JPEG, MP3, ZIP, etc.)
+* Small files where compression overhead exceeds savings
+* Testing and debugging
+* Maximum extraction speed requirements
+
+**Performance**:
+* Compression ratio: 0% (no reduction)
+* Compression speed: Instant (memory copy)
+* Decompression speed: Instant (memory copy)
+* Memory usage: Minimal
+
+**Implementation Notes**:
+* `cbData` equals `cbUncomp` in CFDATA blocks
+* Simple memcpy from compressed to uncompressed buffer
+* No algorithm initialization required
+
+**Example Code**:
+
+[source,ruby]
+----
+def decompress_none(compressed_data, uncompressed_size)
+  # Verify sizes match
+  if compressed_data.size != uncompressed_size
+    raise "Size mismatch in uncompressed data"
+  end
+
+  # Return data as-is
+  compressed_data
+end
+----
+
+=== Type 1: MSZIP Compression
+
+**Type Code**: `0x0001`
+
+**Description**: Microsoft ZIP compression, based on RFC 1951 Deflate algorithm. Each data block is independently compressed.
+
+**Parameters**: None (bits 4-15 must be zero)
+
+**Algorithm**: Deflate (LZ77 + Huffman coding)
+
+**Block Structure**:
+* Each CFDATA block is an independent Deflate stream
+* 2-byte signature: `CK` (0x43 0x4B) at start of each block
+* Maximum uncompressed block size: 32768 bytes (32 KB)
+* Maximum compressed block size: 32768 + overhead
+
+**Use Cases**:
+* General-purpose compression
+* Good balance of speed and ratio
+* Compatibility with ZIP/Deflate tools
+* Moderate memory requirements
+
+**Performance**:
+* Compression ratio: 50-80% (text), 30-70% (binary)
+* Compression speed: Fast to moderate
+* Decompression speed: Fast
+* Memory usage: ~32-64 KB
+
+**Implementation Notes**:
+* Must check for `CK` signature at block start
+* Each block decompresses to exactly 32768 bytes (except last)
+* Uses standard Deflate literal/length and distance codes
+* No preset dictionary between blocks
+
+**Block Format**:
+
+[source]
+----
++------+------------------------+
+| 0x43 | Signature byte 1 ('C')  |
+| 0x4B | Signature byte 2 ('K')  |
++------+------------------------+
+| Deflate compressed data        |
+| (RFC 1951 format)              |
++--------------------------------+
+----
+
+**Example Code**:
+
+[source,ruby]
+----
+def decompress_mszip(compressed_data, uncompressed_size)
+  # Check CK signature
+  unless compressed_data[0..1] == "CK"
+    raise "Invalid MSZIP signature"
+  end
+
+  # Decompress using zlib (RFC 1951)
+  deflate_data = compressed_data[2..-1]
+  Zlib::Inflate.new(-Zlib::MAX_WBITS).inflate(deflate_data)
+end
+----
+
+**Reference**: RFC 1951 (DEFLATE Compressed Data Format Specification)
+
+=== Type 2: Quantum Compression
+
+**Type Codes**: `0x0002` through `0x001F`
+
+**Description**: Proprietary Microsoft compression algorithm. Memory level parameter controls window size.
+
+**Parameters**: Memory level (bits 4-7)
+
+**Memory Levels**:
+
+[cols="1,1,1", options="header"]
+|===
+| Level | Window Size | Type Code
+
+| 1
+| 1024 bytes (1 KB)
+| 0x0012
+
+| 2
+| 2048 bytes (2 KB)
+| 0x0022
+
+| 3
+| 4096 bytes (4 KB)
+| 0x0032
+
+| 4
+| 8192 bytes (8 KB)
+| 0x0042
+
+| 5
+| 16384 bytes (16 KB)
+| 0x0052
+
+| 6
+| 32768 bytes (32 KB)
+| 0x0062
+
+| 7
+| 65536 bytes (64 KB)
+| 0x0072
+|===
+
+**Formula**: `type_code = 0x0002 | (memory_level << 4)`
+
+**Algorithm Components**:
+* LZ77-style sliding window compression
+* Huffman coding for literals and match lengths
+* Multiple match distance codes
+* Proprietary bit packing
+
+**Use Cases**:
+* Legacy CAB files from Windows 95/98 era
+* Memory-constrained environments
+* Moderate compression requirements
+
+**Performance**:
+* Compression ratio: 55-85% (depends on memory level)
+* Compression speed: Moderate
+* Decompression speed: Moderate
+* Memory usage: Window size + overhead
+
+**Implementation Notes**:
+* Extract memory level: `memory_level = (type_code >> 4) & 0x0F`
+* Window size: `1 << (memory_level + 10)` bytes
+* More complex than MSZIP, proprietary algorithm
+* No public algorithm specification
+
+**Example Code**:
+
+[source,ruby]
+----
+def get_quantum_window_size(type_code)
+  memory_level = (type_code >> 4) & 0x0F
+
+  # Window size = 2^(level + 10)
+  1 << (memory_level + 10)
+end
+
+# Example: type_code = 0x0052 (level 5)
+window_size = get_quantum_window_size(0x0052)
+# Result: 16384 bytes (16 KB)
+----
+
+**Limitations**:
+* Proprietary algorithm (no formal specification)
+* Less efficient than LZX for larger windows
+* Rarely used in modern cabinets
+
+=== Type 3: LZX Compression
+
+**Type Codes**: `0x0003` through `0x0013`
+
+**Description**: High-ratio LZ77 variant with multiple Huffman trees. Advanced sliding window compression.
+
+**Parameters**: Window size (bits 4-7)
+
+**Window Sizes**:
+
+[cols="1,1,1,1", options="header"]
+|===
+| Window Bits | Window Size | Type Code | Typical Use
+
+| 15
+| 32 KB
+| 0x0003
+| Small archives
+
+| 16
+| 64 KB
+| 0x0013
+| Default
+
+| 17
+| 128 KB
+| 0x0023
+| Medium archives
+
+| 18
+| 256 KB
+| 0x0033
+| Large archives
+
+| 19
+| 512 KB
+| 0x0043
+| Very large archives
+
+| 20
+| 1 MB
+| 0x0053
+| Huge archives
+
+| 21
+| 2 MB
+| 0x0063
+| Maximum
+|===
+
+**Formula**: `type_code = 0x0003 | ((window_bits - 15) << 4)`
+
+**Valid Range**: Window bits 15-21 (32 KB to 2 MB)
+
+**Algorithm Components**:
+* LZ77 sliding window (up to 2 MB)
+* Multiple Huffman trees:
+  - Main tree (literals and match lengths)
+  - Length tree (extended lengths)
+  - Aligned offset tree (match distances)
+* Intel x86 E8 call preprocessing
+* Block-based compression with reset
+
+**Use Cases**:
+* Maximum compression ratio requirements
+* Large file archives
+* Software distributions
+* Installer packages
+
+**Performance**:
+* Compression ratio: 70-95% (excellent)
+* Compression speed: Slow to moderate
+* Decompression speed: Moderate
+* Memory usage: Window size + tree overhead (significant)
+
+**Implementation Notes**:
+* Most complex algorithm in CAB format
+* Window size determines memory requirements
+* Larger windows = better compression but more memory
+* Intel E8 preprocessing improves compression of executables
+* Requires careful state management across blocks
+
+**Block Structure**:
+
+Each LZX compressed block contains:
+1. Block type and size header
+2. Huffman tree definitions
+3. Compressed data using defined trees
+4. Optional aligned offset data
+
+**Example Code**:
+
+[source,ruby]
+----
+def get_lzx_window_size(type_code)
+  window_bits = ((type_code >> 4) & 0x0F) + 15
+
+  # Window size = 2^window_bits
+  1 << window_bits
+end
+
+# Example: type_code = 0x0053 (window bits = 20)
+window_size = get_lzx_window_size(0x0053)
+# Result: 1048576 bytes (1 MB)
+----
+
+**Memory Requirements**:
+
+[cols="1,1,1", options="header"]
+|===
+| Window Size | Decompression RAM | Compression RAM
+
+| 32 KB
+| ~100 KB
+| ~500 KB
+
+| 64 KB
+| ~150 KB
+| ~800 KB
+
+| 256 KB
+| ~400 KB
+| ~2 MB
+
+| 1 MB
+| ~1.5 MB
+| ~6 MB
+
+| 2 MB
+| ~2.5 MB
+| ~10 MB
+|===
+
+**Reference**: Microsoft LZX compression specification (proprietary)
+
+=== KWAJ Format Compression Types
+
+The KWAJ format uses similar compression type codes but with simpler encoding.
+
+[cols="1,1,3", options="header"]
+|===
+| Code | Name | Description
+
+| 0x00
+| Store
+| No compression (similar to CAB Type 0)
+
+| 0x01
+| XOR obfuscation
+| Simple XOR with pattern (not compression)
+
+| 0x02
+| SZDD
+| LZSS compression (see SZDD format)
+
+| 0x03
+| MSZIP
+| Deflate compression (similar to CAB Type 1)
+
+| 0x04
+| Quantum
+| Quantum compression (similar to CAB Type 2)
+|===
+
+=== SZDD Format Compression
+
+**Type**: LZSS (Lempel-Ziv-Storer-Szymanski)
+
+**Magic Bytes**: `SZDD` (0x53 0x5A 0x44 0x44)
+
+**Description**: Simple LZ77 variant with fixed parameters.
+
+**Parameters**:
+* Window size: 4096 bytes (4 KB)
+* Look-ahead buffer: 18 bytes
+* Minimum match length: 3 bytes
+
+**Algorithm**:
+* Sliding window dictionary compression
+* Literals encoded as-is (with flag bit)
+* Matches encoded as (offset, length) pairs
+* Single control byte for 8 literals/matches
+
+**Use Cases**:
+* Single file compression
+* Windows 3.x file distribution
+* Simple compression requirements
+* Low memory environments
+
+**Performance**:
+* Compression ratio: 40-70%
+* Compression speed: Fast
+* Decompression speed: Very fast
+* Memory usage: ~8 KB
+
+=== CHM Format Compression
+
+**Type**: LZX (exclusive)
+
+**Description**: CHM files use only LZX compression, typically with 64 KB or 128 KB windows.
+
+**Common Settings**:
+* Window size: 65536 bytes (64 KB) default
+* Reset interval: 32768 bytes
+* Intel E8 preprocessing: Enabled for HTML/code
+
+**Notes**:
+* No compression type field in CHM header
+* LZX is mandatory for all CHM files
+* Window size determined by CHM section header
+
+=== HLP Format Compression
+
+**Type**: LZ77 phrase compression
+
+**Description**: Proprietary phrase-based compression for help file text.
+
+**Algorithm**:
+* Dictionary of common phrases
+* LZ77-style backreferences
+* Huffman coding for phrase indices
+
+**Parameters**:
+* Fixed window size: 4 KB
+* Phrase dictionary: Up to 2048 entries
+
+=== Compression Type Validation
+
+==== Validating Type Codes
+
+[source,ruby]
+----
+def validate_cab_compression_type(type_code)
+  algorithm = type_code & 0x000F
+  params = (type_code & 0x00F0) >> 4
+  reserved = (type_code & 0xFF00) >> 8
+
+  # Check reserved bits
+  if reserved != 0
+    raise "Invalid compression type: reserved bits set"
+  end
+
+  # Validate algorithm
+  case algorithm
+  when 0 # None
+    raise "Invalid None compression: params must be 0" if params != 0
+  when 1 # MSZIP
+    raise "Invalid MSZIP compression: params must be 0" if params != 0
+  when 2 # Quantum
+    raise "Invalid Quantum level: #{params}" unless (1..7).include?(params)
+  when 3 # LZX
+    window_bits = params + 15
+    unless (15..21).include?(window_bits)
+      raise "Invalid LZX window size: #{window_bits} bits"
+    end
+  else
+    raise "Unknown compression algorithm: #{algorithm}"
+  end
+
+  true
+end
+----
+
+=== Algorithm Selection Guidelines
+
+==== Choosing Compression Type
+
+[cols="1,3", options="header"]
+|===
+| Requirement | Recommended Type
+
+| Maximum speed
+| Type 0 (None) or Type 1 (MSZIP)
+
+| Best compression
+| Type 3 (LZX) with large window
+
+| Balanced performance
+| Type 1 (MSZIP)
+
+| Low memory
+| Type 2 (Quantum) low level or Type 1 (MSZIP)
+
+| Legacy compatibility
+| Type 1 (MSZIP)
+
+| Pre-compressed data
+| Type 0 (None)
+|===
+
+==== Compression Ratio Comparison
+
+Typical compression ratios on mixed file types:
+
+[cols="1,1,1,1", options="header"]
+|===
+| Type | Text Files | Binary Files | Pre-compressed
+
+| None
+| 0%
+| 0%
+| 0%
+
+| MSZIP
+| 70-80%
+| 50-65%
+| 0-10%
+
+| Quantum (level 5)
+| 75-85%
+| 55-70%
+| 0-10%
+
+| LZX (64 KB)
+| 85-90%
+| 60-75%
+| 0-10%
+
+| LZX (2 MB)
+| 90-95%
+| 70-85%
+| 0-15%
+|===
+
+=== Implementation References
+
+==== Required Algorithms
+
+For full CAB support, implement:
+1. **Type 0** (None): Trivial memcpy
+2. **Type 1** (MSZIP): Use zlib or similar Deflate library
+3. **Type 3** (LZX): Custom implementation or libmspack
+
+==== Optional Algorithms
+
+* **Type 2** (Quantum): Rarely used, can report unsupported
+
+==== Library Support
+
+* **zlib**: MSZIP/Deflate (Type 1)
+* **libmspack**: LZX, Quantum, full CAB support
+* **7-Zip**: All CAB types via external library
+
+=== See Also
+
+* link:cab-specification.html[CAB File Format Specification]
+* xref:guides/compression/choosing-algorithm.adoc[Choosing Compression Algorithm]
+* xref:guides/compression/mszip-compression.adoc[MSZIP Guide]
+* xref:guides/compression/quantum-compression.adoc[Quantum Guide]
+* xref:guides/compression/lzx-compression.adoc[LZX Guide]
+* xref:concepts/compression-algorithms.adoc[Compression Algorithms Overview]

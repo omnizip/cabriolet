@@ -1,0 +1,54 @@
+---
+layout: default
+title: FAQ
+parent: Appendix
+nav_order: 2
+---
+
+== Frequently Asked Questions
+
+=== General
+
+**Q: What formats does Cabriolet support?**
+
+A: CAB, CHM, SZDD, KWAJ, HLP, LIT, and OAB formats.
+
+**Q: Is Cabriolet compatible with Microsoft's tools?**
+
+A: Yes, Cabriolet can read files created by Microsoft tools and vice versa.
+
+=== Usage
+
+**Q: How do I extract a CAB file?**
+
+A: `cabriolet cab extract archive.cab`
+
+**Q: Can I extract to memory?**
+
+A: Yes, use `extract_to_memory` method.
+
+=== Troubleshooting
+
+**Q: What if I get checksum errors?**
+
+A: Try salvage mode with `--salvage` flag or `salvage: true` option.
+
+**Q: How do I handle corrupted archives?**
+
+A: Use salvage mode for partial recovery. See xref:../guides/advanced-usage/salvage-mode.adoc[Salvage Mode Guide].
+
+=== Performance
+
+**Q: How can I improve extraction speed?**
+
+A: Use larger buffers, disable checksum verification if appropriate. See xref:../guides/advanced-usage/performance-tuning.adoc[Performance Tuning].
+
+=== Development
+
+**Q: How do I contribute?**
+
+A: See xref:../developer/contributing.adoc[Contributing Guide].
+
+**Q: Can I add new formats?**
+
+A: Yes, see xref:../architecture/extending.adoc[Extending Cabriolet].

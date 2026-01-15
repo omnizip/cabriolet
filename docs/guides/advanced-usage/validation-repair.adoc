@@ -1,0 +1,144 @@
+---
+layout: default
+title: Validation and Repair
+parent: Advanced Usage
+grand_parent: Guides
+nav_order: 4
+---
+
+== Validation and Repair
+
+=== Purpose
+
+This document explains how to validate archive integrity and repair corrupted archives using Cabriolet's validation and repair tools.
+
+Use this guide when you need to:
+* Verify archive integrity before processing
+* Detect corruption in archives
+* Recover files from damaged archives
+* Implement quality assurance workflows
+
+=== References
+
+* xref:reference/api/validator-api.adoc[Validator API Reference]
+* xref:reference/api/repairer-api.adoc[Repairer API Reference]
+* xref:troubleshooting/corrupted-files.adoc[Handling Corrupted Files]
+
+=== Concepts
+
+==== Validation Levels
+
+**Quick**: Structure and magic bytes only (~0.1s)
+**Standard**: Includes checksum verification (~1s)
+**Thorough**: Full decompression test (~10s)
+
+==== Salvage Mode
+
+Attempts to recover files even when archive structure is damaged.
+
+==== Repair vs. Salvage
+
+**Repair**: Rebuilds archive with recovered files
+**Salvage**: Extracts recovered files to directory
+
+=== Archive Validation
+
+==== Quick Validation
+
+[example]
+====
+[source,ruby]
+----
+validator = Cabriolet::Validator.new('archive.cab', level: :quick)
+report = validator.validate
+
+puts "Valid: #{report.valid?}"
+puts report.summary
+----
+====
+
+==== Thorough Validation
+
+[example]
+====
+[source,ruby]
+----
+validator = Cabriolet::Validator.new('archive.cab', level: :thorough)
+report = validator.validate
+
+if report.valid?
+  puts "✓ Archive fully validated"
+else
+  puts "✗ Errors found:"
+  report.errors.each { |e| puts "  - #{e}" }
+end
+
+# Detailed report
+puts report.detailed_report
+----
+====
+
+=== Archive Repair
+
+==== Repair Corrupted Archive
+
+[example]
+====
+[source,ruby]
+----
+repairer = Cabriolet::Repairer.new('corrupted.cab')
+
+# Attempt repair
+report = repairer.repair(output: 'repaired.cab')
+
+if report.success?
+  puts "✓ Repaired: #{report.stats[:recovered]} files recovered"
+else
+  puts "✗ Repair failed: #{report.error}"
+end
+----
+====
+
+==== Salvage Files
+
+[example]
+====
+[source,ruby]
+----
+repairer = Cabriolet::Repairer.new('damaged.cab')
+
+# Salvage to directory
+report = repairer.salvage(output_dir: 'recovered/')
+
+puts report.summary
+# => "Salvaged 140 files to recovered/, 5 failed"
+----
+====
+
+=== Validation in CI/CD
+
+[example]
+====
+[source,ruby]
+----
+# Pre-deployment validation
+validator = Cabriolet::Validator.new('release.cab', level: :thorough)
+report = validator.validate
+
+exit 1 unless report.valid?
+
+# Deploy if valid
+deploy_archive('release.cab')
+----
+====
+
+=== See Also
+
+* xref:examples/recover-corrupted-archive.adoc[Recovery Example]
+* xref:troubleshooting/corrupted-files.adoc[Corrupted Files]
+* xref:reference/api/validator-api.adoc[Validator API]
+
+=== Bibliography
+
+* Archive Integrity Verification Best Practices
+* Data Recovery Techniques for Compressed Archives

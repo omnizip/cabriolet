@@ -1,0 +1,91 @@
+---
+layout: default
+title: Concepts
+nav_order: 4
+has_children: true
+---
+
+== Concepts
+
+This section explains the fundamental concepts behind Cabriolet and the file formats it supports.
+
+=== Topics
+
+==== xref:compression-algorithms.adoc[Compression Algorithms]
+
+Understanding how data compression works:
+
+* LZSS sliding window compression
+* MSZIP/DEFLATE mechanics
+* LZX advanced features
+* Quantum arithmetic coding
+* Huffman encoding fundamentals
+
+==== xref:cabinet-structure.adoc[Cabinet Structure]
+
+Anatomy of Microsoft Cabinet files:
+
+* CFHEADER, CFFOLDER, CFFILE structures
+* Data blocks and compression
+* Multi-part cabinet relationships
+* Reserve data and extensions
+
+==== xref:folders-and-files.adoc[Folders and Files]
+
+How CAB files organize content:
+
+* The folder concept in CAB archives
+* File ordering and relationships
+* Compression boundaries
+* Folder-based compression strategies
+
+==== xref:bitstreams.adoc[Bitstream Processing]
+
+Low-level bit manipulation:
+
+* Bit-level reading and writing
+* Endianness handling
+* Buffer management
+* Bit ordering considerations
+
+==== xref:huffman-coding.adoc[Huffman Coding]
+
+Statistical compression techniques:
+
+* Huffman tree construction
+* Code length tables
+* Tree building algorithms
+* Fast decoding tables
+
+==== xref:io-abstraction.adoc[I/O Abstraction]
+
+Platform-independent I/O:
+
+* Handle abstraction layer
+* File and memory handles
+* Custom I/O implementations
+* Performance considerations
+
+=== Purpose
+
+These concept documents provide deeper understanding of:
+
+* **How things work** - Internal mechanisms and algorithms
+* **Why they work** - Theoretical foundations
+* **Design decisions** - Trade-offs and rationale
+* **Relationships** - How components interact
+
+=== Prerequisites
+
+Basic understanding of:
+
+* Binary data and hexadecimal notation
+* File I/O operations
+* Data structures (arrays, trees)
+* Basic information theory (optional but helpful)
+
+=== Related Sections
+
+* xref:../guides/index.adoc[Guides] - Practical usage
+* xref:../reference/api/index.adoc[API Reference] - Implementation details
+* xref:../architecture/index.adoc[Architecture] - System design

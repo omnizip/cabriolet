@@ -1,0 +1,562 @@
+---
+layout: default
+title: File Attributes Reference
+parent: Format Specifications
+grand_parent: Formats
+---
+
+== File Attributes Reference
+
+=== Overview
+
+File attributes are metadata flags that describe file properties such as read-only status, hidden state, system file designation, and archive status. These attributes are stored in the [`CFFILE`](cab-specification.html#cffile-structure) structure of CAB files and other Microsoft compression formats.
+
+=== Attribute Field Format
+
+The attribute field is a 16-bit unsigned integer (u16) where each bit represents a specific attribute flag.
+
+[source]
+----
+Bits 0-7:   MS-DOS/FAT file attributes
+Bits 8-15:  Windows extended attributes
+----
+
+=== Standard MS-DOS Attributes (Bits 0-7)
+
+These attributes originate from MS-DOS and are universally supported across Windows versions.
+
+[cols="1,1,1,3", options="header"]
+|===
+| Bit | Value (hex) | Name | Description
+
+| 0
+| 0x01
+| `_A_RDONLY`
+| Read-only. File cannot be written or deleted without special permissions.
+
+| 1
+| 0x02
+| `_A_HIDDEN`
+| Hidden. File not shown in normal directory listings.
+
+| 2
+| 0x04
+| `_A_SYSTEM`
+| System file. Critical OS file, typically hidden.
+
+| 3
+| 0x08
+| `_A_LABEL`
+| Volume label. Reserved, not used in CAB files.
+
+| 4
+| 0x10
+| `_A_SUBDIR`
+| Directory. Reserved, not used in CAB files.
+
+| 5
+| 0x20
+| `_A_ARCH`
+| Archive. File modified since last backup.
+
+| 6
+| 0x40
+| `_A_DEVICE`
+| Device. Reserved, not used in CAB files.
+
+| 7
+| 0x80
+| `_A_NORMAL`
+| Normal. No other attributes set (pseudo-attribute).
+|===
+
+=== Windows Extended Attributes (Bits 8-15)
+
+Extended attributes introduced with Windows NT for advanced file system features.
+
+[cols="1,1,1,3", options="header"]
+|===
+| Bit | Value (hex) | Name | Description
+
+| 8
+| 0x0100
+| `_A_TEMPORARY`
+| Temporary file. Can be deleted by system when not in use.
+
+| 9
+| 0x0200
+| `_A_SPARSE`
+| Sparse file. File with large regions of zeros (NTFS).
+
+| 10
+| 0x0400
+| `_A_REPARSE`
+| Reparse point. Symbolic link or junction point.
+
+| 11
+| 0x0800
+| `_A_COMPRESSED`
+| Compressed. File compressed by file system (not CAB).
+
+| 12
+| 0x1000
+| `_A_OFFLINE`
+| Offline. File migrated to offline storage.
+
+| 13
+| 0x2000
+| `_A_NOTINDEXED`
+| Not content indexed. Excluded from indexing service.
+
+| 14
+| 0x4000
+| `_A_ENCRYPTED`
+| Encrypted. File encrypted by file system (EFS).
+
+| 15
+| 0x8000
+| Reserved
+| Reserved for future use.
+|===
+
+=== Detailed Attribute Descriptions
+
+==== Read-Only (_A_RDONLY, 0x01)
+
+**Purpose**: Protects file from modification or deletion.
+
+**Behavior**:
+* Write operations fail with "Access Denied"
+* Deletion requires explicit attribute removal
+* Can be overridden by administrator privileges
+
+**Common Uses**:
+* System configuration files
+* Published documentation
+* Protected templates
+* License files
+
+**Example**: `0x0021` (Read-only + Archive)
+
+==== Hidden (_A_HIDDEN, 0x02)
+
+**Purpose**: Hides file from normal directory listings.
+
+**Behavior**:
+* Not shown in Explorer without "Show hidden files" option
+* `dir` command requires `/a` flag to display
+* Still accessible if full path known
+
+**Common Uses**:
+* System files (e.g., `boot.ini`, `hiberfil.sys`)
+* User settings directories (e.g., `.config`)
+* Temporary system files
+
+**Example**: `0x0022` (Hidden + Archive)
+
+==== System (_A_SYSTEM, 0x04)
+
+**Purpose**: Marks critical operating system files.
+
+**Behavior**:
+* Often combined with Hidden attribute
+* Extra protection from user modification
+* May have special handling by OS
+
+**Common Uses**:
+* Boot files (`NTLDR`, `bootmgr`)
+* Core system files
+* Device drivers
+
+**Example**: `0x0027` (System + Hidden + Archive)
+
+**Note**: System files are typically also marked hidden.
+
+==== Archive (_A_ARCH, 0x20)
+
+**Purpose**: Indicates file modified since last backup.
+
+**Behavior**:
+* Set automatically when file is created or modified
+* Cleared by backup software after successful backup
+* Used by incremental/differential backup schemes
+
+**Common Uses**:
+* All modified files
+* Backup tracking
+* Synchronization tools
+
+**Example**: `0x0020` (Archive only - typical for normal files)
+
+**Best Practice**: Most files in CAB archives should have Archive bit set.
+
+==== Normal (_A_NORMAL, 0x80)
+
+**Purpose**: Pseudo-attribute indicating no special attributes.
+
+**Behavior**:
+* Actually means "no other flags set"
+* Value 0x80 is a convention, not stored
+* When checking, verify other bits are 0
+
+**Common Uses**:
+* Default file state
+* Checking if file has no special attributes
+
+**Example**: Attributes = `0x0000` or `0x0080` (equivalent - normal file)
+
+**Note**: `_A_NORMAL` is often defined as 0x80 in code but logical value is 0x00.
+
+==== Temporary (_A_TEMPORARY, 0x0100)
+
+**Purpose**: Marks short-lived files for cleanup.
+
+**Behavior**:
+* File system may skip flushing to disk
+* System may delete during cleanup
+* Typically stored in temp directories
+
+**Common Uses**:
+* Installer temporary files
+* Cache files
+* Temporary extraction locations
+
+**Example**: `0x0120` (Temporary + Archive)
+
+==== Compressed (_A_COMPRESSED, 0x0800)
+
+**Purpose**: File compressed by NTFS file system.
+
+**Behavior**:
+* Transparent compression/decompression
+* Different from CAB compression
+* Compression status persists on disk
+
+**Important**: This is **file system compression**, not CAB compression. A file can be:
+* Compressed in CAB archive only
+* Compressed on NTFS disk only
+* Both (compressed in CAB, will be compressed on disk after extraction)
+* Neither
+
+**Example**: `0x0820` (NTFS compressed + Archive)
+
+==== Encrypted (_A_ENCRYPTED, 0x4000)
+
+**Purpose**: File encrypted by Encrypting File System (EFS).
+
+**Behavior**:
+* Transparent encryption/decryption for owner
+* Protected from other users
+* Requires user certificates
+
+**Important**: This is **file system encryption** (EFS), not CAB encryption or DRM.
+
+**Example**: `0x4020` (Encrypted + Archive)
+
+=== Attribute Combinations
+
+==== Common Combinations
+
+[cols="1,2,2", options="header"]
+|===
+| Attributes (hex) | Flags | Typical Usage
+
+| 0x0000
+| None (Normal)
+| Standard user files
+
+| 0x0020
+| Archive
+| Recently modified files
+
+| 0x0001
+| Read-only
+| Protected templates, licenses
+
+| 0x0021
+| Read-only + Archive
+| Protected files that were backed up
+
+| 0x0022
+| Hidden + Archive
+| User config files, thumbnails
+
+| 0x0027
+| System + Hidden + Archive
+| OS system files
+
+| 0x0026
+| System + Hidden
+| Boot sector files
+
+| 0x0122
+| Temporary + Hidden + Archive
+| Installer temp files
+
+| 0x0820
+| Compressed + Archive
+| NTFS compressed user files
+|===
+
+==== Invalid Combinations
+
+Some attribute combinations don't make sense:
+
+* **Archive (0x20) + Normal (0x80)**: Contradictory (archive implies not normal)
+* **Hidden (0x02) + Normal (0x80)**: Contradictory
+* **Label (0x08) in CAB**: Volume labels don't belong in archives
+* **Directory (0x10) in CAB**: Directories represented by folder structure, not attributes
+
+=== Reading and Writing Attributes
+
+==== Extracting Attribute Flags
+
+[source,ruby]
+----
+def parse_attributes(attr_word)
+  flags = {}
+
+  # MS-DOS attributes
+  flags[:read_only]   = (attr_word & 0x0001) != 0
+  flags[:hidden]      = (attr_word & 0x0002) != 0
+  flags[:system]      = (attr_word & 0x0004) != 0
+  flags[:volume]      = (attr_word & 0x0008) != 0  # Rarely used
+  flags[:directory]   = (attr_word & 0x0010) != 0  # Rarely used
+  flags[:archive]     = (attr_word & 0x0020) != 0
+  flags[:device]      = (attr_word & 0x0040) != 0  # Reserved
+  flags[:normal]      = (attr_word & 0x0080) != 0
+
+  # Windows extended attributes
+  flags[:temporary]   = (attr_word & 0x0100) != 0
+  flags[:sparse]      = (attr_word & 0x0200) != 0
+  flags[:reparse]     = (attr_word & 0x0400) != 0
+  flags[:compressed]  = (attr_word & 0x0800) != 0
+  flags[:offline]     = (attr_word & 0x1000) != 0
+  flags[:not_indexed] = (attr_word & 0x2000) != 0
+  flags[:encrypted]   = (attr_word & 0x4000) != 0
+
+  flags
+end
+
+# Example
+attrs = parse_attributes(0x0027)
+# => { read_only: true, hidden: true, system: true, archive: true, ... }
+----
+
+==== Creating Attribute Values
+
+[source,ruby]
+----
+def build_attributes(**flags)
+  attr = 0
+
+  attr |= 0x0001 if flags[:read_only]
+  attr |= 0x0002 if flags[:hidden]
+  attr |= 0x0004 if flags[:system]
+  attr |= 0x0020 if flags[:archive]
+  attr |= 0x0100 if flags[:temporary]
+  attr |= 0x0800 if flags[:compressed]
+  attr |= 0x2000 if flags[:not_indexed]
+  attr |= 0x4000 if flags[:encrypted]
+
+  attr
+end
+
+# Example
+attr = build_attributes(hidden: true, system: true, archive: true)
+# => 0x0026 (0x02 | 0x04 | 0x20)
+----
+
+==== Attribute Masks
+
+Useful masks for filtering:
+
+[source,ruby]
+----
+# Standard DOS attributes only
+ATTR_DOS_MASK = 0x00FF
+
+# Extended Windows attributes only
+ATTR_WIN_MASK = 0xFF00
+
+# All valid attributes
+ATTR_ALL_MASK = 0x7FFF  # Bit 15 reserved
+
+# Attributes typically preserved on extraction
+ATTR_PRESERVE_MASK = 0x0027  # Read-only, Hidden, System, Archive
+
+# Example: Strip extended attributes
+dos_only = full_attrs & ATTR_DOS_MASK
+----
+
+=== Platform-Specific Behavior
+
+==== Windows
+
+* **Full support** for all attributes
+* Attributes preserved during extraction
+* Can set/clear via file properties or `attrib` command
+* NTFS supports extended attributes
+
+==== Unix/Linux
+
+* **Limited support** - only some attributes map to Unix permissions
+* Read-only → removes write permission (chmod -w)
+* Hidden → prepends dot to filename (`.filename`)
+* System, Archive → typically ignored
+* Extended attributes → ignored
+
+**Mapping**:
+[source]
+----
+Windows Read-only  → Unix: chmod 444 (r--r--r--)
+Windows Normal     → Unix: chmod 644 (rw-r--r--)
+Windows Hidden     → Unix: filename starts with '.'
+Windows Executable → Unix: chmod +x (add execute bit)
+----
+
+==== macOS
+
+* Similar to Unix/Linux
+* Extended attributes stored in HFS+ metadata
+* Some mapping to Finder flags
+* Hidden → Finder hidden flag or dot-prefix
+
+=== Best Practices
+
+==== When Creating CAB Files
+
+1. **Set Archive flag** (0x20) for all normal files
+2. **Preserve original attributes** from source files
+3. **Use Read-only** (0x01) for protected content
+4. **Avoid extended attributes** unless targeting Windows only
+5. **Clear temporary flag** unless intentionally temporary
+
+**Default attributes**: `0x0020` (Archive only)
+
+==== When Extracting CAB Files
+
+1. **Preserve standard attributes** (Read-only, Hidden, System, Archive)
+2. **Map to platform conventions** (e.g., Hidden → dot-prefix on Unix)
+3. **Warn on unknown attributes** (bits 15, 6-7)
+4. **Handle conflicts** (e.g., read-only destination file)
+5. **Respect user preferences** (option to ignore attributes)
+
+=== Attribute Validation
+
+[source,ruby]
+----
+def validate_attributes(attr_word)
+  # Check reserved bits
+  if (attr_word & 0x8000) != 0
+    warn "Reserved bit 15 is set"
+  end
+
+  # Check for invalid CAB attributes
+  if (attr_word & 0x0008) != 0  # Volume label
+    raise "Volume label attribute invalid in CAB files"
+  end
+
+  if (attr_word & 0x0010) != 0  # Directory
+    warn "Directory attribute should not be set on files"
+  end
+
+  if (attr_word & 0x0040) != 0  # Device
+    raise "Device attribute invalid in CAB files"
+  end
+
+  # Check for contradictory flags
+  if (attr_word & 0x0080) != 0 && (attr_word & 0x007F) != 0
+    warn "Normal flag set but other attributes also present"
+  end
+
+  true
+end
+----
+
+=== Attribute Constants
+
+==== Common Definitions
+
+[source,ruby]
+----
+module FileAttributes
+  # MS-DOS attributes
+  READONLY    = 0x0001
+  HIDDEN      = 0x0002
+  SYSTEM      = 0x0004
+  VOLUME      = 0x0008  # Not used in CAB
+  DIRECTORY   = 0x0010  # Not used in CAB
+  ARCHIVE     = 0x0020
+  DEVICE      = 0x0040  # Reserved
+  NORMAL      = 0x0080
+
+  # Windows extended attributes
+  TEMPORARY   = 0x0100
+  SPARSE      = 0x0200
+  REPARSE     = 0x0400
+  COMPRESSED  = 0x0800
+  OFFLINE     = 0x1000
+  NOT_INDEXED = 0x2000
+  ENCRYPTED   = 0x4000
+
+  # Common combinations
+  SYSTEM_FILE = SYSTEM | HIDDEN | ARCHIVE  # 0x0026
+  NORMAL_FILE = ARCHIVE                     # 0x0020
+  PROTECTED   = READONLY | ARCHIVE          # 0x0021
+end
+----
+
+=== Compatibility Notes
+
+==== Windows Version Support
+
+* **Windows 3.x/9x**: Only MS-DOS attributes (bits 0-7)
+* **Windows NT/2000**: MS-DOS + some extended (COMPRESSED, TEMPORARY)
+* **Windows XP+**: Full extended attribute support
+* **Windows 10+**: All attributes supported
+
+==== File System Support
+
+[cols="1,1,1", options="header"]
+|===
+| File System | DOS Attributes | Extended Attributes
+
+| FAT12/16/32
+| Full support
+| Not supported
+
+| exFAT
+| Full support
+| Partial support
+
+| NTFS
+| Full support
+| Full support
+
+| ReFS
+| Full support
+| Full support
+
+| ext4 (Linux)
+| Mapped
+| Via extended attributes
+
+| HFS+ (macOS)
+| Mapped
+| Via Finder flags
+|===
+
+=== See Also
+
+* link:cab-specification.html[CAB File Format Specification]
+* xref:guides/formats/cab-format.adoc[CAB Format Usage Guide]
+* xref:guides/basic-usage/extracting-files.adoc[Extracting Files Guide]
+* xref:concepts/cabinet-structure.adoc[Cabinet Structure Concepts]
+
+=== References
+
+* Microsoft Win32 API Documentation (File Attribute Constants)
+* MS-DOS Programmer's Reference (File Attributes)
+* NTFS Technical Reference (Extended Attributes)
+* POSIX File Permissions (Unix attribute mapping)

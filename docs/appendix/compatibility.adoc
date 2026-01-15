@@ -1,0 +1,42 @@
+---
+layout: default
+title: Compatibility
+parent: Appendix
+nav_order: 4
+---
+
+== Compatibility
+
+=== Platform Support
+
+[options="header"]
+|===
+| Platform | Ruby Version | Status
+| Linux | 2.7+ | ✓ Supported
+| macOS | 2.7+ | ✓ Supported
+| Windows | 2.7+ | ✓ Supported
+| FreeBSD | 2.7+ | ✓ Supported
+|===
+
+=== Format Compatibility
+
+[options="header"]
+|===
+| Format | Read | Write | Notes
+| CAB | ✓ | ✓ | Full support
+| CHM | ✓ | ✓ | Full support
+| SZDD | ✓ | ✓ | Full support
+| KWAJ | ✓ | Partial | Decompression only
+| HLP | ✓ | Partial | Decompression only
+| LIT | ✓ | Partial | Decompression only
+| OAB | ✓ | Partial | Decompression only
+|===
+
+=== Tool Compatibility
+
+Compatible with files created by:
+
+* Microsoft Cabinet SDK
+* cabextract
+* libmspack
+* 7-Zip (CAB support)

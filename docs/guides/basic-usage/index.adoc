@@ -1,0 +1,153 @@
+---
+title: Basic Usage
+parent: Guides
+has_children: true
+nav_order: 1
+---
+
+== Basic Usage
+
+=== Purpose
+
+This section covers fundamental operations for working with archives using Cabriolet. These guides apply to all supported formats and provide the foundation for more advanced usage.
+
+=== References
+
+* <<../../getting-started/quick-start#,Quick Start Guide>>
+* <<../formats/index#,Format-Specific Guides>>
+* <<../../reference/cli/index#,CLI Reference>>
+
+=== Concepts
+
+All archive operations in Cabriolet follow a consistent pattern, whether you're working with CAB, CHM, SZDD, or other formats. The basic operations are:
+
+* **Extracting**: Retrieving files from an archive
+* **Creating**: Building new archives from source files
+* **Listing**: Viewing archive contents without extracting
+* **Testing**: Verifying archive integrity
+
+=== Basic Operations
+
+==== Extracting Files
+
+<<extracting-files#,Extracting Files>> covers:
+
+* Extracting all files from an archive
+* Specifying output directories
+* Handling file conflicts
+* Preserving file attributes
+* Recursive extraction
+
+==== Creating Archives
+
+<<creating-archives#,Creating Archives>> explains:
+
+* Adding files to new archives
+* Choosing compression algorithms
+* Setting archive options
+* Adding directories recursively
+* Managing file attributes
+
+==== Listing Contents
+
+<<listing-contents#,Listing Archive Contents>> demonstrates:
+
+* Viewing file lists
+* Displaying file details
+* Filtering by patterns
+* Sorting output
+* Formatting options
+
+==== Testing Integrity
+
+<<testing-integrity#,Testing Archive Integrity>> covers:
+
+* Verifying archive structure
+* Checking file checksums
+* Detecting corruption
+* Validating compression
+* Error reporting
+
+=== Common Workflows
+
+==== Quick Extraction
+
+[source,bash]
+----
+# Extract archive to current directory
+cabriolet extract archive.cab
+
+# Extract to specific directory
+cabriolet extract archive.cab output/
+----
+
+==== Quick Archive Creation
+
+[source,bash]
+----
+# Create archive from files
+cabriolet create my-archive.cab file1.txt file2.txt
+
+# Create from directory
+cabriolet create backup.cab data/
+----
+
+==== Inspection Workflow
+
+[source,bash]
+----
+# View contents
+cabriolet list archive.cab
+
+# Get detailed info
+cabriolet info archive.cab
+
+# Test integrity
+cabriolet test archive.cab
+----
+
+=== Format Compatibility
+
+These basic operations work across all supported formats:
+
+[cols="1,3"]
+|===
+|Format |Notes
+
+|CAB
+|Full support for all operations
+
+|CHM
+|Use `chm-` prefixed commands
+
+|SZDD
+|Single-file only, use `expand`/`compress`
+
+|KWAJ
+|Use `kwaj-` prefixed commands
+
+|HLP
+|Use `hlp-` prefixed commands
+
+|LIT
+|Use `lit-` prefixed commands
+
+|OAB
+|Use `oab-` prefixed commands
+|===
+
+For format-specific details, see <<../formats/index#,Format Guides>>.
+
+=== Next Steps
+
+After mastering basic operations:
+
+* Learn about <<../formats/index#,specific formats>> you'll be working with
+* Understand <<../compression/index#,compression algorithms>> for optimal performance
+* Explore <<../advanced-usage/index#,advanced techniques>> for complex scenarios
+
+=== Bibliography
+
+* <<../../reference/cli/index#,CLI Command Reference>>
+* <<../../reference/api/index#,API Documentation>>
+* <<../formats/index#,Format-Specific Guides>>

@@ -1,0 +1,20 @@
+---
+layout: default
+title: Appendix
+nav_order: 7
+has_children: true
+---
+
+== Appendix
+
+Additional reference materials and resources.
+
+=== Contents
+
+* xref:glossary.adoc[Glossary] - Terms and definitions
+* xref:faq.adoc[FAQ] - Frequently asked questions
+* xref:troubleshooting.adoc[Troubleshooting] - Common problems and solutions
+* xref:compatibility.adoc[Compatibility] - Platform compatibility matrix
+* xref:performance.adoc[Performance] - Benchmarks and comparisons
+* xref:migration.adoc[Migration] - Migrating from other tools
+* xref:bibliography.adoc[Bibliography] - External references

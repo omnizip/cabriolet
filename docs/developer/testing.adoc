@@ -1,0 +1,38 @@
+---
+layout: default
+title: Testing
+parent: Developer
+nav_order: 3
+---
+
+== Testing
+
+=== Running Tests
+
+[source,shell]
+----
+bundle exec rspec
+----
+
+=== Test Structure
+
+* `spec/` - Test files
+* `spec/fixtures/` - Test data
+* One spec file per class
+
+=== Writing Tests
+
+[source,ruby]
+----
+RSpec.describe Cabriolet::CAB::Decompressor do
+  describe '#extract_file' do
+    it 'extracts files correctly' do
+      # Test implementation
+    end
+  end
+end
+----
+
+=== Coverage
+
+Aim for comprehensive coverage of all public APIs.

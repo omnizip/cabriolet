@@ -1,0 +1,335 @@
+---
+title: Quantum Compression
+parent: Compression
+grand_parent: Guides
+nav_order: 6
+---
+
+== Quantum Compression
+
+=== Purpose
+
+This guide explains Quantum compression, a legacy statistical compression algorithm used in older CAB files.
+
+=== References
+
+* <<choosing-algorithm#,Choosing a Compression Algorithm>>
+* <<../formats/cab-format#compression-support,CAB Format>>
+
+=== Concepts
+
+==== What is Quantum?
+
+Quantum is a statistical compression algorithm developed by David Stafford for Microsoft. It uses probability modeling and arithmetic coding to achieve good compression ratios.
+
+==== Key Features
+
+* **Statistical compression** - Uses probability models
+* **Configurable window** - 10 to 21 bits (1 KB to 2 MB)
+* **Legacy algorithm** - Rarely used in new applications
+* **CAB only** - Exclusive to CAB format
+
+==== Status
+
+WARNING: Quantum is considered **experimental** in Cabriolet. It's supported for compatibility with legacy CAB files but not recommended for new applications.
+
+=== Performance Characteristics
+
+[cols="1,2"]
+|===
+|Metric |Value
+
+|Compression ratio
+|45-65% for text, 35-55% for executables
+
+|Compression speed
+|Medium (5-15 MB/s)
+
+|Decompression speed
+|Medium (10-50 MB/s)
+
+|Memory usage
+|Medium to High (window-dependent)
+
+|Window size
+|Configurable: 2^10 to 2^21 bytes (1 KB to 2 MB)
+|===
+
+=== Usage
+
+==== CAB Files Only
+
+[source,ruby]
+----
+compressor = Cabriolet::CAB::Compressor.new(compression: :quantum)
+compressor.add_file('data.txt')
+compressor.write('archive.cab')
+----
+
+Command line:
+[source,bash]
+----
+cabriolet create --compression=quantum archive.cab files/
+----
+
+NOTE: Quantum is **only available in CAB format**. Other formats do not support it.
+
+=== Window Sizes
+
+[cols="1,1,2"]
+|===
+|Bits |Window Size |Notes
+
+|10
+|1 KB
+|Minimum size
+
+|15
+|32 KB
+|Typical small files
+
+|16
+|64 KB
+|Default
+
+|18
+|256 KB
+|Large files
+
+|21
+|2 MB
+|Maximum size
+|===
+
+=== Algorithm Details
+
+==== Compression Process
+
+1. **Model building** - Create probability model of input
+2. **Symbol encoding** - Encode symbols based on probabilities
+3. **Arithmetic coding** - Compress using statistical encoding
+4. **Window sliding** - Maintain context window
+
+==== Characteristics
+
+* **Context-based** - Uses previous data to predict next
+* **Adaptive** - Model updates as compression proceeds
+* **Complex** - More sophisticated than dictionary methods
+
+=== Comparison
+
+[cols="1,1,1,1"]
+|===
+|Algorithm |Ratio |Speed |Recommended
+
+|LZSS
+|30-50%
+|Fast
+|Yes (for SZDD/HLP)
+
+|MSZIP
+|40-60%
+|Medium
+|**Yes (default)**
+
+|LZX
+|50-70%
+|Slow
+|Yes (for distribution)
+
+|Quantum
+|45-65%
+|Medium
+|**No (legacy only)**
+|===
+
+=== When to Use Quantum
+
+Use Quantum only when:
+
+* **Compatibility required** - Legacy CAB files use Quantum
+* **Extracting old files** - Decompressing existing Quantum CABs
+* **Historical reasons** - Maintaining old systems
+
+Do NOT use Quantum for:
+
+* **New applications** - Use MSZIP or LZX instead
+* **Maximum compression** - LZX is better
+* **Maximum speed** - LZSS or None is faster
+* **Non-CAB formats** - Not supported
+
+=== Recommended Alternatives
+
+Instead of Quantum, use:
+
+[cols="1,2,2"]
+|===
+|Use Case |Recommended |Why
+
+|General purpose
+|MSZIP
+|Better support, similar ratio
+
+|Maximum compression
+|LZX
+|Higher ratio, wider support
+
+|Maximum speed
+|LZSS or None
+|Faster compression/decompression
+
+|Legacy compatibility
+|Quantum
+|Only valid use case
+|===
+
+=== Examples
+
+==== Extract Legacy CAB
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Decompress old Quantum CAB
+decompressor = Cabriolet::CAB::Decompressor.new
+cabinet = decompressor.open('old-archive.cab')
+
+cabinet.files.each do |file|
+  puts "#{file.filename} - Quantum compressed"
+end
+
+decompressor.extract_all(cabinet, 'output/')
+----
+
+==== Convert to Modern Format
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Extract Quantum CAB
+old_decompressor = Cabriolet::CAB::Decompressor.new
+old_cabinet = old_decompressor.open('quantum.cab')
+old_decompressor.extract_all(old_cabinet, 'temp/')
+
+# Re-compress with MSZIP
+new_compressor = Cabriolet::CAB::Compressor.new(compression: :mszip)
+
+Dir.glob('temp/**/*').each do |file|
+  next if File.directory?(file)
+  new_compressor.add_file(file)
+end
+
+new_compressor.write('mszip.cab')
+
+puts "Converted Quantum → MSZIP"
+----
+
+==== Identify Compression Type
+
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::CAB::Decompressor.new
+cabinet = decompressor.open('archive.cab')
+
+cabinet.folders.each_with_index do |folder, i|
+  case folder.compression
+  when :quantum
+    puts "Folder #{i}: Quantum (legacy)"
+  when :mszip
+    puts "Folder #{i}: MSZIP (recommended)"
+  when :lzx
+    puts "Folder #{i}: LZX (maximum compression)"
+  when :none
+    puts "Folder #{i}: Uncompressed"
+  end
+end
+----
+
+=== Troubleshooting
+
+==== "Unsupported Quantum"
+
+If you see experimental/unsupported warnings:
+
+* Quantum support is limited
+* Use for extraction only
+* Don't create new Quantum CABs
+
+==== Poor Performance
+
+Quantum may be slower than expected:
+
+* Use MSZIP for better balance
+* Use LZX for better compression
+* Use LZSS for better speed
+
+==== Compatibility Issues
+
+Quantum CABs may not work everywhere:
+
+* Some tools don't support Quantum
+* MSZIP is more widely compatible
+* LZX is better supported
+
+=== Migration Guide
+
+To migrate from Quantum:
+
+1. **Extract existing CABs**
+   ```ruby
+   decompressor = Cabriolet::CAB::Decompressor.new
+   decompressor.open('quantum.cab')
+   decompressor.extract_all(cabinet, 'extracted/')
+   ```
+
+2. **Re-compress with MSZIP or LZX**
+   ```ruby
+   compressor = Cabriolet::CAB::Compressor.new(compression: :mszip)
+   # or
+   compressor = Cabriolet::CAB::Compressor.new(compression: :lzx)
+   ```
+
+3. **Test thoroughly**
+   ```bash
+   cabriolet test new-archive.cab
+   ```
+
+=== Best Practices
+
+1. **Avoid for new files** - Use MSZIP or LZX instead
+2. **Extract only** - Don't create new Quantum CABs
+3. **Convert old files** - Migrate to modern algorithms
+4. **Document usage** - Note why Quantum is used if required
+5. **Test compatibility** - Verify decompression works
+
+=== Technical Notes
+
+==== Implementation Status
+
+* **Decompression**: Supported (experimental)
+* **Compression**: Supported (not recommended)
+* **Stability**: Less tested than MSZIP/LZX
+* **Performance**: May vary
+
+==== Format Details
+
+* **CAB Type Code**: 2
+* **Window sizes**: 10-21 bits
+* **Method**: Statistical/arithmetic coding
+* **Developed by**: David Stafford
+
+=== See Also
+
+* <<choosing-algorithm#,Choosing a Compression Algorithm>>
+* <<mszip-compression#,MSZIP Compression>> - Recommended alternative
+* <<lzx-compression#,LZX Compression>> - For maximum compression
+* <<../formats/cab-format#,CAB Format Guide>>
+
+=== Bibliography
+
+* https://www.cabextract.org.uk/[cabextract Documentation]
+* https://en.wikipedia.org/wiki/Arithmetic_coding[Wikipedia: Arithmetic Coding]

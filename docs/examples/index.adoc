@@ -1,0 +1,154 @@
+---
+layout: default
+title: Examples
+nav_order: 2.5
+has_children: true
+---
+
+== Examples
+
+=== Overview
+
+This section provides complete, runnable examples demonstrating common Cabriolet use cases. Each example includes full code, expected output, and explanations.
+
+=== Available Examples
+
+==== link:extract-installer.html[Extracting from Windows Installer]
+
+Learn how to extract files from Windows installer packages (MSI, setup.exe) that use CAB compression internally.
+
+**Topics covered:**
+* Identifying embedded CAB files
+* Extracting installer resources
+* Handling multi-volume installers
+* Batch extraction workflows
+
+==== link:create-software-bundle.html[Creating Software Distribution Bundle]
+
+Build a complete software distribution package using CAB compression for optimal size and compatibility.
+
+**Topics covered:**
+* Organizing files for distribution
+* Choosing compression algorithms
+* Creating multi-volume archives
+* Adding digital signatures
+
+==== link:recover-corrupted-archive.html[Recovering from Corrupted Archives]
+
+Use Cabriolet's salvage mode to recover data from damaged CAB files.
+
+**Topics covered:**
+* Detecting corruption
+* Using salvage mode
+* Partial file recovery
+* Verification strategies
+
+==== link:batch-processing.html[Batch Processing Multiple Archives]
+
+Process large numbers of archive files efficiently with automation.
+
+**Topics covered:**
+* Recursive directory scanning
+* Parallel processing
+* Error handling and logging
+* Progress reporting
+
+==== link:custom-compression-pipeline.html[Custom Compression Pipeline]
+
+Build advanced compression workflows with custom I/O handlers and streaming.
+
+**Topics covered:**
+* Memory-based compression
+* Custom I/O handlers
+* Streaming compression
+* Format conversion pipelines
+
+=== Using These Examples
+
+==== Prerequisites
+
+All examples assume you have Cabriolet installed:
+
+[source,shell]
+----
+gem install cabriolet
+----
+
+Or in your Gemfile:
+
+[source,ruby]
+----
+gem 'cabriolet', '~> 0.1'
+----
+
+==== Running Examples
+
+Each example provides:
+
+1. **Complete source code** - Copy and run directly
+2. **Sample data** - Test files or how to obtain them
+3. **Expected output** - What you should see
+4. **Variations** - How to adapt for your needs
+
+==== Code Conventions
+
+* **Ruby version**: 2.7 or later
+* **Error handling**: Explicit exception handling shown
+* **Comments**: Explain key concepts
+* **Style**: Follow Cabriolet conventions
+
+=== Example Categories
+
+==== Basic Operations
+
+* Extracting files
+* Creating archives
+* Listing contents
+* Testing integrity
+
+See: xref:guides/basic-usage/index.adoc[Basic Usage Guide]
+
+==== Advanced Techniques
+
+* Custom I/O handlers
+* Salvage mode recovery
+* Multi-part archives
+* Streaming operations
+
+See: xref:guides/advanced-usage/index.adoc[Advanced Usage Guide]
+
+==== Integration Patterns
+
+* CI/CD pipelines
+* Automated workflows
+* Batch processing
+* Format conversion
+
+See: xref:guides/use-cases/index.adoc[Use Cases Guide]
+
+=== Getting Help
+
+If you encounter issues with these examples:
+
+1. Check the xref:troubleshooting/index.adoc[Troubleshooting Guide]
+2. Review the xref:reference/api/index.adoc[API Reference]
+3. Visit the https://github.com/your-org/cabriolet/issues[issue tracker]
+4. Join the https://github.com/your-org/cabriolet/discussions[community discussions]
+
+=== Contributing Examples
+
+Have a useful example to share? We'd love to include it!
+
+1. Write clear, documented code
+2. Include sample input/output
+3. Test on multiple Ruby versions
+4. Submit a pull request
+
+See: xref:developer/contributing.adoc[Contributing Guide]
+
+=== Further Reading
+
+* xref:getting-started/quick-start.adoc[Quick Start Guide]
+* xref:guides/index.adoc[Usage Guides]
+* xref:reference/index.adoc[API Reference]
+* xref:concepts/index.adoc[Core Concepts]

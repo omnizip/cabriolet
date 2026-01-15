@@ -1,0 +1,239 @@
+---
+title: Compression Algorithms
+parent: Guides
+has_children: true
+nav_order: 3
+---
+
+== Compression Algorithms
+
+=== Purpose
+
+This section explains the 5 compression algorithms supported by Cabriolet, helping you choose the right algorithm for your needs and understand how each works.
+
+=== References
+
+* <<choosing-algorithm#,Choosing a Compression Algorithm>>
+* <<../formats/index#,Format Guides>>
+* <<../../reference/formats/compression-types#,Compression Type Codes>>
+
+=== Concepts
+
+Compression algorithms trade off between compression ratio, speed, and memory usage. Cabriolet supports multiple algorithms to match different use cases, from fast extraction to maximum compression.
+
+=== Supported Algorithms
+
+==== None - Uncompressed Storage
+
+<<none-compression#,None Compression Guide>>
+
+* **Compression**: 0% (stores uncompressed)
+* **Speed**: Fastest extraction
+* **Memory**: Minimal
+* **Use Cases**: Pre-compressed files, fast access, testing
+
+==== LZSS - Dictionary Compression
+
+<<lzss-compression#,LZSS Algorithm Guide>>
+
+* **Compression**: Moderate (40-60%)
+* **Speed**: Fast compression and extraction
+* **Memory**: Low (small window)
+* **Use Cases**: Legacy compatibility, simple compression
+
+==== MSZIP - Deflate-based Compression
+
+<<mszip-compression#,MSZIP Algorithm Guide>>
+
+* **Compression**: Good (50-70%)
+* **Speed**: Balanced
+* **Memory**: Moderate
+* **Use Cases**: General purpose, ZIP compatibility, default choice
+
+==== LZX - High Compression
+
+<<lzx-compression#,LZX Algorithm Guide>>
+
+* **Compression**: Excellent (60-80%)
+* **Speed**: Slower compression, fast extraction
+* **Memory**: High (large window)
+* **Use Cases**: Software distribution, maximum compression, archival
+
+==== Quantum - Memory-efficient Compression
+
+<<quantum-compression#,Quantum Algorithm Guide>>
+
+* **Compression**: Good (55-75%)
+* **Speed**: Moderate
+* **Memory**: Configurable window
+* **Use Cases**: Memory-constrained environments, variable compression
+
+=== Algorithm Comparison
+
+[cols="1,1,1,1,2"]
+|===
+|Algorithm |Ratio |Speed |Memory |Best For
+
+|None
+|0%
+|★★★★★
+|★★★★★
+|Pre-compressed data
+
+|LZSS
+|★★☆☆☆
+|★★★★☆
+|★★★★☆
+|Legacy files, simple compression
+
+|MSZIP
+|★★★☆☆
+|★★★☆☆
+|★★★☆☆
+|General purpose, default
+
+|LZX
+|★★★★★
+|★★☆☆☆
+|★★☆☆☆
+|Software distribution
+
+|Quantum
+|★★★★☆
+|★★★☆☆
+|★★★★☆
+|Variable requirements
+|===
+
+=== Quick Selection Guide
+
+**Choose None when:**
+
+* Files are already compressed (images, videos, zip files)
+* Fast extraction is critical
+* Testing or debugging
+
+**Choose LZSS when:**
+
+* Working with SZDD or KWAJ formats
+* Simplicity is important
+* Legacy compatibility required
+
+**Choose MSZIP when:**
+
+* General-purpose compression needed
+* Balanced performance desired
+* Default recommendation
+
+**Choose LZX when:**
+
+* Maximum compression ratio needed
+* Distribution package size matters
+* Extraction speed more important than compression speed
+
+**Choose Quantum when:**
+
+* Memory constraints exist
+* Configurable compression needed
+* Moderate compression acceptable
+
+=== Usage Examples
+
+==== Specifying Compression Algorithm
+
+[source,bash]
+----
+# Create with MSZIP (default)
+cabriolet create archive.cab files/
+
+# Create with LZX for maximum compression
+cabriolet create --compression=lzx small.cab files/
+
+# Create uncompressed for speed
+cabriolet create --compression=none fast.cab files/
+----
+
+==== Using the Ruby API
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Create with specific compression
+compressor = Cabriolet::CAB::Compressor.new(compression: :lzx)
+compressor.add_file('large-file.dat')
+compressor.write('compressed.cab')
+
+# Detect compression of existing archive
+decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+puts "Compression: #{decompressor.cabinet.folders.first.compression}"
+----
+
+=== Performance Considerations
+
+==== Compression Time vs. Ratio
+
+Higher compression ratios require more processing time:
+
+[source,text]
+----
+File: 10MB uncompressed data
+
+None:    0.1s → 10MB    (0% compression)
+LZSS:    1.2s →  6MB    (40% compression)
+MSZIP:   2.5s →  4MB    (60% compression)
+LZX:     8.0s →  2.5MB  (75% compression)
+Quantum: 4.0s →  3MB    (70% compression)
+----
+
+==== Memory Usage
+
+Different algorithms have different memory requirements:
+
+* **None**: <1MB
+* **LZSS**: 8KB - 64KB window
+* **MSZIP**: 32KB window
+* **LZX**: 32KB - 2MB window (configurable)
+* **Quantum**: 64KB - 2MB window (configurable)
+
+=== Format Compatibility
+
+Not all formats support all compression algorithms:
+
+[cols="1,4"]
+|===
+|Format |Supported Algorithms
+
+|CAB
+|None, MSZIP, LZX, Quantum
+
+|CHM
+|LZX only
+
+|SZDD
+|LZSS only
+
+|KWAJ
+|LZSS, MSZIP
+
+|HLP
+|LZ77 variant (automatic)
+
+|LIT
+|DES + compression (automatic)
+
+|OAB
+|LZX only
+|===
+
+=== Next Steps
+
+* Read <<choosing-algorithm#,Choosing a Compression Algorithm>> for detailed selection criteria
+* Study individual algorithm guides for technical details
+* Explore <<../advanced-usage/performance-tuning#,performance tuning>> techniques
+
+=== Bibliography
+
+* <<choosing-algorithm#,Algorithm Selection Guide>>
+* <<../../reference/formats/compression-types#,Compression Type Codes>>
+* https://docs.microsoft.com/en-us/previous-versions/bb417343(v=msdn.10)[Microsoft Cabinet SDK]

@@ -1,0 +1,243 @@
+---
+title: Home
+nav_order: 0
+---
+
+== Cabriolet: working with Microsoft archive formats in Ruby
+
+=== Purpose
+
+Cabriolet is a pure Ruby implementation for Microsoft compression formats,
+providing comprehensive support for CAB, CHM, SZDD, KWAJ, HLP, LIT, and OAB file
+formats with multiple compression algorithms.
+
+=== Quick Start
+
+Get started with Cabriolet in minutes:
+
+* <<getting-started/installation#,Installation>> - Install the gem and dependencies
+* <<getting-started/quick-start#,Quick Start>> - Extract your first CAB file in 5 minutes
+* <<getting-started/your-first-cab#,Your First CAB>> - Create a simple archive
+
+=== Documentation Map
+
+==== New to Cabriolet?
+
+Follow this learning path:
+
+. Install Cabriolet
+** <<getting-started/installation#,Installation Guide>>
+
+. Quick Start (5 minutes)
+** <<getting-started/quick-start#,Quick Start>>
+
+. Create Your First Archive
+** <<getting-started/your-first-cab#,Your First CAB>>
+
+. Learn Basic Operations
+** <<guides/basic-usage/extracting-files#,Extracting Files>>
+** <<guides/basic-usage/listing-contents#,Listing Contents>>
+** <<guides/basic-usage/creating-archives#,Creating Archives>>
+
+. Explore Advanced Features
+** <<guides/advanced-usage/index#,Advanced Usage Guide>>
+
+==== Looking for Something Specific?
+
+**Working with Files**
+
+* <<guides/basic-usage/extracting-files#,Extracting Files>> - Extract from archives
+* <<guides/basic-usage/creating-archives#,Creating Archives>> - Build new archives
+* <<guides/basic-usage/listing-contents#,Listing Contents>> - Browse archive contents
+* <<guides/basic-usage/testing-integrity#,Testing Integrity>> - Verify archives
+
+**File Formats**
+
+* <<guides/formats/cab-format#,CAB Format>> - Microsoft Cabinet files
+* <<guides/formats/chm-format#,CHM Format>> - Compiled HTML Help
+* <<guides/formats/szdd-format#,SZDD Format>> - Single-file compression
+* <<guides/formats/kwaj-format#,KWAJ Format>> - KWAJ archives
+* <<guides/formats/hlp-format#,HLP Format>> - Windows Help files
+* <<guides/formats/lit-format#,LIT Format>> - Microsoft Reader eBooks
+* <<guides/formats/oab-format#,OAB Format>> - Offline Address Book
+
+**Compression Algorithms**
+
+* <<guides/compression/choosing-algorithm#,Choosing an Algorithm>> - Algorithm selection guide
+* <<guides/compression/none-compression#,None>> - Uncompressed storage
+* <<guides/compression/lzss-compression#,LZSS>> - Simple dictionary compression
+* <<guides/compression/mszip-compression#,MSZIP>> - ZIP-compatible compression
+* <<guides/compression/lzx-compression#,LZX>> - High compression ratio
+* <<guides/compression/quantum-compression#,Quantum>> - Memory-efficient compression
+
+**Advanced Topics**
+
+* <<guides/advanced-usage/multi-part-cabinets#,Multi-part Cabinets>> - Split archives
+* <<guides/advanced-usage/embedded-cabinets#,Embedded Cabinets>> - Extract from executables
+* <<guides/advanced-usage/custom-io-handlers#,Custom I/O Handlers>> - Advanced I/O
+* <<guides/advanced-usage/memory-operations#,Memory Operations>> - In-memory processing
+* <<guides/advanced-usage/salvage-mode#,Salvage Mode>> - Recover damaged archives
+* <<guides/advanced-usage/performance-tuning#,Performance Tuning>> - Optimization tips
+
+**Reference Materials**
+
+* <<quick-reference#,Quick Reference>> - Cheat sheet for common operations
+* <<reference/cli/index#,CLI Reference>> - Command-line interface documentation
+* <<reference/api/index#,API Reference>> - Ruby API documentation
+* <<concepts/index#,Concepts>> - Core concepts explained
+* <<architecture/index#,Architecture>> - Design and implementation details
+
+**For Developers**
+
+* <<developer/contributing#,Contributing Guide>> - How to contribute
+* <<developer/code-style#,Code Style>> - Coding standards
+* <<developer/testing#,Testing>> - Running and writing tests
+* <<developer/debugging#,Debugging>> - Debugging techniques
+* <<developer/release-process#,Release Process>> - How releases work
+
+**Help & Resources**
+
+* <<appendix/faq#,FAQ>> - Frequently asked questions
+* <<appendix/glossary#,Glossary>> - Technical terms explained
+* <<appendix/performance#,Performance>> - Benchmarks and optimization
+* <<appendix/compatibility#,Compatibility>> - Platform and format compatibility
+* <<appendix/bibliography#,Bibliography>> - Additional resources and references
+
+==== Most Used Pages
+
+Based on common tasks:
+
+1. <<quick-reference#,Quick Reference>> - Fast lookup for common operations
+2. <<getting-started/quick-start#,Quick Start>> - Get running in 5 minutes
+3. <<guides/basic-usage/extracting-files#,Extracting Files>> - Most common operation
+4. <<guides/compression/choosing-algorithm#,Choosing Algorithm>> - Algorithm selection
+5. <<reference/cli/index#,CLI Reference>> - Command-line tools
+6. <<reference/api/cab-api#,CAB API>> - Most used API
+7. <<guides/advanced-usage/error-handling#,Error Handling>> - Handle errors properly
+8. <<appendix/faq#,FAQ>> - Common questions answered
+
+=== Documentation Sections
+
+==== Getting Started
+
+New to Cabriolet? Start here for installation and basic usage:
+
+* <<getting-started/installation#,Installation Guide>>
+* <<getting-started/quick-start#,5-Minute Quick Start>>
+* <<getting-started/your-first-cab#,Creating Your First CAB File>>
+
+==== Guides
+
+Comprehensive guides for all features and formats:
+
+* <<guides/basic-usage/index#,Basic Usage>> - Common operations explained
+* <<guides/formats/index#,Format Guides>> - CAB, CHM, SZDD, KWAJ, HLP, LIT, OAB
+* <<guides/compression/index#,Compression Algorithms>> - None, LZSS, MSZIP, LZX, Quantum
+* <<guides/advanced-usage/index#,Advanced Usage>> - Multi-part cabinets, custom I/O, performance tuning
+
+==== Reference
+
+Complete technical reference for CLI and API:
+
+* <<reference/cli/index#,CLI Reference>> - All command-line tools documented
+* <<reference/api/index#,API Reference>> - Ruby API documentation
+* <<reference/formats/index#,Format Specifications>> - Technical format details
+
+=== Supported Formats
+
+Cabriolet supports 7 Microsoft compression formats:
+
+[cols="1,3,2"]
+|===
+|Format |Description |Common Use
+
+|CAB
+|Microsoft Cabinet files
+|Software distribution, Windows installers
+
+|CHM
+|Compiled HTML Help
+|Windows help files, documentation
+
+|SZDD
+|Single-file LZSS compression
+|Compressed system files (*.ex_, *.dl_)
+
+|KWAJ
+|KWAJ compression format
+|Compressed installers
+
+|HLP
+|Windows Help files
+|Legacy Windows help system
+
+|LIT
+|Microsoft Reader eBooks
+|Digital book format
+
+|OAB
+|Offline Address Book
+|Exchange/Outlook data files
+|===
+
+=== Compression Algorithms
+
+Five compression algorithms supported:
+
+* **None** - Uncompressed storage
+* **LZSS** - Simple dictionary compression
+* **MSZIP** - Deflate-based compression (ZIP-compatible)
+* **LZX** - High compression ratio
+* **Quantum** - Memory-efficient compression
+
+=== Key Features
+
+* **Pure Ruby** - No native dependencies, works on any Ruby platform
+* **Format Detection** - Automatic format identification
+* **Multi-part Support** - Handle split CAB archives
+* **Embedded CABs** - Extract cabinets from executables
+* **Salvage Mode** - Recover data from damaged archives
+* **Custom I/O** - File or memory-based operations
+* **CLI Tools** - Complete command-line interface
+* **Ruby API** - Full programmatic access
+
+=== Example Usage
+
+.Extracting a CAB file
+[source,ruby]
+----
+require 'cabriolet'
+
+# Extract all files
+Cabriolet::CAB::Decompressor.new('archive.cab').extract('output/')
+
+# List contents
+Cabriolet::CAB::Decompressor.new('archive.cab').each_file do |file|
+  puts "#{file.name} (#{file.size} bytes)"
+end
+----
+
+.Command-line extraction
+[source,bash]
+----
+# Extract CAB file
+cabriolet extract archive.cab
+
+# List contents
+cabriolet list archive.cab
+
+# Get archive info
+cabriolet info archive.cab
+----
+
+=== Getting Help
+
+* **Documentation**: Browse the guides and reference sections
+* **Issues**: Report bugs at https://github.com/omnizip/cabriolet/issues
+* **Source**: View the code at https://github.com/omnizip/cabriolet
+
+=== Bibliography
+
+* https://github.com/omnizip/cabriolet[Cabriolet on GitHub]
+* https://docs.microsoft.com/en-us/previous-versions/bb417343(v=msdn.10)[Microsoft Cabinet SDK Documentation]
+* https://www.cabextract.org.uk/[cabextract - Cabinet extraction tool]

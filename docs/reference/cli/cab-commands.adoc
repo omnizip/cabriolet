@@ -1,0 +1,802 @@
+---
+title: CAB Commands
+parent: CLI Reference
+grand_parent: Reference
+nav_order: 1
+---
+
+== CAB Commands Reference
+
+=== Purpose
+
+Complete command-line reference for all CAB (Microsoft Cabinet) format operations. This document provides detailed syntax, options, and examples for the 6 CAB commands.
+
+=== References
+
+* <<../../guides/formats/cab-format#,CAB Format Guide>>
+* <<../api/cab-api#,CAB API Reference>>
+* <<global-options#,Global Options>>
+
+=== Concepts
+
+CAB commands follow a consistent pattern with the format: `cabriolet COMMAND [OPTIONS] FILE [ARGS]`. Each command operates on CAB files with specific purposes: listing, extracting, creating, testing, searching, and getting information.
+
+=== Command Overview
+
+[cols="1,3"]
+|===
+|Command |Purpose
+
+|<<list,list>>
+|List contents of a CAB file
+
+|<<extract,extract>>
+|Extract files from a CAB archive
+
+|<<info,info>>
+|Display detailed CAB information
+
+|<<test,test>>
+|Verify CAB archive integrity
+
+|<<search,search>>
+|Find embedded CAB files
+
+|<<create,create>>
+|Create new CAB archive
+|===
+
+'''
+
+[[list]]
+=== list - List CAB Contents
+
+Display files contained in a CAB archive without extracting them.
+
+==== Syntax
+
+[source,text]
+----
+cabriolet list [OPTIONS] FILE
+----
+
+==== Parameters
+
+`FILE`:: (required) Path to the CAB file to list
+
+==== Options
+
+`--verbose, -v`:: Show detailed file information including size, date, attributes
+
+==== Returns
+
+* Exit code 0 on success
+* Exit code 1 on error
+* Exit code 3 if file not found
+
+==== Description
+
+The `list` command displays all files contained in a CAB archive, showing file names and basic information. Use `--verbose` for detailed output including file sizes, timestamps, and attributes.
+
+==== Examples
+
+.Basic listing
+[source,bash]
+----
+cabriolet list archive.cab
+----
+
+.Output
+[source,text]
+----
+Files in archive.cab:
+  readme.txt
+  setup.exe
+  config.ini
+
+Total: 3 files
+----
+
+.Verbose listing
+[source,bash]
+----
+cabriolet list --verbose archive.cab
+----
+
+.Output
+[source,text]
+----
+Files in archive.cab:
+  readme.txt
+    Size: 1,245 bytes
+    Date: 2024-01-15 14:30:00
+    Attributes: Archive
+
+  setup.exe
+    Size: 524,288 bytes
+    Date: 2024-01-15 14:30:00
+    Attributes: Archive
+
+  config.ini
+    Size: 512 bytes
+    Date: 2024-01-15 14:30:00
+    Attributes: Archive
+
+Total: 3 files, 526,045 bytes
+Compression: MSZIP
+----
+
+.Save listing to file
+[source,bash]
+----
+cabriolet list archive.cab > contents.txt
+----
+
+==== Common Errors
+
+* **File not found**: Verify the CAB file path is correct
+* **Invalid CAB signature**: File is not a valid CAB archive
+* **Permission denied**: Ensure read permissions on the CAB file
+
+==== See Also
+
+* <<info,info>> - For detailed archive information
+* <<../../guides/formats/cab-format#listing-cab-contents,CAB Format Guide - Listing Contents>>
+
+'''
+
+[[extract]]
+=== extract - Extract CAB Files
+
+Extract all files from a CAB archive to a directory.
+
+==== Syntax
+
+[source,text]
+----
+cabriolet extract [OPTIONS] FILE [OUTPUT_DIR]
+----
+
+==== Parameters
+
+`FILE`:: (required) Path to the CAB file to extract
+
+`OUTPUT_DIR`:: (optional) Directory to extract files to (default: current directory)
+
+==== Options
+
+`--verbose, -v`:: Show extraction progress for each file
+
+`--overwrite`:: Overwrite existing files without prompting
+
+`--preserve-paths`:: Preserve full directory paths from CAB
+
+`--salvage`:: Attempt to extract from damaged archives
+
+==== Returns
+
+* Exit code 0 on success
+* Exit code 1 on error
+* Exit code 3 if file not found
+* Exit code 4 if permission denied
+
+==== Description
+
+The `extract` command extracts all files from a CAB archive, recreating the directory structure as stored in the CAB. By default, files are extracted to the current directory unless `OUTPUT_DIR` is specified.
+
+==== Examples
+
+.Extract to current directory
+[source,bash]
+----
+cabriolet extract archive.cab
+----
+
+.Extract to specific directory
+[source,bash]
+----
+cabriolet extract archive.cab output/
+----
+
+.Output
+[source,text]
+----
+Extracting archive.cab...
+  readme.txt (1,245 bytes) ✓
+  setup.exe (524,288 bytes) ✓
+  config.ini (512 bytes) ✓
+
+Successfully extracted 3 files to output/
+----
+
+.Extract with verbose output
+[source,bash]
+----
+cabriolet extract --verbose archive.cab extracted/
+----
+
+.Output
+[source,text]
+----
+Opening archive.cab...
+Found 3 files in 1 folder
+Compression: MSZIP
+
+Extracting to extracted/
+  Decompressing folder 1...
+  readme.txt (1,245 bytes)... OK
+  setup.exe (524,288 bytes)... OK
+  config.ini (512 bytes)... OK
+
+Extraction complete
+Total: 3 files, 526,045 bytes
+Time: 0.5 seconds
+----
+
+.Extract from damaged archive
+[source,bash]
+----
+cabriolet extract --salvage damaged.cab recovered/
+----
+
+.Extract multi-part archive
+[source,bash]
+----
+# Ensure all parts are present
+ls large-archive.ca*
+# Extract from first part
+cabriolet extract large-archive.cab output/
+----
+
+==== Common Errors
+
+* **Cannot create output directory**: Verify write permissions
+* **Disk full**: Ensure sufficient disk space for extraction
+* **Corrupt data**: Try `--salvage` option for damaged archives
+* **Missing cabinet**: For multi-part CABs, ensure all parts are present
+
+==== See Also
+
+* <<test,test>> - Verify archive integrity before extraction
+* <<../../guides/formats/cab-format#extracting-files,CAB Format Guide - Extracting>>
+* <<../../guides/advanced-usage/salvage-mode#,Salvage Mode Guide>>
+
+'''
+
+[[info]]
+=== info - Show CAB Information
+
+Display detailed information about a CAB archive including structure, compression, and metadata.
+
+==== Syntax
+
+[source,text]
+----
+cabriolet info [OPTIONS] FILE
+----
+
+==== Parameters
+
+`FILE`:: (required) Path to the CAB file to analyze
+
+==== Options
+
+`--verbose, -v`:: Show additional technical details
+
+==== Returns
+
+* Exit code 0 on success
+* Exit code 1 on error
+* Exit code 3 if file not found
+
+==== Description
+
+The `info` command provides comprehensive information about a CAB archive, including cabinet metadata, folder structure, compression details, and file listings.
+
+==== Examples
+
+.Basic information
+[source,bash]
+----
+cabriolet info archive.cab
+----
+
+.Output
+[source,text]
+----
+Cabinet: archive.cab
+  Set ID: 12345
+  Cabinet number: 1
+  Total size: 320,512 bytes
+
+Folders: 1
+  Folder 1:
+    Compression: MSZIP
+    Data size: 320,476 bytes
+
+Files: 3
+  readme.txt (1,245 bytes)
+  setup.exe (524,288 bytes)
+  config.ini (512 bytes)
+----
+
+.Verbose information
+[source,bash]
+----
+cabriolet info --verbose archive.cab
+----
+
+.Output
+[source,text]
+----
+Cabinet: archive.cab
+  Signature: MSCF
+  Version: 1.3
+  Set ID: 12345
+  Cabinet number: 1 of 1
+  Total size: 320,512 bytes
+  Header size: 36 bytes
+  Flags: None
+
+Folders: 1
+  Folder 1:
+    Compression: MSZIP (Type 1)
+    Data offset: 36
+    Data blocks: 1
+    Data size: 320,476 bytes (uncompressed: 526,045 bytes)
+    Compression ratio: 39.1%
+
+Files: 3
+  readme.txt
+    Size: 1,245 bytes
+    Folder: 1
+    Offset: 0
+    Date: 2024-01-15 14:30:00
+    Attributes: Archive
+
+  setup.exe
+    Size: 524,288 bytes
+    Folder: 1
+    Offset: 1,245
+    Date: 2024-01-15 14:30:00
+    Attributes: Archive
+
+  config.ini
+    Size: 512 bytes
+    Folder: 1
+    Offset: 525,533
+    Date: 2024-01-15 14:30:00
+    Attributes: Archive
+----
+
+.Multi-part cabinet information
+[source,bash]
+----
+cabriolet info large-archive.cab
+----
+
+.Output
+[source,text]
+----
+Cabinet: large-archive.cab
+  Set ID: 54321
+  Cabinet number: 1 of 3
+  Next cabinet: large-archive.ca2
+  Total size: 1,474,560 bytes
+
+Folders: 5
+Files: 127
+
+This is part 1 of a multi-part archive.
+----
+
+==== Common Errors
+
+* **Invalid CAB signature**: File is not a valid CAB archive
+* **Corrupt header**: Archive header is damaged
+
+==== See Also
+
+* <<list,list>> - For simple file listing
+* <<../../guides/formats/cab-format#getting-archive-information,CAB Format Guide - Info>>
+
+'''
+
+[[test]]
+=== test - Test CAB Integrity
+
+Verify the integrity of a CAB archive by validating structure and checksums.
+
+==== Syntax
+
+[source,text]
+----
+cabriolet test [OPTIONS] FILE
+----
+
+==== Parameters
+
+`FILE`:: (required) Path to the CAB file to test
+
+==== Options
+
+`--verbose, -v`:: Show detailed testing progress
+
+==== Returns
+
+* Exit code 0 if archive is valid
+* Exit code 1 if archive is corrupt
+* Exit code 3 if file not found
+
+==== Description
+
+The `test` command validates a CAB archive by checking file signatures, verifying checksums, and ensuring all data blocks decompress correctly. This is useful before extracting to verify archive integrity.
+
+==== Examples
+
+.Basic test
+[source,bash]
+----
+cabriolet test archive.cab
+----
+
+.Output
+[source,text]
+----
+Testing archive.cab...
+  readme.txt ✓
+  setup.exe ✓
+  config.ini ✓
+
+All 3 files OK
+----
+
+.Verbose test
+[source,bash]
+----
+cabriolet test --verbose archive.cab
+----
+
+.Output
+[source,text]
+----
+Testing archive.cab...
+Checking cabinet header... OK
+Checking folder structure... OK
+Found 1 folder, 3 files
+
+Testing folder 1 (MSZIP compression)...
+  Decompressing data block 1... OK
+  Verifying checksums... OK
+
+Testing files...
+  readme.txt (1,245 bytes)... OK
+  setup.exe (524,288 bytes)... OK
+  config.ini (512 bytes)... OK
+
+All tests passed
+Total: 3 files, 526,045 bytes verified
+----
+
+.Test failed example
+[source,bash]
+----
+cabriolet test damaged.cab
+----
+
+.Output
+[source,text]
+----
+Testing damaged.cab...
+  readme.txt ✓
+  setup.exe ✗ Checksum mismatch
+  config.ini ✓
+
+Error: 1 file failed verification
+----
+
+==== Common Errors
+
+* **Checksum mismatch**: File data is corrupted
+* **Decompression failed**: Compression data is damaged
+* **Invalid folder**: Cabinet structure is corrupt
+
+==== See Also
+
+* <<extract,extract>> - Extract files after verification
+* <<../../guides/formats/cab-format#testing-integrity,CAB Format Guide - Testing>>
+
+'''
+
+[[search]]
+=== search - Find Embedded CABs
+
+Search for CAB files embedded within other files, such as executables or installers.
+
+==== Syntax
+
+[source,text]
+----
+cabriolet search [OPTIONS] FILE
+----
+
+==== Parameters
+
+`FILE`:: (required) File to search for embedded CAB files
+
+==== Options
+
+`--verbose, -v`:: Show search progress and details
+
+==== Returns
+
+* Exit code 0 if CAB files found
+* Exit code 1 if no CAB files found
+* Exit code 3 if file not found
+
+==== Description
+
+The `search` command scans a file for embedded CAB archives by looking for CAB signatures. This is useful for extracting CAB files from self-extracting executables or installer packages.
+
+==== Examples
+
+.Basic search
+[source,bash]
+----
+cabriolet search installer.exe
+----
+
+.Output
+[source,text]
+----
+Searching installer.exe...
+Found embedded CAB at offset 245,760 (size: 1,024,000 bytes)
+Found embedded CAB at offset 1,269,760 (size: 512,000 bytes)
+
+Total: 2 embedded CAB files found
+----
+
+.Verbose search
+[source,bash]
+----
+cabriolet search --verbose installer.exe
+----
+
+.Output
+[source,text]
+----
+Searching installer.exe (5,242,880 bytes)...
+Scanning for CAB signatures...
+  Progress: 10%... 20%... 30%... 40%...
+  Found CAB signature at 245,760
+    Validating header... OK
+    Cabinet size: 1,024,000 bytes
+    Files: 15
+  Progress: 50%... 60%... 70%... 80%...
+  Found CAB signature at 1,269,760
+    Validating header... OK
+    Cabinet size: 512,000 bytes
+    Files: 8
+  Progress: 90%... 100%
+
+Found 2 embedded CAB files:
+  Offset 245,760: 1,024,000 bytes (15 files)
+  Offset 1,269,760: 512,000 bytes (8 files)
+----
+
+.Extract found CAB
+[source,bash]
+----
+# Find embedded CABs
+cabriolet search installer.exe
+
+# Extract CAB at specific offset (planned feature)
+# cabriolet extract --offset=245760 installer.exe extracted.cab
+----
+
+==== Common Errors
+
+* **No CAB files found**: File contains no embedded CAB archives
+* **False positives**: Some signatures may not be valid CAB files
+
+==== See Also
+
+* <<../../guides/advanced-usage/embedded-cabinets#,Embedded Cabinets Guide>>
+* <<extract,extract>> - Extract found CAB files
+
+'''
+
+[[create]]
+=== create - Create CAB Archive
+
+Create a new CAB archive from source files.
+
+==== Syntax
+
+[source,text]
+----
+cabriolet create [OPTIONS] OUTPUT FILES...
+----
+
+==== Parameters
+
+`OUTPUT`:: (required) Path for the new CAB file
+
+`FILES...`:: (required) One or more files or directories to add
+
+==== Options
+
+`--compression=ALGORITHM`:: Compression algorithm: `none`, `mszip`, `lzx`, `quantum` (default: `mszip`)
+
+`--verbose, -v`:: Show creation progress
+
+`--recursive, -r`:: Recursively add directories
+
+`--set-id=ID`:: Set cabinet set ID (default: random)
+
+`--split=SIZE`:: Split into parts of SIZE (e.g., `1M`, `10M`) (planned)
+
+`--reserve=BYTES`:: Reserve header space for signatures (planned)
+
+==== Returns
+
+* Exit code 0 on success
+* Exit code 1 on error
+* Exit code 3 if source files not found
+* Exit code 4 if permission denied
+
+==== Description
+
+The `create` command builds a new CAB archive from source files. Files can be added individually or by specifying directories. Multiple compression algorithms are supported.
+
+==== Examples
+
+.Create with default MSZIP compression
+[source,bash]
+----
+cabriolet create archive.cab file1.txt file2.txt
+----
+
+.Output
+[source,text]
+----
+Creating archive.cab...
+  Adding file1.txt (1,024 bytes)
+  Adding file2.txt (2,048 bytes)
+
+Successfully created archive.cab
+Total: 2 files, 3,072 bytes → 1,856 bytes (39.6% compression)
+----
+
+.Create with LZX compression
+[source,bash]
+----
+cabriolet create --compression=lzx small.cab large-file.dat
+----
+
+.Create from directory
+[source,bash]
+----
+cabriolet create --recursive project.cab src/
+----
+
+.Output
+[source,text]
+----
+Creating project.cab...
+  Adding src/main.rb (1,234 bytes)
+  Adding src/lib/helper.rb (567 bytes)
+  Adding src/lib/utils.rb (890 bytes)
+  Adding src/config.yml (123 bytes)
+
+Successfully created project.cab
+Total: 4 files, 2,814 bytes → 1,456 bytes (48.3% compression)
+----
+
+.Create uncompressed archive
+[source,bash]
+----
+cabriolet create --compression=none fast.cab *.jpg
+----
+
+.Create with verbose output
+[source,bash]
+----
+cabriolet create --verbose --compression=lzx installer.cab bin/ docs/
+----
+
+.Output
+[source,text]
+----
+Creating installer.cab with LZX compression...
+Scanning files...
+  Found 15 files (total: 5,242,880 bytes)
+
+Creating cabinet structure...
+  Folder 1: LZX compression
+
+Adding files...
+  bin/program.exe (2,097,152 bytes)... compressed to 1,048,576 bytes
+  bin/library.dll (1,048,576 bytes)... compressed to 524,288 bytes
+  docs/readme.txt (1,245 bytes)... compressed to 623 bytes
+  ...
+
+Writing cabinet file...
+  Header: 36 bytes
+  Folders: 24 bytes
+  Files: 480 bytes
+  Data: 2,097,152 bytes
+
+Successfully created installer.cab
+Total: 15 files
+  Original size: 5,242,880 bytes
+  Compressed size: 2,097,692 bytes
+  Compression ratio: 60.0%
+----
+
+==== Common Errors
+
+* **Cannot create output file**: Verify write permissions and disk space
+* **Source file not found**: Check all file paths are correct
+* **Compression failed**: Ensure files are readable
+
+==== See Also
+
+* <<../../guides/getting-started/your-first-cab#,Your First CAB Guide>>
+* <<../../guides/formats/cab-format#creating-cab-archives,CAB Format Guide - Creating>>
+* <<../../guides/compression/choosing-algorithm#,Choosing Compression Algorithm>>
+
+'''
+
+=== Global Options
+
+All CAB commands support these global options:
+
+`--verbose, -v`:: Enable verbose output with detailed progress
+
+`--help, -h`:: Display command help
+
+`--version`:: Show Cabriolet version
+
+See <<global-options#,Global Options>> for complete details.
+
+=== Exit Codes
+
+[cols="1,3"]
+|===
+|Code |Meaning
+
+|0
+|Success
+
+|1
+|General error
+
+|2
+|Invalid arguments
+
+|3
+|File not found
+
+|4
+|Permission denied
+
+|5
+|Corrupt archive
+
+|6
+|Unsupported format
+|===
+
+=== Next Steps
+
+* Review <<../../guides/formats/cab-format#,CAB Format Guide>> for usage examples
+* Study <<../api/cab-api#,CAB API Reference>> for Ruby integration
+* Learn about <<../../guides/compression/index#,compression algorithms>>
+
+=== Bibliography
+
+* <<../../guides/formats/cab-format#,CAB Format Guide>>
+* <<../api/cab-api#,CAB API Reference>>
+* https://docs.microsoft.com/en-us/previous-versions/bb417343(v=msdn.10)[Microsoft Cabinet SDK Documentation]
+* https://www.cabextract.org.uk/[cabextract Manual Pages]

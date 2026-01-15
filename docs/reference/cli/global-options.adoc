@@ -1,0 +1,533 @@
+---
+title: Global Options
+parent: CLI Reference
+grand_parent: Reference
+nav_order: 8
+---
+
+== Global Options Reference
+
+=== Purpose
+
+Complete reference for command-line options that are available across all Cabriolet commands. These global options control output verbosity, help display, and version information.
+
+=== References
+
+* <<cab-commands#,CAB Commands>>
+* <<chm-commands#,CHM Commands>>
+* <<szdd-commands#,SZDD Commands>>
+* <<kwaj-commands#,KWAJ Commands>>
+* <<hlp-commands#,HLP Commands>>
+* <<lit-commands#,LIT Commands>>
+* <<oab-commands#,OAB Commands>>
+
+=== Concepts
+
+Global options are available for every Cabriolet command and can be used in combination with command-specific options. They follow standard Unix conventions and can be specified using either short (`-v`) or long (`--verbose`) forms.
+
+=== Available Global Options
+
+==== --verbose, -v
+
+Enable verbose output with detailed progress information.
+
+===== Description
+
+The verbose flag increases the amount of information displayed during command execution. This includes:
+
+* Detailed progress for each step
+* File-by-file processing updates
+* Compression/decompression statistics
+* Technical details about operations
+* Timing information
+
+===== Usage
+
+[source,bash]
+----
+cabriolet COMMAND --verbose FILE [ARGS]
+cabriolet COMMAND -v FILE [ARGS]
+----
+
+===== Examples
+
+.Verbose extraction
+[source,bash]
+----
+cabriolet extract --verbose archive.cab output/
+----
+
+.Output
+[source,text]
+----
+Opening archive.cab...
+Found 3 files in 1 folder
+Compression: MSZIP
+
+Extracting to output/
+  Decompressing folder 1...
+  readme.txt (1,245 bytes)... OK
+  setup.exe (524,288 bytes)... OK
+  config.ini (512 bytes)... OK
+
+Extraction complete
+Total: 3 files, 526,045 bytes
+Time: 0.5 seconds
+----
+
+.Verbose compression
+[source,bash]
+----
+cabriolet create -v archive.cab file1.txt file2.txt
+----
+
+.Output
+[source,text]
+----
+Creating archive.cab with MSZIP compression...
+Scanning files...
+  Found 2 files (total: 3,072 bytes)
+
+Creating cabinet structure...
+  Folder 1: MSZIP compression
+
+Adding files...
+  file1.txt (1,024 bytes)... compressed to 512 bytes
+  file2.txt (2,048 bytes)... compressed to 1,024 bytes
+
+Writing cabinet file...
+  Header: 36 bytes
+  Folders: 24 bytes
+  Files: 120 bytes
+  Data: 1,536 bytes
+
+Successfully created archive.cab
+Total: 2 files
+  Original size: 3,072 bytes
+  Compressed size: 1,716 bytes
+  Compression ratio: 44.1%
+----
+
+===== Use Cases
+
+Use verbose mode when:
+
+* **Troubleshooting**: Diagnosing errors or unexpected behavior
+* **Monitoring progress**: Processing large files or archives
+* **Learning**: Understanding how commands work
+* **Scripting**: Capturing detailed output for logs
+* **Performance analysis**: Measuring compression ratios and timing
+
+==== --help, -h
+
+Display command-specific help information.
+
+===== Description
+
+The help flag shows usage information for the specified command, including:
+
+* Command syntax
+* Available options
+* Parameter descriptions
+* Example usage
+* See also references
+
+===== Usage
+
+[source,bash]
+----
+cabriolet COMMAND --help
+cabriolet COMMAND -h
+cabriolet --help  # Shows general help
+----
+
+===== Examples
+
+.Command-specific help
+[source,bash]
+----
+cabriolet extract --help
+----
+
+.Output
+[source,text]
+----
+Usage: cabriolet extract [OPTIONS] FILE [OUTPUT_DIR]
+
+Extract files from a CAB archive.
+
+Arguments:
+  FILE         Path to the CAB file to extract (required)
+  OUTPUT_DIR   Directory to extract files to (optional, default: .)
+
+Options:
+  --output, -o DIR     Output directory
+  --verbose, -v        Show extraction progress
+  --salvage            Enable salvage mode for corrupted files
+  --help, -h           Display this help message
+
+Examples:
+  cabriolet extract archive.cab
+  cabriolet extract archive.cab output/
+  cabriolet extract --verbose archive.cab extracted/
+
+See also:
+  cabriolet list --help
+  cabriolet info --help
+----
+
+.General help
+[source,bash]
+----
+cabriolet --help
+----
+
+.Output
+[source,text]
+----
+Cabriolet - Microsoft compression format library
+
+Usage: cabriolet COMMAND [OPTIONS] [ARGS]
+
+Available Commands:
+  CAB Format:
+    list        List contents of CAB file
+    extract     Extract files from CAB
+    info        Show detailed CAB information
+    test        Test CAB file integrity
+    search      Find embedded CAB files
+    create      Create new CAB archive
+
+  CHM Format:
+    chm-list    List contents of CHM file
+    chm-extract Extract files from CHM
+    chm-info    Show CHM information
+    chm-create  Create new CHM file
+
+  SZDD Format:
+    expand      Expand SZDD compressed file
+    compress    Compress file to SZDD format
+    szdd-info   Show SZDD file information
+
+  KWAJ Format:
+    kwaj-extract   Extract KWAJ compressed file
+    kwaj-compress  Compress file to KWAJ format
+    kwaj-info      Show KWAJ file information
+
+  HLP Format:
+    hlp-extract Extract files from HLP
+    hlp-create  Create HLP file
+    hlp-info    Show HLP file information
+
+  LIT Format:
+    lit-extract Extract files from LIT eBook
+    lit-create  Create LIT eBook file
+    lit-info    Show LIT file information
+
+  OAB Format:
+    oab-extract Extract OAB file
+    oab-create  Create compressed OAB file
+    oab-info    Show OAB file information
+
+  General:
+    version     Show version information
+    help        Show this help message
+
+Global Options:
+  --verbose, -v   Enable verbose output
+  --help, -h      Show help message
+  --version       Show version
+
+For command-specific help:
+  cabriolet COMMAND --help
+
+Examples:
+  cabriolet list archive.cab
+  cabriolet extract archive.cab output/
+  cabriolet create archive.cab file1.txt file2.txt
+
+For more information, visit:
+  https://github.com/omnizip/cabriolet
+----
+
+===== Use Cases
+
+Use help when:
+
+* **Learning commands**: Understanding available options
+* **Quick reference**: Checking syntax and parameters
+* **Discovery**: Finding available commands
+* **Documentation**: Generating inline documentation
+
+==== --version
+
+Display Cabriolet version information.
+
+===== Description
+
+The version flag shows the current version of Cabriolet installed on the system, along with copyright and license information.
+
+===== Usage
+
+[source,bash]
+----
+cabriolet --version
+cabriolet version
+----
+
+===== Examples
+
+.Show version
+[source,bash]
+----
+cabriolet --version
+----
+
+.Output
+[source,text]
+----
+Cabriolet version 0.1.0
+Copyright (c) 2024 Ribose Inc.
+Licensed under the BSD 2-Clause License
+----
+
+.Version command
+[source,bash]
+----
+cabriolet version
+----
+
+.Output
+[source,text]
+----
+Cabriolet version 0.1.0
+----
+
+===== Use Cases
+
+Use version when:
+
+* **Troubleshooting**: Reporting bugs or issues
+* **Compatibility**: Checking feature availability
+* **Verification**: Confirming installation
+* **Documentation**: Recording environment details
+
+=== Option Precedence
+
+When multiple options affect the same behavior, the last specified option takes precedence.
+
+[source,bash]
+----
+# Verbose wins (last specified)
+cabriolet extract --verbose archive.cab
+
+# Help wins (shows help instead of executing)
+cabriolet extract --verbose --help archive.cab
+----
+
+=== Combining Options
+
+Global options can be combined with command-specific options:
+
+[source,bash]
+----
+# Global + command-specific options
+cabriolet create --verbose --compression=lzx archive.cab files/
+
+# Short form combination (Unix style)
+cabriolet extract -v archive.cab
+----
+
+=== Environment Variables
+
+Cabriolet respects the following environment variables:
+
+==== CABRIOLET_VERBOSE
+
+Set default verbose mode for all commands.
+
+[source,bash]
+----
+# Enable verbose by default
+export CABRIOLET_VERBOSE=1
+
+# Commands will now be verbose without --verbose flag
+cabriolet extract archive.cab
+----
+
+==== CABRIOLET_LOG_LEVEL
+
+Control logging verbosity (for debugging).
+
+[source,bash]
+----
+# Set log level: debug, info, warn, error
+export CABRIOLET_LOG_LEVEL=debug
+
+cabriolet extract archive.cab
+----
+
+=== Output Formats
+
+==== Standard Output
+
+By default, commands write results to standard output:
+
+[source,bash]
+----
+cabriolet list archive.cab
+# Output goes to terminal
+
+cabriolet list archive.cab > contents.txt
+# Redirect to file
+----
+
+==== Standard Error
+
+Error messages and warnings go to standard error:
+
+[source,bash]
+----
+cabriolet extract corrupt.cab 2> errors.log
+# Errors logged to file, output to terminal
+
+cabriolet extract corrupt.cab > /dev/null 2>&1
+# Suppress all output
+----
+
+==== Verbose Output
+
+Verbose output goes to standard error to allow separation:
+
+[source,bash]
+----
+cabriolet extract --verbose archive.cab > /dev/null
+# Verbose messages still visible
+
+cabriolet extract --verbose archive.cab 2> progress.log
+# Capture verbose output
+----
+
+=== Exit Codes
+
+All Cabriolet commands use standard exit codes:
+
+[cols="1,3"]
+|===
+|Code |Meaning
+
+|0
+|Success - operation completed successfully
+
+|1
+|General error - operation failed
+
+|2
+|Invalid arguments - incorrect command usage
+
+|3
+|File not found - specified file doesn't exist
+
+|4
+|Permission denied - insufficient permissions
+
+|5
+|Corrupt archive - file data is corrupted
+
+|6
+|Unsupported format - format or feature not supported
+|===
+
+==== Usage in Scripts
+
+[source,bash]
+----
+#!/bin/bash
+
+# Check exit code
+if cabriolet extract archive.cab output/; then
+  echo "Extraction successful"
+else
+  echo "Extraction failed with code $?"
+  exit 1
+fi
+
+# Handle specific errors
+cabriolet extract archive.cab output/
+case $? in
+  0)
+    echo "Success"
+    ;;
+  3)
+    echo "File not found"
+    ;;
+  5)
+    echo "Corrupt archive"
+    ;;
+  *)
+    echo "Unknown error: $?"
+    ;;
+esac
+----
+
+=== Best Practices
+
+1. **Use verbose for troubleshooting**: Always enable verbose mode when diagnosing issues
+
+2. **Check help before using new commands**: Use `--help` to understand options
+
+3. **Verify version for bug reports**: Include version information when reporting issues
+
+4. **Handle exit codes in scripts**: Check return values for proper error handling
+
+5. **Redirect appropriately**: Send output and errors to appropriate streams
+
+6. **Set environment defaults**: Use environment variables for consistent behavior
+
+=== Common Patterns
+
+==== Silent Operation
+
+[source,bash]
+----
+# Suppress all output
+cabriolet extract archive.cab output/ > /dev/null 2>&1
+
+# Check only exit code
+if cabriolet test archive.cab > /dev/null 2>&1; then
+  echo "Valid"
+fi
+----
+
+==== Progress Tracking
+
+[source,bash]
+----
+# Show progress for large operations
+cabriolet extract --verbose large-archive.cab | tee extraction.log
+
+# Monitor specific operations
+cabriolet create --verbose large-archive.cab files/ 2>&1 | grep -E "(Progress|Ratio)"
+----
+
+==== Error Logging
+
+[source,bash]
+----
+# Log errors while showing progress
+cabriolet extract --verbose archive.cab 2> errors.log
+
+# Separate logs
+cabriolet extract --verbose archive.cab 1> output.log 2> errors.log
+----
+
+=== See Also
+
+* <<cab-commands#,CAB Commands Reference>>
+* <<../../guides/getting-started/quick-start#,Quick Start Guide>>
+* <<../../guides/basic-usage/index#,Basic Usage Guides>>
+
+=== Bibliography
+
+* https://www.gnu.org/prep/standards/html_node/Command_002dLine-Interfaces.html[GNU Coding Standards - Command-Line Interfaces]
+* https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap12.html[POSIX Utility Conventions]

@@ -1,0 +1,216 @@
+---
+title: Listing Contents
+parent: Basic Usage
+grand_parent: Guides
+nav_order: 3
+---
+
+== Listing Contents Guide
+
+=== Purpose
+
+Learn how to list and inspect archive contents without extracting files.
+
+=== References
+
+* <<../../getting-started/quick-start#,Quick Start Guide>>
+* <<../formats/index#,Format Guides>>
+* <<../../reference/cli/index#,CLI Reference>>
+
+=== Concepts
+
+Listing shows archive contents, file sizes, and metadata without extraction. Useful for inspecting archives before processing.
+
+=== By Format
+
+==== CAB Files
+
+[source,bash]
+----
+# Basic listing
+cabriolet list archive.cab
+
+# Verbose with details
+cabriolet list --verbose archive.cab
+
+# Get detailed info
+cabriolet info archive.cab
+----
+
+Ruby API:
+[source,ruby]
+----
+decompressor = Cabriolet::CAB::Decompressor.new
+cabinet = decompressor.open('archive.cab')
+
+cabinet.files.each do |file|
+  puts "#{file.filename} (#{file.length} bytes)"
+end
+----
+
+==== CHM Files
+
+[source,bash]
+----
+cabriolet chm-list help.chm
+cabriolet chm-info help.chm
+----
+
+Ruby API:
+[source,ruby]
+----
+decompressor = Cabriolet::CHM::Decompressor.new
+chm = decompressor.open('help.chm')
+
+chm.all_files.each do |file|
+  section = file.section.id == 0 ? "Uncompressed" : "Compressed"
+  puts "#{file.filename} (#{file.length} bytes, #{section})"
+end
+----
+
+==== SZDD Files
+
+[source,bash]
+----
+cabriolet szdd-info file.tx_
+----
+
+Ruby API:
+[source,ruby]
+----
+decompressor = Cabriolet::SZDD::Decompressor.new
+header = decompressor.open('file.tx_')
+
+puts "Format: #{header.format}"
+puts "Size: #{header.length} bytes"
+puts "Missing char: '#{header.missing_char}'"
+----
+
+==== KWAJ Files
+
+[source,bash]
+----
+cabriolet kwaj-info setup.kwj
+----
+
+Ruby API:
+[source,ruby]
+----
+decompressor = Cabriolet::KWAJ::Decompressor.new
+header = decompressor.open('setup.kwj')
+
+puts "Compression: #{header.compression_name}"
+puts "Size: #{header.length || 'unknown'} bytes"
+puts "Filename: #{header.filename}" if header.filename
+----
+
+==== HLP Files
+
+[source,bash]
+----
+cabriolet hlp-info help.hlp
+----
+
+Ruby API:
+[source,ruby]
+----
+decompressor = Cabriolet::HLP::Decompressor.new
+header = decompressor.open('help.hlp')
+
+header.files.each do |file|
+  compression = file.compressed? ? "LZSS" : "none"
+  puts "#{file.filename}: #{file.length} bytes (#{compression})"
+end
+----
+
+==== LIT Files
+
+[source,bash]
+----
+cabriolet lit-info book.lit
+----
+
+Ruby API:
+[source,ruby]
+----
+decompressor = Cabriolet::LIT::Decompressor.new
+header = decompressor.open('book.lit')
+
+puts "Encrypted: #{header.encrypted?}"
+puts "Files: #{header.files.size}"
+
+header.files.each do |file|
+  puts "  #{file.filename} (#{file.length} bytes)"
+end
+----
+
+==== OAB Files
+
+[source,bash]
+----
+cabriolet oab-info full.oab
+----
+
+Ruby API:
+[source,ruby]
+----
+# Check if full or patch
+io_system = Cabriolet::System::IOSystem.new
+handle = io_system.open('file.oab', Cabriolet::Constants::MODE_READ)
+header_data = io_system.read(handle, 16)
+
+full_header = Cabriolet::Binary::OABStructures::FullHeader.read(header_data)
+if full_header.valid?
+  puts "Type: Full OAB"
+  puts "Target size: #{full_header.target_size} bytes"
+end
+----
+
+=== Common Patterns
+
+==== Batch Inspection
+
+[source,bash]
+----
+for file in *.cab; do
+  echo "=== $file ==="
+  cabriolet info "$file"
+  echo
+done
+----
+
+==== Filter by Type
+
+[source,ruby]
+----
+decompressor = Cabriolet::CAB::Decompressor.new
+cabinet = decompressor.open('archive.cab')
+
+# Find all text files
+text_files = cabinet.files.select { |f| f.filename.end_with?('.txt') }
+puts "Text files: #{text_files.count}"
+----
+
+==== Calculate Total Size
+
+[source,ruby]
+----
+decompressor = Cabriolet::CAB::Decompressor.new
+cabinet = decompressor.open('archive.cab')
+
+total = cabinet.files.sum { |f| f.length }
+puts "Total uncompressed: #{total} bytes"
+----
+
+=== Best Practices
+
+1. **Check before extracting** - Verify contents first
+2. **Use info commands** - Get detailed metadata
+3. **Inspect compression** - Understand what algorithms are used
+4. **Verify file counts** - Ensure completeness
+5. **Check for DRM** - Especially for LIT files
+
+=== See Also
+
+* <<extracting-files#,Extracting Files>>
+* <<testing-integrity#,Testing Integrity>>

@@ -1,0 +1,536 @@
+---
+title: CHM Format
+parent: Format Guides
+grand_parent: Guides
+nav_order: 2
+---
+
+== CHM Format Guide
+
+=== Purpose
+
+This guide provides comprehensive documentation for working with Microsoft Compiled HTML Help (CHM) files using Cabriolet. CHM is Microsoft's proprietary format for delivering documentation and help systems with HTML content.
+
+=== References
+
+* <<../../getting-started/quick-start#,Quick Start Guide>>
+* <<../../reference/cli/chm-commands#,CHM Commands Reference>>
+* <<../../reference/api/chm-api#,CHM API Reference>>
+* <<../compression/lzx-compression#,LZX Compression>>
+
+=== Concepts
+
+==== What is a CHM File?
+
+CHM (Compiled HTML Help) files are Microsoft's compressed archive format specifically designed for help documentation. They are used extensively for:
+
+* Application help systems
+* Software documentation
+* Technical manuals
+* eBook distribution
+* Windows help files (.chm extension)
+
+==== CHM File Structure
+
+A CHM file consists of several key components:
+
+[source,text]
+----
+┌─────────────────────────┐
+│   ITSF Header           │  File signature and metadata
+├─────────────────────────┤
+│   Directory Header      │  PMGL/PMGI chunks structure
+├─────────────────────────┤
+│   Sections              │
+│   ┌─────────────────┐   │
+│   │ Section 0       │   │  Uncompressed files
+│   │ (Uncompressed)  │   │
+│   ├─────────────────┤   │
+│   │ Section 1       │   │  LZX compressed files
+│   │ (MSCompressed)  │   │
+│   └─────────────────┘   │
+└─────────────────────────┘
+----
+
+**ITSF Header**: Contains format version, language ID, and directory location.
+
+**Directory**: Uses PMGL (directory listing) and PMGI (index) chunks to organize files hierarchically.
+
+**Sections**: Files are stored in two sections:
+* **Section 0** (Uncompressed): Control files and small assets
+* **Section 1** (MSCompressed): HTML and large files compressed with LZX
+
+==== Compression Support
+
+CHM files use LZX compression exclusively for compressed sections:
+
+* **Section 0** - Uncompressed storage for control files
+* **Section 1** - LZX compression with configurable window size (15-21 bits)
+
+For detailed algorithm information, see <<../compression/lzx-compression#,LZX Compression>>.
+
+==== Language Support
+
+CHM files include language codes (LCID) for internationalization:
+
+* Language ID stored in header
+* Supports multiple languages
+* Used for search and indexing features
+
+=== Basic Operations
+
+==== Listing CHM Contents
+
+View files without extracting:
+
+.Command-line
+[source,bash]
+----
+cabriolet chm-list help.chm
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::CHM::Decompressor.new
+chm = decompressor.open('help.chm')
+
+chm.all_files.each do |file|
+  section = file.section.id == 0 ? "Uncompressed" : "MSCompressed"
+  puts "#{file.filename} (#{file.length} bytes, #{section})"
+end
+
+decompressor.close
+----
+
+.Example Output
+[source,text]
+----
+CHM File: help.chm
+Version: 3
+Language: 1033
+Chunks: 512, Chunk Size: 4096
+
+Files:
+  /index.html (15,234 bytes, MSCompressed)
+  /style.css (2,048 bytes, MSCompressed)
+  /images/logo.png (8,192 bytes, Uncompressed)
+  /#SYSTEM (512 bytes, Uncompressed)
+  /#TOPICS (1,024 bytes, Uncompressed)
+
+Total: 5 files
+----
+
+==== Extracting Files
+
+Extract all files from a CHM archive:
+
+.Command-line
+[source,bash]
+----
+# Extract to current directory
+cabriolet chm-extract help.chm
+
+# Extract to specific directory
+cabriolet chm-extract help.chm output/
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+require 'fileutils'
+
+decompressor = Cabriolet::CHM::Decompressor.new
+chm = decompressor.open('help.chm')
+
+FileUtils.mkdir_p('output')
+
+chm.all_files.each do |file|
+  next if file.system_file?
+
+  output_path = File.join('output', file.filename)
+  FileUtils.mkdir_p(File.dirname(output_path))
+
+  decompressor.extract(file, output_path)
+end
+
+decompressor.close
+----
+
+==== Getting CHM Information
+
+Display detailed CHM information:
+
+.Command-line
+[source,bash]
+----
+cabriolet chm-info help.chm
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::CHM::Decompressor.new
+chm = decompressor.open('help.chm')
+
+puts "Version: #{chm.version}"
+puts "Language: #{chm.language}"
+puts "Chunks: #{chm.num_chunks}"
+puts "Chunk Size: #{chm.chunk_size}"
+puts "Files: #{chm.all_files.count}"
+
+decompressor.close
+----
+
+==== Creating CHM Files
+
+Build new CHM files from HTML content:
+
+.Command-line
+[source,bash]
+----
+# Create with default window size (16 bits)
+cabriolet chm-create help.chm index.html style.css
+
+# Create with larger window for better compression
+cabriolet chm-create --window-bits=21 help.chm docs/*.html
+----
+
+.Ruby API
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::CHM::Compressor.new
+
+# Add HTML files to compressed section
+compressor.add_file('index.html', '/index.html', section: :compressed)
+compressor.add_file('style.css', '/style.css', section: :compressed)
+
+# Add images to uncompressed section
+compressor.add_file('logo.png', '/images/logo.png', section: :uncompressed)
+
+compressor.generate('help.chm', window_bits: 16)
+----
+
+=== Advanced Features
+
+==== Working with Sections
+
+CHM files use two sections with different characteristics:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::CHM::Decompressor.new
+chm = decompressor.open('help.chm')
+
+# Separate files by section
+uncompressed = chm.all_files.select { |f| f.section.id == 0 }
+compressed = chm.all_files.select { |f| f.section.id == 1 }
+
+puts "Uncompressed files: #{uncompressed.count}"
+puts "Compressed files: #{compressed.count}"
+
+decompressor.close
+----
+
+==== System Files
+
+CHM files contain special system files that control behavior:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::CHM::Decompressor.new
+chm = decompressor.open('help.chm')
+
+# Get system files (start with /)
+system_files = chm.all_sysfiles
+
+system_files.each do |file|
+  puts "System file: #{file.filename} (#{file.length} bytes)"
+end
+
+decompressor.close
+----
+
+Common system files include:
+
+* `/#SYSTEM` - System configuration
+* `/#TOPICS` - Topic index
+* `/#URLSTR` - URL strings
+* `/#URLTBL` - URL table
+* `/#WINDOWS` - Window definitions
+
+==== Directory Chunks
+
+CHM uses PMGL (listing) and PMGI (index) chunks:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::CHM::Decompressor.new
+chm = decompressor.open('help.chm')
+
+puts "Directory offset: #{chm.dir_offset}"
+puts "First PMGL: #{chm.first_pmgl}"
+puts "Last PMGL: #{chm.last_pmgl}"
+puts "Chunks: #{chm.num_chunks}"
+
+decompressor.close
+----
+
+==== LZX Window Size
+
+Configure compression window for different file sizes:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Small files: 15-bit window (32KB)
+compressor = Cabriolet::CHM::Compressor.new
+compressor.add_file('small.html', '/small.html')
+compressor.generate('small-help.chm', window_bits: 15)
+
+# Large files: 21-bit window (2MB)
+compressor = Cabriolet::CHM::Compressor.new
+compressor.add_file('large.html', '/large.html')
+compressor.generate('large-help.chm', window_bits: 21)
+----
+
+=== Performance Optimization
+
+==== Choosing Window Size
+
+Select LZX window size based on content:
+
+[cols="1,2,2"]
+|===
+|Window Bits |Window Size |Best For
+
+|15
+|32 KB
+|Small help files (<100 KB)
+
+|16
+|64 KB
+|Medium help files (default)
+
+|18
+|256 KB
+|Large help files
+
+|21
+|2 MB
+|Very large documentation
+|===
+
+==== Section Selection
+
+Choose appropriate section for each file type:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+compressor = Cabriolet::CHM::Compressor.new
+
+# Compress HTML/text files
+compressor.add_file('index.html', '/index.html', section: :compressed)
+compressor.add_file('help.txt', '/help.txt', section: :compressed)
+
+# Don't compress already-compressed files
+compressor.add_file('logo.jpg', '/images/logo.jpg', section: :uncompressed)
+compressor.add_file('icon.png', '/images/icon.png', section: :uncompressed)
+
+compressor.generate('help.chm')
+----
+
+=== Common Use Cases
+
+==== Application Help Systems
+
+Creating help documentation for applications:
+
+[source,ruby]
+----
+require 'cabriolet'
+require 'fileutils'
+
+compressor = Cabriolet::CHM::Compressor.new
+
+# Add all HTML help pages
+Dir.glob('help/**/*.html').each do |file|
+  chm_path = file.sub('help', '')
+  compressor.add_file(file, chm_path, section: :compressed)
+end
+
+# Add CSS and JavaScript
+Dir.glob('help/**/*.{css,js}').each do |file|
+  chm_path = file.sub('help', '')
+  compressor.add_file(file, chm_path, section: :compressed)
+end
+
+# Add images uncompressed
+Dir.glob('help/**/*.{png,jpg,gif}').each do |file|
+  chm_path = file.sub('help', '')
+  compressor.add_file(file, chm_path, section: :uncompressed)
+end
+
+compressor.generate('app-help.chm', window_bits: 16)
+----
+
+==== Technical Documentation
+
+Converting documentation to CHM format:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+decompressor = Cabriolet::CHM::Decompressor.new
+chm = decompressor.open('manual.chm')
+
+# Extract all documentation
+require 'fileutils'
+FileUtils.mkdir_p('docs')
+
+chm.all_files.each do |file|
+  next if file.system_file?
+
+  output_path = File.join('docs', file.filename)
+  FileUtils.mkdir_p(File.dirname(output_path))
+
+  decompressor.extract(file, output_path)
+  puts "Extracted: #{file.filename}"
+end
+
+decompressor.close
+----
+
+=== Troubleshooting
+
+==== Common Errors
+
+**"Invalid CHM signature"**
+
+The file is not a valid CHM file. Verify with:
+
+[source,bash]
+----
+file help.chm  # Should show "MS Windows HtmlHelp Data"
+----
+
+**"Unsupported CHM version"**
+
+The CHM file uses an unsupported version. Check with:
+
+[source,bash]
+----
+cabriolet chm-info help.chm  # Shows version
+----
+
+**"LZX decompression failed"**
+
+The compressed section is corrupted:
+
+[source,bash]
+----
+# Try extracting uncompressed files only
+cabriolet chm-extract --uncompressed-only help.chm
+----
+
+**"Invalid directory chunk"**
+
+The CHM directory structure is damaged. This typically indicates file corruption.
+
+==== Validation
+
+Verify CHM integrity:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+begin
+  decompressor = Cabriolet::CHM::Decompressor.new
+  chm = decompressor.open('help.chm')
+
+  puts "CHM is valid"
+  puts "Files: #{chm.all_files.count}"
+
+  decompressor.close
+rescue Cabriolet::FormatError => e
+  puts "Invalid CHM file: #{e.message}"
+rescue Cabriolet::CorruptionError => e
+  puts "Corrupted CHM: #{e.message}"
+end
+----
+
+=== Best Practices
+
+1. **Use appropriate sections**:
+   * Compressed section for HTML, CSS, JavaScript
+   * Uncompressed section for images and media
+
+2. **Choose optimal window size**:
+   * Smaller windows for small files (faster)
+   * Larger windows for big documentation (better compression)
+
+3. **Preserve system files**: When extracting, system files provide important metadata
+
+4. **Handle language codes**: Store language ID for proper indexing
+
+5. **Test extraction**: Verify all files extract correctly before distribution
+
+=== Format Specifications
+
+==== File Signature
+
+CHM files start with the ITSF signature:
+
+[source,text]
+----
+Offset  Bytes  Description
+0x0000  4      Signature: "ITSF" (0x49 0x54 0x53 0x46)
+0x0004  4      Version
+0x0008  4      Total header length
+0x000C  4      Unknown (1)
+0x0010  4      Timestamp
+0x0014  4      Language ID (LCID)
+----
+
+==== Section Types
+
+* **Section 0**: Uncompressed storage
+* **Section 1**: MSCompressed (LZX) storage
+
+==== Directory Structure
+
+Uses PMGL (directory listing) and PMGI (index) chunks for hierarchical organization.
+
+For complete format specifications, see <<../../reference/formats/chm-specification#,CHM Specification>>.
+
+=== Next Steps
+
+* Learn about <<../compression/lzx-compression#,LZX compression algorithm>>
+* Review <<../../reference/cli/chm-commands#,complete CHM command reference>>
+* Study <<../../reference/api/chm-api#,CHM API documentation>>
+
+=== Bibliography
+
+* <<../../reference/cli/chm-commands#,CHM Commands Reference>>
+* <<../../reference/api/chm-api#,CHM API Reference>>
+* <<../../reference/formats/chm-specification#,CHM Format Specification>>
+* https://www.nongnu.org/chmspec/latest/[Unofficial CHM Format Specification]
+* https://en.wikipedia.org/wiki/Microsoft_Compiled_HTML_Help[Wikipedia: Microsoft Compiled HTML Help]

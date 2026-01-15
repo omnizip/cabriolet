@@ -1,0 +1,198 @@
+---
+title: Creating Archives
+parent: Basic Usage
+grand_parent: Guides
+nav_order: 2
+---
+
+== Creating Archives Guide
+
+=== Purpose
+
+Learn how to create archives in all supported formats using Cabriolet.
+
+=== References
+
+* <<../../getting-started/your-first-cab#,Your First CAB>>
+* <<../compression/choosing-algorithm#,Choosing a Compression Algorithm>>
+* <<../../reference/cli/index#,CLI Reference>>
+
+=== Concepts
+
+Archive creation compresses files into a single archive. Choose the appropriate format and compression algorithm based on your needs.
+
+=== By Format
+
+==== CAB Files
+
+[source,bash]
+----
+# Default MSZIP compression
+cabriolet create archive.cab file1.txt file2.txt
+
+# LZX for maximum compression
+cabriolet create --compression=lzx installer.cab files/
+
+# Uncompressed
+cabriolet create --compression=none media.cab *.jpg
+----
+
+Ruby API:
+[source,ruby]
+----
+compressor = Cabriolet::CAB::Compressor.new(compression: :mszip)
+compressor.add_file('file1.txt')
+compressor.add_file('file2.txt')
+compressor.write('archive.cab')
+----
+
+==== CHM Files
+
+[source,bash]
+----
+# Default window size
+cabriolet chm-create help.chm index.html style.css
+
+# Large window for better compression
+cabriolet chm-create --window-bits=21 help.chm docs/*.html
+----
+
+Ruby API:
+[source,ruby]
+----
+compressor = Cabriolet::CHM::Compressor.new
+compressor.add_file('index.html', '/index.html', section: :compressed)
+compressor.add_file('logo.png', '/logo.png', section: :uncompressed)
+compressor.generate('help.chm', window_bits: 16)
+----
+
+==== SZDD Files
+
+[source,bash]
+----
+# Auto-generate output name
+cabriolet compress file.txt
+
+# Specify output
+cabriolet compress file.txt file.tx_
+
+# QBasic format
+cabriolet compress --format=qbasic program.bas program.ba_
+----
+
+Ruby API:
+[source,ruby]
+----
+compressor = Cabriolet::SZDD::Compressor.new
+compressor.compress('file.txt', 'file.tx_', format: :normal)
+----
+
+==== KWAJ Files
+
+[source,bash]
+----
+# Default SZDD compression
+cabriolet kwaj-compress setup.exe setup.kwj
+
+# MSZIP compression with metadata
+cabriolet kwaj-compress --compression=mszip --filename=setup.exe \
+  --extra-data="Version 1.0" setup.exe setup.kwj
+----
+
+Ruby API:
+[source,ruby]
+----
+compressor = Cabriolet::KWAJ::Compressor.new
+compressor.compress('setup.exe', 'setup.kwj',
+  compression: :mszip,
+  filename: 'setup.exe',
+  include_length: true
+)
+----
+
+==== HLP Files
+
+[source,bash]
+----
+cabriolet hlp-create help.hlp system.dat topic.dat phrases.dat
+----
+
+Ruby API:
+[source,ruby]
+----
+compressor = Cabriolet::HLP::Compressor.new
+compressor.add_file('system.dat', '|SYSTEM', compress: true)
+compressor.add_file('topic.dat', '|TOPIC', compress: true)
+compressor.generate('help.hlp')
+----
+
+==== LIT Files
+
+[source,bash]
+----
+cabriolet lit-create book.lit chapter*.html cover.jpg
+----
+
+Ruby API:
+[source,ruby]
+----
+compressor = Cabriolet::LIT::Compressor.new
+compressor.add_file('chapter1.html', 'chapter1.html', compress: true)
+compressor.add_file('cover.jpg', 'cover.jpg', compress: false)
+compressor.generate('book.lit')
+----
+
+==== OAB Files
+
+[source,bash]
+----
+# Full file
+cabriolet oab-create address.dat full.oab
+
+# Incremental patch
+cabriolet oab-create --base=old.dat new.dat patch.oab
+----
+
+Ruby API:
+[source,ruby]
+----
+compressor = Cabriolet::OAB::Compressor.new
+compressor.compress('address.dat', 'full.oab', block_size: 32_768)
+----
+
+=== Compression Selection
+
+Choose algorithm based on use case:
+
+[cols="1,2"]
+|===
+|Use Case |Recommended Algorithm
+
+|Software distribution
+|LZX (maximum compression)
+
+|General archives
+|MSZIP (balanced)
+
+|Speed critical
+|None or LZSS
+
+|Pre-compressed files
+|None
+
+|Text/HTML
+|MSZIP or LZX
+|===
+
+=== Best Practices
+
+1. **Choose appropriate compression** - Match algorithm to content
+2. **Test before distributing** - Verify archives work correctly
+3. **Use verbose mode** - Monitor compression ratios
+4. **Don't compress media** - JPG, PNG, MP3 already compressed
+5. **Include metadata** - Store filenames, versions where supported
+
+=== See Also
+
+* <<extracting-files#,Extracting Files>>
+* <<../compression/choosing-algorithm#,Choosing a Compression Algorithm>>

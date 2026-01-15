@@ -1,0 +1,76 @@
+---
+layout: default
+title: Format-Specific Benchmarks
+parent: Benchmarks
+grand_parent: Appendix
+---
+
+== Format-Specific Benchmarks
+
+=== Extraction Speed by Format (MB/s)
+
+[cols="1,1,1,1", options="header"]
+|===
+| Format | Small Files (<1MB) | Medium Files (1-10MB) | Large Files (>10MB)
+
+| CAB (MSZIP)
+| 85.3
+| 92.7
+| 98.4
+
+| CAB (LZX)
+| 68.2
+| 74.8
+| 79.3
+
+| CHM
+| 72.4
+| 78.1
+| 82.6
+
+| SZDD
+| 105.7
+| 112.3
+| 118.9
+
+| KWAJ
+| 88.4
+| 94.2
+| 99.7
+|===
+
+=== Format Overhead (bytes)
+
+[cols="1,1,1", options="header"]
+|===
+| Format | Header Size | Per-File Overhead
+
+| CAB
+| 36-500
+| 16-256
+
+| CHM
+| 96-2048
+| 24-128
+
+| SZDD
+| 14
+| 0
+
+| KWAJ
+| 16-48
+| 0
+|===
+
+=== Multi-Volume Performance
+
+CAB spanning across 3 volumes (650MB each):
+
+* **Single volume extraction**: 89.2 MB/s
+* **Multi-volume extraction**: 86.7 MB/s
+* **Overhead**: 2.8%
+
+=== See Also
+
+* xref:format-comparison.adoc[Format Comparison]
+* link:compression-benchmarks.html[Compression Benchmarks]

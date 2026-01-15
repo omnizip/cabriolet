@@ -1,0 +1,627 @@
+---
+layout: default
+title: Salvage Mode
+parent: Advanced Usage
+grand_parent: Guides
+nav_order: 5
+---
+
+== Salvage Mode
+:toc:
+
+=== Purpose
+
+This guide explains how to use salvage mode to recover data from corrupted or damaged cabinet archives when normal extraction fails.
+
+=== References
+
+* xref:error-handling.adoc[Error Handling Guide]
+* xref:../../reference/api/cab-api.adoc[CAB API Reference]
+* xref:../../concepts/compression-algorithms.adoc[Compression Algorithms]
+
+=== What Is Salvage Mode?
+
+==== Overview
+
+Salvage mode is a special extraction mode that attempts to recover as much data as possible from corrupted or damaged archives. Instead of failing completely when encountering errors, salvage mode:
+
+* Skips corrupted data blocks
+* Continues extraction after errors
+* Recovers partial file contents
+* Tolerates checksum mismatches
+* Handles malformed headers gracefully
+
+==== When to Use Salvage Mode
+
+Use salvage mode when:
+
+* Archive has physical media damage
+* Download was interrupted or corrupted
+* Checksum verification fails
+* Normal extraction produces errors
+* Partial data recovery is acceptable
+* Archive is historically important
+
+**Warning**: Salvage mode should not be used for security-critical data, as it bypasses integrity checks.
+
+==== Limitations
+
+Salvage mode cannot:
+
+* Recover overwritten or missing data
+* Fix hardware-level corruption
+* Restore truncated archives completely
+* Guarantee data integrity
+* Recover encrypted data without keys
+
+=== Enabling Salvage Mode
+
+==== Basic Usage
+
+Enable salvage mode during decompressor creation:
+
+[source,ruby]
+----
+require 'cabriolet'
+
+# Enable salvage mode
+decompressor = Cabriolet::CAB::Decompressor.new(
+  'corrupted.cab',
+  salvage: true
+)
+
+begin
+  decompressor.extract_all('recovered_output')
+  puts "Salvage extraction completed"
+rescue Cabriolet::Error => e
+  puts "Some files could not be recovered: #{e.message}"
+end
+----
+
+==== CLI Usage
+
+[source,shell]
+----
+# Extract with salvage mode
+$ cabriolet cab extract corrupted.cab --salvage --output recovered/
+
+# With verbose output to see what was recovered
+$ cabriolet cab extract corrupted.cab --salvage --verbose --output recovered/
+----
+
+==== Configuration Options
+
+Fine-tune salvage behavior:
+
+[source,ruby]
+----
+decompressor = Cabriolet::CAB::Decompressor.new(
+  'corrupted.cab',
+  salvage: true,
+  salvage_options: {
+    skip_checksum: true,          # Skip checksum verification
+    skip_corrupted_blocks: true,  # Skip unreadable data blocks
+    max_errors: 100,              # Stop after 100 errors
+    partial_files: true,          # Save partially extracted files
+    verify_structure: false       # Skip structural validation
+  }
+)
+----
+
+=== Recovery Scenarios
+
+==== Corrupted Header Recovery
+
+Recover when cabinet header is damaged:
+
+[source,ruby]
+----
+begin
+  decompressor = Cabriolet::CAB::Decompressor.new(
+    'damaged_header.cab',
+    salvage: true
+  )
+
+  # If header is too corrupt, search for valid data blocks
+  if decompressor.files.empty?
+    puts "Header severely damaged, searching for data..."
+
+    # Manual recovery: search for MSZIP signatures
+    File.open('damaged_header.cab', 'rb') do |f|
+      data = f.read
+      # Look for MSZIP block signature (0x4B43)
+      offset = 0
+      while (pos = data.index('CK', offset))
+        puts "Found potential data block at #{pos}"
+        offset = pos + 1
+      end
+    end
+  else
+    decompressor.extract_all('recovered')
+  end
+
+rescue Cabriolet::InvalidHeaderError => e
+  puts "Header corruption too severe for automatic recovery"
+  puts "Manual hex editing may be required"
+end
+----
+
+==== Partial File Recovery
+
+Recover individual files from corrupted archives:
+
+[source,ruby]
+----
+decompressor = Cabriolet::CAB::Decompressor.new(
+  'corrupted.cab',
+  salvage: true,
+  salvage_options: { partial_files: true }
+)
+
+recovered_files = []
+failed_files = []
+
+decompressor.files.each do |file|
+  output_path = "recovered/#{file.filename}"
+  FileUtils.mkdir_p(File.dirname(output_path))
+
+  begin
+    decompressor.extract_file(file.filename, output_path)
+
+    # Check if file is partial
+    actual_size = File.size(output_path)
+    expected_size = file.uncompressed_size
+
+    if actual_size < expected_size
+      puts "⚠ #{file.filename}: partial (#{actual_size}/#{expected_size} bytes)"
+      recovered_files << { name: file.filename, partial: true, size: actual_size }
+    else
+      puts "✓ #{file.filename}: complete (#{actual_size} bytes)"
+      recovered_files << { name: file.filename, partial: false, size: actual_size }
+    end
+
+  rescue Cabriolet::Error => e
+    puts "✗ #{file.filename}: failed (#{e.message})"
+    failed_files << file.filename
+  end
+end
+
+# Generate recovery report
+File.open('recovered/RECOVERY_REPORT.txt', 'w') do |f|
+  f.puts "Recovery Report"
+  f.puts "=" * 50
+  f.puts "Archive: corrupted.cab"
+  f.puts "Date: #{Time.now}"
+  f.puts
+  f.puts "Successfully recovered: #{recovered_files.size}"
+  f.puts "Failed to recover: #{failed_files.size}"
+  f.puts
+
+  recovered_files.each do |file|
+    status = file[:partial] ? "PARTIAL" : "COMPLETE"
+    f.puts "#{status}: #{file[:name]} (#{file[:size]} bytes)"
+  end
+
+  f.puts
+  f.puts "Failed files:"
+  failed_files.each { |name| f.puts "  - #{name}" }
+end
+----
+
+==== Block-Level Recovery
+
+Recover at the data block level:
+
+[source,ruby]
+----
+class BlockRecovery
+  def initialize(filename)
+    @decompressor = Cabriolet::CAB::Decompressor.new(
+      filename,
+      salvage: true
+    )
+    @recovered_blocks = []
+    @failed_blocks = []
+  end
+
+  def recover_all_blocks
+    @decompressor.folders.each_with_index do |folder, folder_idx|
+      puts "Processing folder #{folder_idx + 1}..."
+
+      folder.data_blocks.each_with_index do |block, block_idx|
+        recover_block(folder, folder_idx, block, block_idx)
+      end
+    end
+
+    generate_report
+  end
+
+  private
+
+  def recover_block(folder, folder_idx, block, block_idx)
+    begin
+      # Attempt to decompress block
+      data = folder.decompress_block(block_idx)
+
+      @recovered_blocks << {
+        folder: folder_idx,
+        block: block_idx,
+        size: data.bytesize,
+        checksum: calculate_checksum(data)
+      }
+
+      # Save block data
+      filename = "block_f#{folder_idx}_b#{block_idx}.bin"
+      File.binwrite("recovered_blocks/#{filename}", data)
+
+      puts "  ✓ Block #{block_idx}: #{data.bytesize} bytes"
+
+    rescue Cabriolet::DecompressionError => e
+      @failed_blocks << {
+        folder: folder_idx,
+        block: block_idx,
+        error: e.message
+      }
+
+      puts "  ✗ Block #{block_idx}: #{e.message}"
+    end
+  end
+
+  def calculate_checksum(data)
+    require 'digest'
+    Digest::MD5.hexdigest(data)
+  end
+
+  def generate_report
+    File.open('recovered_blocks/BLOCK_REPORT.txt', 'w') do |f|
+      f.puts "Block Recovery Report"
+      f.puts "=" * 50
+      f.puts "Total blocks: #{@recovered_blocks.size + @failed_blocks.size}"
+      f.puts "Recovered: #{@recovered_blocks.size}"
+      f.puts "Failed: #{@failed_blocks.size}"
+      f.puts "Success rate: #{(@recovered_blocks.size * 100.0 / (@recovered_blocks.size + @failed_blocks.size)).round(1)}%"
+      f.puts
+
+      f.puts "Recovered Blocks:"
+      @recovered_blocks.each do |block|
+        f.puts "  Folder #{block[:folder]}, Block #{block[:block]}: #{block[:size]} bytes (MD5: #{block[:checksum]})"
+      end
+
+      if @failed_blocks.any?
+        f.puts
+        f.puts "Failed Blocks:"
+        @failed_blocks.each do |block|
+          f.puts "  Folder #{block[:folder]}, Block #{block[:block]}: #{block[:error]}"
+        end
+      end
+    end
+  end
+end
+
+# Usage
+recovery = BlockRecovery.new('corrupted.cab')
+recovery.recover_all_blocks
+----
+
+==== Multi-Part Archive Recovery
+
+Recover from multi-part archives with missing parts:
+
+[source,ruby]
+----
+def recover_multipart(parts_pattern)
+  # Find available parts
+  available_parts = Dir.glob(parts_pattern).sort
+  puts "Found #{available_parts.size} parts"
+
+  available_parts.each_with_index do |part, index|
+    puts "\nProcessing part #{index + 1}: #{part}"
+
+    begin
+      decompressor = Cabriolet::CAB::Decompressor.new(
+        part,
+        salvage: true
+      )
+
+      output_dir = "recovered_part_#{index + 1}"
+      decompressor.extract_all(output_dir)
+
+      puts "  Extracted to: #{output_dir}"
+
+    rescue Cabriolet::Error => e
+      puts "  Error: #{e.message}"
+      puts "  Attempting block-level recovery..."
+
+      # Try block-level recovery for this part
+      recovery = BlockRecovery.new(part)
+      recovery.recover_all_blocks
+    end
+  end
+end
+
+# Usage
+recover_multipart('archive.ca*')
+----
+
+=== Advanced Recovery Techniques
+
+==== Hex-Based Recovery
+
+When salvage mode fails, try hex-level recovery:
+
+[source,ruby]
+----
+class HexRecovery
+  MSZIP_SIGNATURE = 'CK'.b
+
+  def self.find_data_blocks(filename)
+    blocks = []
+
+    File.open(filename, 'rb') do |f|
+      data = f.read
+      offset = 0
+
+      while (pos = data.index(MSZIP_SIGNATURE, offset))
+        # Verify it looks like a real MSZIP block
+        if valid_mszip_block?(data, pos)
+          block_info = extract_block_info(data, pos)
+          blocks << block_info if block_info
+        end
+
+        offset = pos + 1
+      end
+    end
+
+    blocks
+  end
+
+  def self.valid_mszip_block?(data, pos)
+    return false if pos + 4 > data.bytesize
+
+    # Check for MSZIP signature (CK)
+    data[pos, 2] == MSZIP_SIGNATURE
+  end
+
+  def self.extract_block_info(data, pos)
+    # Extract block metadata
+    {
+      offset: pos,
+      signature: data[pos, 2],
+      # Add more metadata extraction as needed
+    }
+  end
+end
+
+# Find all potential data blocks
+blocks = HexRecovery.find_data_blocks('severely_corrupted.cab')
+puts "Found #{blocks.size} potential data blocks"
+
+blocks.each_with_index do |block, index|
+  puts "Block #{index + 1} at offset #{block[:offset]}"
+end
+----
+
+==== Progressive Recovery
+
+Try increasingly aggressive recovery strategies:
+
+[source,ruby]
+----
+def progressive_recovery(filename, output_dir)
+  strategies = [
+    { name: 'Normal', options: {} },
+    { name: 'Salvage', options: { salvage: true } },
+    { name: 'Aggressive', options: {
+        salvage: true,
+        salvage_options: {
+          skip_checksum: true,
+          skip_corrupted_blocks: true
+        }
+      }
+    },
+    { name: 'Maximum', options: {
+        salvage: true,
+        salvage_options: {
+          skip_checksum: true,
+          skip_corrupted_blocks: true,
+          verify_structure: false,
+          max_errors: 1000
+        }
+      }
+    }
+  ]
+
+  strategies.each do |strategy|
+    puts "\nTrying strategy: #{strategy[:name]}"
+
+    begin
+      decompressor = Cabriolet::CAB::Decompressor.new(
+        filename,
+        **strategy[:options]
+      )
+
+      strategy_output = "#{output_dir}/#{strategy[:name].downcase}"
+      decompressor.extract_all(strategy_output)
+
+      # Count recovered files
+      file_count = Dir.glob("#{strategy_output}/**/*").count { |f| File.file?(f) }
+
+      puts "✓ Strategy #{strategy[:name]} succeeded"
+      puts "  Recovered #{file_count} files"
+
+      # If we got files, no need to try more aggressive strategies
+      return if file_count > 0
+
+    rescue Cabriolet::Error => e
+      puts "✗ Strategy #{strategy[:name]} failed: #{e.message}"
+    end
+  end
+
+  puts "\nAll recovery strategies exhausted"
+end
+
+# Usage
+progressive_recovery('badly_corrupted.cab', 'recovery_attempts')
+----
+
+=== Quality Assessment
+
+==== Verifying Recovered Data
+
+Check the quality of recovered files:
+
+[source,ruby]
+----
+class RecoveryValidator
+  def self.validate_directory(dir)
+    results = {
+      total_files: 0,
+      complete_files: 0,
+      partial_files: 0,
+      corrupted_files: 0,
+      total_size: 0
+    }
+
+    Dir.glob("#{dir}/**/*").each do |path|
+      next unless File.file?(path)
+
+      results[:total_files] += 1
+      size = File.size(path)
+      results[:total_size] += size
+
+      # Try to validate file
+      if validate_file(path)
+        results[:complete_files] += 1
+        puts "✓ #{File.basename(path)}: valid (#{size} bytes)"
+      elsif size > 0
+        results[:partial_files] += 1
+        puts "⚠ #{File.basename(path)}: partial (#{size} bytes)"
+      else
+        results[:corrupted_files] += 1
+        puts "✗ #{File.basename(path)}: corrupted (0 bytes)"
+      end
+    end
+
+    print_validation_report(results)
+  end
+
+  def self.validate_file(path)
+    # Basic validation: check if file has content
+    return false if File.size(path) == 0
+
+    # For specific file types, do format validation
+    case File.extname(path).downcase
+    when '.txt', '.log'
+      # Check if valid UTF-8
+      begin
+        File.read(path, encoding: 'UTF-8')
+        true
+      rescue
+        false
+      end
+    when '.zip', '.cab'
+      # Check for valid magic bytes
+      File.open(path, 'rb') do |f|
+        magic = f.read(4)
+        magic == 'PK'.b || magic == 'MSCF'
+      end
+    else
+      # Just check size > 0
+      true
+    end
+  end
+
+  def self.print_validation_report(results)
+    puts "\n" + ("=" * 50)
+    puts "Recovery Validation Report"
+    puts ("=" * 50)
+    puts "Total files: #{results[:total_files]}"
+    puts "Complete: #{results[:complete_files]} (#{(results[:complete_files] * 100.0 / results[:total_files]).round(1)}%)"
+    puts "Partial: #{results[:partial_files]} (#{(results[:partial_files] * 100.0 / results[:total_files]).round(1)}%)"
+    puts "Corrupted: #{results[:corrupted_files]} (#{(results[:corrupted_files] * 100.0 / results[:total_files]).round(1)}%)"
+    puts "Total recovered data: #{results[:total_size] / 1024 / 1024} MB"
+  end
+end
+
+# Usage
+RecoveryValidator.validate_directory('recovered_output')
+----
+
+==== Comparing Recovery Attempts
+
+Compare results from different recovery strategies:
+
+[source,ruby]
+----
+def compare_recoveries(dir1, dir2)
+  files1 = Dir.glob("#{dir1}/**/*").select { |f| File.file?(f) }
+  files2 = Dir.glob("#{dir2}/**/*").select { |f| File.file?(f) }
+
+  # Get relative paths
+  rel_files1 = files1.map { |f| f.sub("#{dir1}/", '') }
+  rel_files2 = files2.map { |f| f.sub("#{dir2}/", '') }
+
+  # Compare
+  only_in_1 = rel_files1 - rel_files2
+  only_in_2 = rel_files2 - rel_files1
+  in_both = rel_files1 & rel_files2
+
+  puts "Comparison: #{dir1} vs #{dir2}"
+  puts "=" * 50
+  puts "Only in #{dir1}: #{only_in_1.size}"
+  puts "Only in #{dir2}: #{only_in_2.size}"
+  puts "In both: #{in_both.size}"
+  puts
+
+  # Compare sizes for files in both
+  in_both.each do |rel_path|
+    size1 = File.size(File.join(dir1, rel_path))
+    size2 = File.join(dir2, rel_path))
+
+    if size1 != size2
+      puts "#{rel_path}: #{size1} bytes vs #{size2} bytes"
+    end
+  end
+end
+----
+
+=== Best Practices
+
+==== When to Use Salvage Mode
+
+**Do use when**:
+* Archive is known to be damaged
+* Data is irreplaceable
+* Partial recovery is acceptable
+* Normal extraction fails
+* For forensic analysis
+
+**Don't use when**:
+* Data integrity is critical
+* Security is a concern
+* Archive is untrusted
+* Complete data is required
+* For production systems
+
+==== Recovery Workflow
+
+1. **Try normal extraction first**: Always attempt standard extraction
+2. **Enable salvage mode**: Only if normal extraction fails
+3. **Validate results**: Check recovered data quality
+4. **Compare with source**: If possible, verify against known good copy
+5. **Document recovery**: Keep records of what was recovered
+
+==== Data Safety
+
+1. **Work on copies**: Never modify original corrupted files
+2. **Separate outputs**: Use different directories for each attempt
+3. **Keep originals**: Retain original files for future tools
+4. **Document everything**: Record all recovery attempts
+5. **Verify checksums**: When available, check against known values
+
+==== Bibliography
+
+* xref:error-handling.adoc[Error Handling Guide]
+* xref:../formats/cab-format.adoc[CAB Format Specification]
+* Data Recovery Best Practices
+* Digital Forensics Guidelines

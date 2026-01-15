@@ -1,0 +1,122 @@
+---
+layout: default
+title: Encoding Issues
+parent: Troubleshooting
+---
+
+== Character Encoding Problems
+
+=== Filename Encoding
+
+**Issue**: Garbled or incorrect filenames
+
+**Cause**: Encoding mismatch between archive and extraction
+
+**Solutions**:
+
+[source,ruby]
+----
+# Force UTF-8 encoding
+filename = file.name.force_encoding('UTF-8')
+
+# Convert from Windows-1252 to UTF-8
+filename = file.name.encode('UTF-8', 'Windows-1252')
+
+# Handle invalid bytes
+filename = file.name.encode('UTF-8', invalid: :replace, undef: :replace)
+----
+
+=== Common Encoding Issues
+
+==== Windows-1252 vs UTF-8
+
+**Issue**: Special characters (é, ñ, ä) display incorrectly
+
+**Solution**:
+
+[source,ruby]
+----
+# Detect and convert
+if filename.encoding == Encoding::ASCII_8BIT
+  filename = filename.force_encoding('Windows-1252').encode('UTF-8')
+end
+----
+
+==== Japanese/Chinese Characters
+
+**Issue**: Asian characters corrupted
+
+**Solutions**:
+
+[source,ruby]
+----
+# Try Shift-JIS (Japanese)
+filename = file.name.encode('UTF-8', 'Shift_JIS')
+
+# Try GB2312 (Chinese)
+filename = file.name.encode('UTF-8', 'GB2312')
+----
+
+=== Content Encoding
+
+**Issue**: Text file content has encoding problems
+
+**Solution**:
+
+[source,ruby]
+----
+# Detect encoding
+require 'charlock_holmes'
+
+detection = CharlockHolmes::EncodingDetector.detect(file.data)
+text = file.data.force_encoding(detection[:encoding]).encode('UTF-8')
+----
+
+=== Cross-Platform Considerations
+
+==== Path Separators
+
+[source,ruby]
+----
+# Normalize to forward slashes
+path = file.name.gsub('\\', '/')
+----
+
+==== Case Sensitivity
+
+[source,ruby]
+----
+# Handle case-insensitive filesystems
+existing = Dir.glob(path, File::FNM_CASEFOLD).first
+if existing && existing != path
+  puts "Warning: Case conflict: #{existing} vs #{path}"
+end
+----
+
+=== Best Practices
+
+1. **Always use UTF-8**::
++
+[source,ruby]
+----
+# Set default encoding
+Encoding.default_external = Encoding::UTF_8
+Encoding.default_internal = Encoding::UTF_8
+----
++
+
+2. **Validate filenames**::
++
+[source,ruby]
+----
+# Remove invalid characters
+safe_name = filename.gsub(/[^\w\s\-.]/, '_')
+----
++
+
+3. **Test with international content**
+
+=== See Also
+
+* link:platform-specific.html[Platform-Specific Issues]
+* link:common-errors.html[Common Errors]

@@ -1,0 +1,89 @@
+---
+layout: default
+title: Custom Compression Pipeline
+parent: Examples
+---
+
+== Custom Compression Pipeline
+
+=== Memory-Based Compression
+
+[source,ruby]
+----
+require 'cabriolet'
+require 'stringio'
+
+# Compress in memory without disk I/O
+input_data = File.read('large_file.dat', mode: 'rb')
+output_buffer = StringIO.new
+output_buffer.set_encoding(Encoding::BINARY)
+
+compressor = Cabriolet::CAB::Compressor.new(
+  io: output_buffer,
+  compression: :lzx
+)
+
+compressor.add_data('file.dat', input_data)
+compressor.compress
+
+# Get compressed data
+cab_data = output_buffer.string
+puts "Compressed #{input_data.size} to #{cab_data.size} bytes"
+----
+
+=== Custom I/O Handler
+
+[source,ruby]
+----
+require 'cabriolet'
+
+class S3IOHandler < Cabriolet::System::IOHandler
+  def initialize(bucket, key)
+    @bucket = bucket
+    @key = key
+    @s3 = Aws::S3::Client.new
+  end
+
+  def read(offset, size)
+    @s3.get_object(
+      bucket: @bucket,
+      key: @key,
+      range: "bytes=#{offset}-#{offset + size - 1}"
+    ).body.read
+  end
+
+  def size
+    @s3.head_object(bucket: @bucket, key: @key).content_length
+  end
+end
+
+# Use with Cabriolet
+handler = S3IOHandler.new('my-bucket', 'archive.cab')
+cabinet = Cabriolet::CAB::Parser.new.parse_io(handler)
+----
+
+=== Format Conversion Pipeline
+
+[source,ruby]
+----
+require 'cabriolet'
+require 'zip'
+
+# Convert CAB to ZIP
+cab = Cabriolet::CAB::Parser.new.parse('archive.cab')
+
+Zip::File.open('archive.zip', Zip::File::CREATE) do |zipfile|
+  cab.files.each do |file|
+    zipfile.get_output_stream(file.name) do |stream|
+      stream.write(file.data)
+    end
+  end
+end
+
+puts "Converted CAB to ZIP"
+----
+
+=== See Also
+
+* xref:guides/advanced-usage/custom-io-handlers.adoc[Custom I/O Handlers]
+* xref:guides/advanced-usage/memory-operations.adoc[Memory Operations]

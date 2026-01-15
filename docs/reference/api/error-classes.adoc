@@ -1,0 +1,538 @@
+---
+layout: default
+title: Error Classes
+parent: API Reference
+grand_parent: Reference
+nav_order: 10
+---
+
+== Error Classes Reference
+:toc:
+
+=== Purpose
+
+Complete reference for Cabriolet's error class hierarchy and error handling.
+
+=== References
+
+* xref:../../guides/advanced-usage/error-handling.adoc[Error Handling Guide]
+* xref:../../guides/advanced-usage/salvage-mode.adoc[Salvage Mode Guide]
+
+== Error Hierarchy
+
+[source]
+----
+Cabriolet::Error (StandardError)
+├── Cabriolet::IOError
+│   ├── FileNotFoundError
+│   ├── ReadError
+│   └── WriteError
+├── Cabriolet::ParseError
+│   ├── InvalidHeaderError
+│   ├── InvalidFormatError
+│   └── CorruptedDataError
+├── Cabriolet::DecompressionError
+│   ├── ChecksumError
+│   ├── InvalidCodeError
+│   └── BufferOverflowError
+└── Cabriolet::UnsupportedFormatError
+    ├── UnknownCompressionError
+    └── VersionMismatchError
+----
+
+== Base Error
+
+=== Cabriolet::Error
+
+Base class for all Cabriolet errors.
+
+**Location:** [`lib/cabriolet/errors.rb`](lib/cabriolet/errors.rb:5)
+
+**Inherits:** `StandardError`
+
+**Attributes:**
+
+* `message` (String) - Error message
+* `context` (Hash) - Additional error context
+
+**Example:**
+
+[source,ruby]
+----
+begin
+  decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+rescue Cabriolet::Error => e
+  puts "Cabriolet error: #{e.message}"
+  puts "Context: #{e.context.inspect}"
+end
+----
+
+== I/O Errors
+
+=== Cabriolet::IOError
+
+Base class for I/O-related errors.
+
+**Location:** [`lib/cabriolet/errors.rb`](lib/cabriolet/errors.rb:10)
+
+**Attributes:**
+
+* `filename` (String) - File that caused the error
+* `operation` (Symbol) - Operation that failed (`:read`, `:write`, `:open`, etc.)
+
+**Example:**
+
+[source,ruby]
+----
+begin
+  handle.read(1024)
+rescue Cabriolet::IOError => e
+  puts "I/O error on #{e.filename}"
+  puts "Operation: #{e.operation}"
+  puts "Message: #{e.message}"
+end
+----
+
+=== FileNotFoundError
+
+File not found or not accessible.
+
+**Location:** [`lib/cabriolet/errors.rb`](lib/cabriolet/errors.rb:15)
+
+**Example:**
+
+[source,ruby]
+----
+begin
+  decompressor = Cabriolet::CAB::Decompressor.new('missing.cab')
+rescue Cabriolet::FileNotFoundError => e
+  puts "File not found: #{e.filename}"
+  puts "Check path and permissions"
+end
+----
+
+=== ReadError
+
+Error reading from file or handle.
+
+**Location:** [`lib/cabriolet/errors.rb`](lib/cabriolet/errors.rb:18)
+
+**Additional Attributes:**
+
+* `position` (Integer) - File position where error occurred
+* `expected_bytes` (Integer) - Bytes expected to read
+* `actual_bytes` (Integer) - Bytes actually read
+
+**Example:**
+
+[source,ruby]
+----
+begin
+  data = handle.read(1024)
+rescue Cabriolet::ReadError => e
+  puts "Read error at position #{e.position}"
+  puts "Expected #{e.expected_bytes}, got #{e.actual_bytes}"
+end
+----
+
+=== WriteError
+
+Error writing to file or handle.
+
+**Location:** [`lib/cabriolet/errors.rb`](lib/cabriolet/errors.rb:21)
+
+**Additional Attributes:**
+
+* `bytes_written` (Integer) - Bytes successfully written
+* `bytes_requested` (Integer) - Bytes requested to write
+
+== Parse Errors
+
+=== Cabriolet::ParseError
+
+Base class for parsing and format errors.
+
+**Location:** [`lib/cabriolet/errors.rb`](lib/cabriolet/errors.rb:25)
+
+**Attributes:**
+
+* `offset` (Integer) - File offset where error occurred
+* `expected` (String) - What was expected
+* `actual` (String) - What was found
+
+=== InvalidHeaderError
+
+Invalid or corrupted file header.
+
+**Location:** [`lib/cabriolet/errors.rb`](lib/cabriolet/errors.rb:28)
+
+**Additional Attributes:**
+
+* `signature` (String) - File signature found
+* `expected_signature` (String) - Expected signature
+
+**Example:**
+
+[source,ruby]
+----
+begin
+  decompressor = Cabriolet::CAB::Decompressor.new('not_a_cab.txt')
+rescue Cabriolet::InvalidHeaderError => e
+  puts "Invalid header"
+  puts "Expected: #{e.expected_signature}"
+  puts "Found: #{e.signature}"
+
+  # Try salvage mode
+  decompressor = Cabriolet::CAB::Decompressor.new(
+    'not_a_cab.txt',
+    salvage: true
+  )
+end
+----
+
+=== InvalidFormatError
+
+File format is invalid or unsupported.
+
+**Location:** [`lib/cabriolet/errors.rb`](lib/cabriolet/errors.rb:31)
+
+=== CorruptedDataError
+
+Data appears to be corrupted.
+
+**Location:** [`lib/cabriolet/errors.rb`](lib/cabriolet/errors.rb:33)
+
+**Example:**
+
+[source,ruby]
+----
+begin
+  decompressor.extract_file('data.bin', 'output/data.bin')
+rescue Cabriolet::CorruptedDataError => e
+  puts "Data corruption detected"
+  puts "Offset: #{e.offset}"
+
+  # Try salvage mode for partial recovery
+  decompressor.salvage_mode = true
+  decompressor.extract_file('data.bin', 'output/partial_data.bin')
+end
+----
+
+== Decompression Errors
+
+=== Cabriolet::DecompressionError
+
+Base class for decompression errors.
+
+**Location:** [`lib/cabriolet/errors.rb`](lib/cabriolet/errors.rb:35)
+
+**Attributes:**
+
+* `compression_type` (Symbol) - Compression algorithm
+* `block_index` (Integer) - Data block where error occurred
+
+=== ChecksumError
+
+Checksum verification failed.
+
+**Location:** [`lib/cabriolet/errors.rb`](lib/cabriolet/errors.rb:40)
+
+**Additional Attributes:**
+
+* `expected_checksum` (Integer) - Expected checksum value
+* `actual_checksum` (Integer) - Calculated checksum value
+* `algorithm` (Symbol) - Checksum algorithm used
+
+**Example:**
+
+[source,ruby]
+----
+begin
+  decompressor.extract_file('important.dat', 'output/important.dat')
+rescue Cabriolet::ChecksumError => e
+  puts "Checksum mismatch"
+  puts "Expected: 0x#{e.expected_checksum.to_s(16)}"
+  puts "Actual: 0x#{e.actual_checksum.to_s(16)}"
+
+  # Extract without verification (dangerous!)
+  decompressor.verify_checksums = false
+  decompressor.extract_file('important.dat', 'output/unchecked.dat')
+
+  puts "WARNING: File may be corrupted"
+end
+----
+
+=== InvalidCodeError
+
+Invalid Huffman code or compression data.
+
+**Location:** [`lib/cabriolet/errors.rb`](lib/cabriolet/errors.rb:43)
+
+**Additional Attributes:**
+
+* `code_value` (Integer) - Invalid code value
+* `bit_position` (Integer) - Position in bit stream
+
+**Example:**
+
+[source,ruby]
+----
+begin
+  decompressor.extract_file('data.bin', 'output/data.bin')
+rescue Cabriolet::InvalidCodeError => e
+  puts "Invalid Huffman code: #{e.code_value}"
+  puts "At bit position: #{e.bit_position}"
+  puts "This usually indicates data corruption"
+end
+----
+
+=== BufferOverflowError
+
+Decompression buffer overflow (potential security issue).
+
+**Location:** [`lib/cabriolet/errors.rb`](lib/cabriolet/errors.rb:45)
+
+**Additional Attributes:**
+
+* `buffer_size` (Integer) - Buffer size limit
+* `required_size` (Integer) - Size that was required
+
+**Example:**
+
+[source,ruby]
+----
+begin
+  decompressor.extract_file('suspicious.bin', 'output/suspicious.bin')
+rescue Cabriolet::BufferOverflowError => e
+  puts "SECURITY WARNING: Buffer overflow detected"
+  puts "Buffer size: #{e.buffer_size}"
+  puts "Required: #{e.required_size}"
+  puts "File may be maliciously crafted"
+
+  # Do NOT attempt salvage mode for security reasons
+  raise
+end
+----
+
+== Format Support Errors
+
+=== Cabriolet::UnsupportedFormatError
+
+Format or version not supported.
+
+**Location:** [`lib/cabriolet/errors.rb`](lib/cabriolet/errors.rb:50)
+
+**Attributes:**
+
+* `format` (String) - Format name
+* `version` (String) - Format version
+
+=== UnknownCompressionError
+
+Compression method not supported.
+
+**Location:** [`lib/cabriolet/errors.rb`](lib/cabriolet/errors.rb:53)
+
+**Additional Attributes:**
+
+* `compression_type` (Integer) - Compression type code
+* `supported_types` (Array) - List of supported types
+
+**Example:**
+
+[source,ruby]
+----
+begin
+  decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+rescue Cabriolet::UnknownCompressionError => e
+  puts "Unsupported compression: #{e.compression_type}"
+  puts "Supported types: #{e.supported_types.join(', ')}"
+  puts "Try updating Cabriolet or use alternative tool"
+end
+----
+
+=== VersionMismatchError
+
+File version not supported.
+
+**Location:** [`lib/cabriolet/errors.rb`](lib/cabriolet/errors.rb:55)
+
+**Additional Attributes:**
+
+* `file_version` (String) - File format version
+* `supported_versions` (Array) - Supported versions
+
+**Example:**
+
+[source,ruby]
+----
+begin
+  decompressor = Cabriolet::CAB::Decompressor.new('future.cab')
+rescue Cabriolet::VersionMismatchError => e
+  puts "Version mismatch"
+  puts "File version: #{e.file_version}"
+  puts "Supported: #{e.supported_versions.join(', ')}"
+end
+----
+
+== Error Handling Patterns
+
+=== Catching Specific Errors
+
+[source,ruby]
+----
+begin
+  decompressor = Cabriolet::CAB::Decompressor.new('archive.cab')
+  decompressor.extract_all('output')
+
+rescue Cabriolet::FileNotFoundError => e
+  puts "File not found: #{e.filename}"
+
+rescue Cabriolet::ChecksumError => e
+  puts "Checksum error, attempting salvage..."
+  decompressor.salvage_mode = true
+  decompressor.extract_all('salvaged_output')
+
+rescue Cabriolet::DecompressionError => e
+  puts "Decompression failed: #{e.message}"
+
+rescue Cabriolet::Error => e
+  puts "Other Cabriolet error: #{e.message}"
+end
+----
+
+=== Catching All Cabriolet Errors
+
+[source,ruby]
+----
+begin
+  # Your code
+rescue Cabriolet::Error => e
+  log_error(e)
+
+  # Re-raise if critical
+  raise if e.is_a?(Cabriolet::BufferOverflowError)
+end
+----
+
+=== Error Context
+
+[source,ruby]
+----
+begin
+  decompressor.extract_file('file.txt', 'output.txt')
+rescue Cabriolet::Error => e
+  context = e.context
+
+  puts "Error: #{e.message}"
+  puts "File: #{context[:filename]}"
+  puts "Offset: #{context[:offset]}"
+  puts "Operation: #{context[:operation]}"
+
+  # Log for debugging
+  logger.error("Cabriolet error: #{e.class}")
+  logger.error("Context: #{context.inspect}")
+  logger.error("Backtrace: #{e.backtrace.join("\n")}")
+end
+----
+
+=== Retry Logic
+
+[source,ruby]
+----
+def extract_with_retry(filename, output, max_attempts: 3)
+  attempts = 0
+
+  begin
+    attempts += 1
+    decompressor = Cabriolet::CAB::Decompressor.new(filename)
+    decompressor.extract_all(output)
+
+  rescue Cabriolet::IOError => e
+    if attempts < max_attempts
+      sleep(2 ** attempts)  # Exponential backoff
+      retry
+    else
+      raise
+    end
+
+  rescue Cabriolet::ChecksumError => e
+    # Try salvage mode on last attempt
+    if attempts == max_attempts
+      decompressor.salvage_mode = true
+      retry
+    else
+      raise
+    end
+  end
+end
+----
+
+== Custom Error Handling
+
+=== Creating Custom Error Classes
+
+[source,ruby]
+----
+module MyApp
+  class CabrioletError < Cabriolet::Error
+    attr_reader :user_id, :operation_id
+
+    def initialize(message, user_id: nil, operation_id: nil)
+      super(message)
+      @user_id = user_id
+      @operation_id = operation_id
+    end
+  end
+end
+
+begin
+  # Operation
+rescue Cabriolet::Error => e
+  raise MyApp::CabrioletError.new(
+    e.message,
+    user_id: current_user.id,
+    operation_id: current_operation.id
+  )
+end
+----
+
+=== Error Reporting
+
+[source,ruby]
+----
+class ErrorReporter
+  def self.report(error)
+    case error
+    when Cabriolet::BufferOverflowError
+      SecurityLogger.alert("Buffer overflow attempt", error)
+
+    when Cabriolet::ChecksumError
+      IntegrityLogger.warn("Checksum failure", error)
+
+    when Cabriolet::IOError
+      SystemLogger.error("I/O error", error)
+
+    when Cabriolet::Error
+      ApplicationLogger.error("Cabriolet error", error)
+    end
+  end
+end
+
+begin
+  # Operations
+rescue Cabriolet::Error => e
+  ErrorReporter.report(e)
+  raise
+end
+----
+
+== Thread Safety
+
+All error classes are thread-safe. Error instances are immutable after creation.
+
+== Bibliography
+
+* xref:../../guides/advanced-usage/error-handling.adoc[Error Handling Guide]
+* xref:../../guides/advanced-usage/salvage-mode.adoc[Salvage Mode]
+* Ruby Exception Handling Best Practices

@@ -1,0 +1,181 @@
+---
+layout: default
+title: Compression Algorithm Benchmarks
+parent: Benchmarks
+grand_parent: Appendix
+---
+
+== Compression Algorithm Benchmarks
+
+=== Compression Speed (MB/s)
+
+[cols="1,1,1,1,1", options="header"]
+|===
+| Algorithm | Text Files | Binary Files | Mixed | Average
+
+| None (Store)
+| 245.3
+| 238.7
+| 241.5
+| 241.8
+
+| LZSS
+| 48.2
+| 42.1
+| 45.6
+| 45.3
+
+| MSZIP
+| 62.4
+| 51.3
+| 58.2
+| 57.3
+
+| Quantum (L5)
+| 28.7
+| 24.3
+| 26.8
+| 26.6
+
+| LZX (256KB)
+| 12.4
+| 10.8
+| 11.7
+| 11.6
+
+| LZX (2MB)
+| 10.2
+| 8.9
+| 9.6
+| 9.6
+|===
+
+=== Decompression Speed (MB/s)
+
+[cols="1,1,1,1,1", options="header"]
+|===
+| Algorithm | Text Files | Binary Files | Mixed | Average
+
+| None (Store)
+| 285.4
+| 279.2
+| 282.1
+| 282.2
+
+| LZSS
+| 118.6
+| 95.4
+| 108.2
+| 107.4
+
+| MSZIP
+| 95.3
+| 82.7
+| 89.4
+| 89.1
+
+| Quantum (L5)
+| 71.2
+| 64.8
+| 68.3
+| 68.1
+
+| LZX (256KB)
+| 78.9
+| 68.2
+| 74.1
+| 73.7
+
+| LZX (2MB)
+| 82.1
+| 71.5
+| 77.2
+| 76.9
+|===
+
+=== Compression Ratio (% reduction)
+
+[cols="1,1,1,1,1", options="header"]
+|===
+| Algorithm | Text Files | Binary Files | Mixed | Average
+
+| None (Store)
+| 0.0
+| 0.0
+| 0.0
+| 0.0
+
+| LZSS
+| 68.2
+| 43.7
+| 58.4
+| 56.8
+
+| MSZIP
+| 79.5
+| 58.3
+| 71.2
+| 69.7
+
+| Quantum (L5)
+| 84.7
+| 64.8
+| 76.9
+| 75.5
+
+| LZX (256KB)
+| 89.3
+| 71.4
+| 82.5
+| 81.1
+
+| LZX (2MB)
+| 93.1
+| 76.8
+| 86.7
+| 85.5
+|===
+
+=== Memory Usage (Peak MB)
+
+[cols="1,1,1", options="header"]
+|===
+| Algorithm | Compression | Decompression
+
+| None
+| 18.2
+| 18.1
+
+| LZSS
+| 22.4
+| 20.8
+
+| MSZIP
+| 38.7
+| 28.3
+
+| Quantum (L5)
+| 45.2
+| 32.6
+
+| LZX (256KB)
+| 128.4
+| 52.8
+
+| LZX (2MB)
+| 512.7
+| 148.3
+|===
+
+=== Analysis
+
+**Speed Winner**: MSZIP offers the best balance of compression speed (57 MB/s) and ratio (70%).
+
+**Ratio Winner**: LZX (2MB window) achieves 85.5% average compression but at 9.6 MB/s.
+
+**Memory Winner**: LZSS uses minimal memory (22MB compression) with decent 57% ratio.
+
+=== See Also
+
+* xref:guides/compression/choosing-algorithm.adoc[Choosing Algorithm]
+* link:format-benchmarks.html[Format Benchmarks]

@@ -1,0 +1,40 @@
+---
+layout: default
+title: Release Process
+parent: Developer
+nav_order: 5
+---
+
+== Release Process
+
+=== Version Bumping
+
+1. Update `lib/cabriolet/version.rb`
+2. Update CHANGELOG.md
+3. Commit changes
+
+=== Building Gem
+
+[source,shell]
+----
+gem build cabriolet.gemspec
+----
+
+=== Publishing
+
+[source,shell]
+----
+gem push cabriolet-X.Y.Z.gem
+----
+
+=== Tagging
+
+[source,shell]
+----
+git tag vX.Y.Z
+git push origin vX.Y.Z
+----
+
+=== Documentation
+
+Update documentation site after release.
