@@ -1,3 +1,9 @@
+---
+title: Comprehensive Testing Guide
+nav_order: 1
+parent: Testing
+---
+
 = Comprehensive Testing Guide
 
 This guide describes the comprehensive testing infrastructure and patterns used in Cabriolet for testing all archive formats.

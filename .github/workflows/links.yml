@@ -6,6 +6,10 @@ on:
     - main
   pull_request:
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   link_checker:
     runs-on: ubuntu-latest
