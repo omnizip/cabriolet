@@ -50,13 +50,14 @@ jobs:
       uses: lycheeverse/lychee-action@v2
       with:
         # Check the built HTML site for rendered links
-        # Set base URL to _site directory for Jekyll baseurl resolution
+        # Jekyll builds to _site/cabriolet/ due to baseurl config
+        # Set base-url to resolve root-relative links starting with /cabriolet/
         args: >-
           --verbose
           --no-progress
           --config docs/.lychee.toml
-          --root-dir "$(pwd)/docs/_site"
-          --base-url file://${{ github.workspace }}/docs/_site
+          --base "https://omnizip.github.io/cabriolet/"
+          --root-dir "$(pwd)/docs/_site/cabriolet"
           'docs/_site/**/*.html'
         fail: true
         output: link-check-results.md
