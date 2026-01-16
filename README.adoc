@@ -3,7 +3,8 @@
 image:https://img.shields.io/gem/v/cabriolet.svg[RubyGems Version, link=https://rubygems.org/gems/cabriolet]
 image:https://img.shields.io/github/license/omnizip/cabriolet.svg[License]
 
-link:https://omnizip.github.io/cabriolet/[Documentation here]
+image:https://img.shields.io/badge/Website-Cabriolet_documentation-blue.svg["Documentation site", link="https://omnizip.github.io/cabriolet"]
+
 
 Pure Ruby implementation for extracting and creating Microsoft compression
 format files.
