@@ -13,7 +13,8 @@ module Cabriolet
       # @param block_size [Integer] Maximum block size
       # @param io_system [System::IOSystem] I/O system
       # @param algorithm_factory [AlgorithmFactory] Algorithm factory
-      def initialize(source_path:, compression_method:, block_size:, io_system:, algorithm_factory:)
+      def initialize(source_path:, compression_method:, block_size:,
+io_system:, algorithm_factory:)
         super({
           source_path: source_path,
           compression_method: compression_method,

@@ -8,7 +8,8 @@ module Cabriolet
     # Compressor creates CAB files from source files
     # rubocop:disable Metrics/ClassLength
     class Compressor
-      attr_reader :io_system, :files, :compression, :set_id, :cabinet_index, :workers
+      attr_reader :io_system, :files, :compression, :set_id, :cabinet_index,
+                  :workers
 
       # Initialize a new compressor
       #

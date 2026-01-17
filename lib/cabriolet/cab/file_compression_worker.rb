@@ -80,7 +80,7 @@ module Cabriolet
           compressor.compress
 
           output_handle.data
-        ensure
+
           # Memory handles don't need closing
         end
       end
