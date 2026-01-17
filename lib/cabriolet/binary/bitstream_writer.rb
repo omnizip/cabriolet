@@ -4,6 +4,10 @@ module Cabriolet
   module Binary
     # BitstreamWriter provides bit-level I/O operations for writing compressed data
     class BitstreamWriter
+      # Pre-computed byte constants for fast single-byte writes
+      # Avoids repeated array packing for each byte written
+      BYTE_CONSTANTS = Array.new(256) { |i| [i].pack("C") }.freeze
+
       attr_reader :io_system, :handle, :buffer_size
 
       # Initialize a new bitstream writer
@@ -129,7 +133,8 @@ module Cabriolet
       # @param byte [Integer] Byte value to write
       # @return [void]
       def write_byte(byte)
-        data = [byte].pack("C")
+        # Use pre-encoded byte constant for better performance
+        data = BYTE_CONSTANTS[byte]
         # DEBUG
         if ENV["DEBUG_BITSTREAM"]
           warn "DEBUG write_byte: pos=#{@bits_in_buffer} byte=#{byte} (#{byte.to_s(2).rjust(
@@ -217,9 +222,21 @@ module Cabriolet
       # @param num_bits [Integer] Number of bits to write
       # @return [void]
       def write_bits_be(value, num_bits)
-        num_bits.times do |i|
-          bit = (value >> (num_bits - 1 - i)) & 1
-          write_bits(bit, 1)
+        # Write full bytes first for better performance
+        full_bytes = num_bits / 8
+        remaining_bits = num_bits % 8
+
+        # Write complete bytes MSB first
+        full_bytes.times do |i|
+          byte_shift = num_bits - 8 - (i * 8)
+          byte = (value >> byte_shift) & 0xFF
+          write_bits(byte, 8)
+        end
+
+        # Write remaining bits
+        if remaining_bits.positive?
+          remaining_value = value & ((1 << remaining_bits) - 1)
+          write_bits(remaining_value, remaining_bits)
         end
       end
 

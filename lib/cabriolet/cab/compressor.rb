@@ -1,23 +1,28 @@
 # frozen_string_literal: true
 
+require_relative "../checksum"
+require_relative "../errors"
+
 module Cabriolet
   module CAB
     # Compressor creates CAB files from source files
     # rubocop:disable Metrics/ClassLength
     class Compressor
-      attr_reader :io_system, :files, :compression, :set_id, :cabinet_index
+      attr_reader :io_system, :files, :compression, :set_id, :cabinet_index, :workers
 
       # Initialize a new compressor
       #
       # @param io_system [System::IOSystem] I/O system for writing
       # @param algorithm_factory [AlgorithmFactory, nil] Custom algorithm factory or nil for default
-      def initialize(io_system = nil, algorithm_factory = nil)
+      # @param workers [Integer] Number of parallel worker threads (default: 1 for sequential)
+      def initialize(io_system = nil, algorithm_factory = nil, workers: 1)
         @io_system = io_system || System::IOSystem.new
         @algorithm_factory = algorithm_factory || Cabriolet.algorithm_factory
         @files = []
         @compression = :mszip
         @set_id = rand(0xFFFF)
         @cabinet_index = 0
+        @workers = workers
       end
 
       # Add a file to the cabinet
@@ -55,6 +60,9 @@ module Cabriolet
         @compression = options[:compression] || @compression
         @set_id = options[:set_id] || @set_id
         @cabinet_index = options[:cabinet_index] || @cabinet_index
+
+        # Validate and cache compression method value to avoid repeated hash lookups
+        @compression_method = compression_type_value
 
         # Collect file information
         file_infos = collect_file_infos
@@ -129,17 +137,80 @@ module Cabriolet
 
       # Compress all files and return block data
       def compress_files(file_infos)
+        return compress_files_sequential(file_infos) if @workers <= 1
+
+        compress_files_parallel(file_infos)
+      end
+
+      # Compress files using parallel workers via Fractor
+      def compress_files_parallel(file_infos)
+        require_relative "file_compression_work"
+        require_relative "file_compression_worker"
+
+        compression_method = @compression_method || compression_type_value
+
+        # Create work items for each file
+        work_items = file_infos.map do |info|
+          FileCompressionWork.new(
+            source_path: info[:source_path],
+            compression_method: compression_method,
+            block_size: Constants::BLOCK_MAX,
+            io_system: @io_system,
+            algorithm_factory: @algorithm_factory,
+          )
+        end
+
+        # Create worker pool
+        worker_pool = Fractor::WorkerPool.new(
+          FileCompressionWorker,
+          num_workers: @workers,
+        )
+
+        # Submit all work items and wait for completion
+        results = worker_pool.process_work(work_items)
+
+        # Aggregate results in original order
+        file_result_map = {}
+        total_uncompressed = 0
+        all_blocks = []
+
+        results.each do |result|
+          if result.error
+            raise DecompressionError,
+                  "Failed to compress #{result.error[:source_path]}: #{result.error[:message]}"
+          end
+
+          file_result_map[result.result[:source_path]] = result.result
+          total_uncompressed += result.result[:total_uncompressed]
+        end
+
+        # Reorder blocks to match original file order
+        file_infos.each do |info|
+          file_result = file_result_map[info[:source_path]]
+          all_blocks.concat(file_result[:blocks])
+        end
+
+        {
+          blocks: all_blocks,
+          total_uncompressed: total_uncompressed,
+        }
+      end
+
+      # Compress files sequentially (original implementation)
+      def compress_files_sequential(file_infos)
         blocks = []
         total_uncompressed = 0
 
         file_infos.each do |info|
           file_data = ::File.binread(info[:source_path])
-          total_uncompressed += file_data.bytesize
+          file_size = file_data.bytesize
+          total_uncompressed += file_size
 
           # Split into blocks of max 32KB
           offset = 0
-          while offset < file_data.bytesize
-            chunk_size = [Constants::BLOCK_MAX, file_data.bytesize - offset].min
+          while offset < file_size
+            remaining = file_size - offset
+            chunk_size = [Constants::BLOCK_MAX, remaining].min
             chunk = file_data[offset, chunk_size]
 
             # Compress chunk
@@ -169,18 +240,9 @@ module Cabriolet
         input = System::MemoryHandle.new(data)
         output = System::MemoryHandle.new("", Constants::MODE_WRITE)
 
-        # Get compression method value
-        compression_method = begin
-          {
-            none: Constants::COMP_TYPE_NONE,
-            mszip: Constants::COMP_TYPE_MSZIP,
-            lzx: Constants::COMP_TYPE_LZX,
-            quantum: Constants::COMP_TYPE_QUANTUM,
-          }.fetch(@compression)
-        rescue KeyError
-          raise ArgumentError,
-                "Unsupported compression type: #{@compression}"
-        end
+        # Use cached compression method value (calculated in generate)
+        # Fallback to calculation if not yet cached
+        compression_method = @compression_method || compression_type_value
 
         # Determine window bits based on compression type
         window_bits = case @compression
@@ -278,7 +340,10 @@ cabinet_size)
           mszip: Constants::COMP_TYPE_MSZIP,
           lzx: Constants::COMP_TYPE_LZX,
           quantum: Constants::COMP_TYPE_QUANTUM,
-        }.fetch(@compression, Constants::COMP_TYPE_MSZIP)
+        }.fetch(@compression) do
+          raise ArgumentError,
+                "Unsupported compression type: #{@compression}"
+        end
       end
 
       # Write CFFILE entry
@@ -331,41 +396,7 @@ cabinet_size)
       # Same algorithm as used in Extractor
       # rubocop:disable Metrics/MethodLength
       def calculate_checksum(data, initial = 0)
-        cksum = initial
-        bytes = data.bytes
-
-        # Process 4-byte chunks
-        (bytes.size / 4).times do |i|
-          offset = i * 4
-          value = bytes[offset] |
-            (bytes[offset + 1] << 8) |
-            (bytes[offset + 2] << 16) |
-            (bytes[offset + 3] << 24)
-          cksum ^= value
-        end
-
-        # Process remaining bytes
-        remainder = bytes.size % 4
-        if remainder.positive?
-          ul = 0
-          offset = bytes.size - remainder
-
-          case remainder
-          when 3
-            ul |= bytes[offset + 2] << 16
-            ul |= bytes[offset + 1] << 8
-            ul |= bytes[offset]
-          when 2
-            ul |= bytes[offset + 1] << 8
-            ul |= bytes[offset]
-          when 1
-            ul |= bytes[offset]
-          end
-
-          cksum ^= ul
-        end
-
-        cksum & 0xFFFFFFFF
+        Checksum.calculate(data, initial)
       end
       # rubocop:enable Metrics/MethodLength
     end

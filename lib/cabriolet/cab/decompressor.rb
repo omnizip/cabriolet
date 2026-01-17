@@ -97,7 +97,8 @@ module Cabriolet
       # @param filename [String] Path to file to search
       # @return [Models::Cabinet, nil] First cabinet found, or nil if none found
       def search(filename)
-        search_buf = Array.new(@search_buffer_size)
+        # Reuse search buffer across searches for better performance
+        search_buf = @search_buffer ||= Array.new(@search_buffer_size)
         first_cabinet = nil
         link_cabinet = nil
         first_len = 0

@@ -214,24 +214,25 @@ Extract many archives efficiently.
 ----
 require 'cabriolet'
 
-# Process all CAB files in parallel
-stats = Cabriolet::Parallel.process_batch(
-  Dir.glob('archives/*.cab'),
-  'output/',
-  workers: 8
-)
+# Process all CAB files
+Dir.glob('archives/*.cab').each do |cab_path|
+  cab = Cabriolet.open(cab_path)
+  output_dir = File.join('output', File.basename(cab_path, '.*'))
 
-puts "Processed: #{stats[:total]}"
-puts "Success: #{stats[:successful]}"
-puts "Failed: #{stats[:failed]}"
+  extractor = Cabriolet::Extraction::Extractor.new(cab, output_dir, workers: 8)
+  stats = extractor.extract_all
+
+  puts "#{File.basename(cab_path)}: #{stats[:extracted]} files"
+end
 ----
 
 Expected output:
 [source]
 ----
-Processed: 50
-Success: 48
-Failed: 2
+archive1.cab: 120 files
+archive2.cab: 85 files
+archive3.cab: 203 files
+...
 ----
 ====
 
@@ -396,7 +397,7 @@ Cabriolet::Modifier.new(path).add_file(name, data: data).save
 Cabriolet::Streaming::StreamParser.new(path).each_file { |f| ... }
 
 # Parallel
-Cabriolet::Parallel.extract(archive, dir, workers: 8)
+Cabriolet::Extraction::Extractor.new(archive, dir, workers: 8).extract_all
 ----
 
 === See also

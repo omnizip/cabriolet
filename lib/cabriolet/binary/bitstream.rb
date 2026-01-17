@@ -51,6 +51,24 @@ buffer_size = Cabriolet.default_buffer_size, bit_order: :lsb, salvage: false)
 
       private
 
+      # Read 2 bytes as a little-endian 16-bit word for MSB mode
+      # This is a shared helper for read_bits_msb and peek_bits
+      #
+      # @return [Integer] 16-bit word, or nil if at EOF and not in salvage mode
+      def read_msb_word
+        byte0 = read_byte
+        if byte0.nil? && (@salvage || @input_end)
+          byte0 = 0
+        end
+
+        byte1 = read_byte
+        if byte1.nil?
+          byte1 = 0
+        end
+
+        byte0 | (byte1 << 8)
+      end
+
       # Read bits in LSB-first order
       #
       # Per libmspack: EOF handling allows padding to avoid bitstream overrun.
@@ -95,34 +113,17 @@ buffer_size = Cabriolet.default_buffer_size, bit_order: :lsb, salvage: false)
       def read_bits_msb(num_bits)
         # Ensure we have enough bits in the buffer
         while @bits_left < num_bits
-          # Read 2 bytes at a time (little-endian), like libmspack
-          byte0 = read_byte
-          if byte0.nil? && (@salvage || @input_end)
-            # First EOF: pad with zeros
-            # Second EOF: read_byte will raise DecompressionError
-            byte0 = 0
-          end
-
-          byte1 = read_byte
-          if byte1.nil?
-            # Pad with 0 if only 1 byte left (or EOF)
-            byte1 = 0
-          end
-
-          # Combine as little-endian 16-bit value
-          word = byte0 | (byte1 << 8)
+          word = read_msb_word
 
           # DEBUG
-          warn "DEBUG MSB read_bytes: byte0=0x#{byte0.to_s(16)} byte1=0x#{byte1.to_s(16)} word=0x#{word.to_s(16)} bits_left=#{@bits_left}" if ENV["DEBUG_BITSTREAM"]
+          warn "DEBUG MSB read_bytes: word=0x#{word.to_s(16)} bits_left=#{@bits_left}" if ENV["DEBUG_BITSTREAM"]
 
           # INJECT_BITS (MSB): inject at the left side
-          # bit_buffer |= word << (BITBUF_WIDTH -16 - bits_left)
           @bit_buffer |= (word << (@bitbuf_width - 16 - @bits_left))
           @bits_left += 16
         end
 
         # PEEK_BITS (MSB): extract from the left
-        # result = bit_buffer >> (BITBUF_WIDTH - num_bits)
         result = @bit_buffer >> (@bitbuf_width - num_bits)
 
         # REMOVE_BITS (MSB): shift left
@@ -251,9 +252,19 @@ buffer_size = Cabriolet.default_buffer_size, bit_order: :lsb, salvage: false)
       # @return [Integer] Bits as an integer
       def read_bits_be(num_bits)
         result = 0
-        num_bits.times do
-          result = (result << 1) | read_bits(1)
+        full_bytes = num_bits / 8
+        remaining_bits = num_bits % 8
+
+        # Read full bytes first (more efficient than bit-by-bit)
+        full_bytes.times do
+          result = (result << 8) | read_bits(8)
         end
+
+        # Read remaining bits
+        if remaining_bits.positive?
+          result = (result << remaining_bits) | read_bits(remaining_bits)
+        end
+
         result
       end
 

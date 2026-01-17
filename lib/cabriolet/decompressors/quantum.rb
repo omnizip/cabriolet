@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "../quantum_shared"
+
 module Cabriolet
   module Decompressors
     # Quantum handles Quantum-compressed data using arithmetic coding
@@ -8,58 +10,9 @@ module Cabriolet
     # The Quantum method was created by David Stafford, adapted by Microsoft
     # Corporation.
     class Quantum < Base
-      # Frame size (32KB per frame)
-      FRAME_SIZE = 32_768
-
-      # Match constants
-      MAX_MATCH = 259
-
-      # Position slot tables (same as in qtmd.c)
-      POSITION_BASE = [
-        0, 1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384,
-        512, 768, 1024, 1536, 2048, 3072, 4096, 6144, 8192, 12_288, 16_384,
-        24_576, 32_768, 49_152, 65_536, 98_304, 131_072, 196_608, 262_144,
-        393_216, 524_288, 786_432, 1_048_576, 1_572_864
-      ].freeze
-
-      EXTRA_BITS = [
-        0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8,
-        9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16,
-        17, 17, 18, 18, 19, 19
-      ].freeze
-
-      LENGTH_BASE = [
-        0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 14, 18, 22, 26,
-        30, 38, 46, 54, 62, 78, 94, 110, 126, 158, 190, 222, 254
-      ].freeze
-
-      LENGTH_EXTRA = [
-        0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2,
-        3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0
-      ].freeze
+      include QuantumShared
 
       attr_reader :window_bits, :window_size
-
-      # Represents a symbol in an arithmetic coding model
-      class ModelSymbol
-        attr_accessor :sym, :cumfreq
-
-        def initialize(sym, cumfreq)
-          @sym = sym
-          @cumfreq = cumfreq
-        end
-      end
-
-      # Represents an arithmetic coding model
-      class Model
-        attr_accessor :shiftsleft, :entries, :syms
-
-        def initialize(syms, entries)
-          @syms = syms
-          @entries = entries
-          @shiftsleft = 4
-        end
-      end
 
       # Initialize Quantum decompressor
       #
@@ -409,7 +362,52 @@ module Cabriolet
       end
 
       # Copy match from window
+      # Optimized to use bulk byte operations for better performance
       def copy_match(offset, length)
+        # Use bulk copy for matches longer than 32 bytes
+        if length > 32
+          copy_match_bulk(offset, length)
+        else
+          copy_match_byte_by_byte(offset, length)
+        end
+      end
+
+      # Bulk copy using bytesplice for better performance on longer matches
+      def copy_match_bulk(offset, length)
+        if offset > @window_posn
+          # Match wraps around window
+          if offset > @window_size
+            raise DecompressionError,
+                  "Match offset beyond window"
+          end
+
+          # Copy from end of window
+          src_pos = @window_size - (offset - @window_posn)
+          copy_len = offset - @window_posn
+
+          if copy_len < length
+            # Copy from end, then from beginning
+            @window.bytesplice(@window_posn, copy_len, @window, src_pos,
+                               copy_len)
+            @window_posn += copy_len
+            remaining = length - copy_len
+            @window.bytesplice(@window_posn, remaining, @window, 0, remaining)
+            @window_posn += remaining
+          else
+            # Copy entirely from end
+            @window.bytesplice(@window_posn, length, @window, src_pos, length)
+            @window_posn += length
+          end
+        else
+          # Normal copy - use bytesplice for bulk operation
+          src_pos = @window_posn - offset
+          @window.bytesplice(@window_posn, length, @window, src_pos, length)
+          @window_posn += length
+        end
+      end
+
+      # Byte-by-byte copy for short matches (fallback)
+      def copy_match_byte_by_byte(offset, length)
         if offset > @window_posn
           # Match wraps around window
           if offset > @window_size

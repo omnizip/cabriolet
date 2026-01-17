@@ -20,8 +20,8 @@ RSpec.describe Cabriolet do
   end
 
   describe ".default_buffer_size" do
-    it "defaults to 4096" do
-      expect(described_class.default_buffer_size).to eq(4096)
+    it "defaults to 64KB for better I/O performance" do
+      expect(described_class.default_buffer_size).to eq(65_536)
     end
   end
 end
