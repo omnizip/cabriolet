@@ -2,6 +2,31 @@
 
 require_relative "../quantum_shared"
 
+# Compatibility shim for String#bytesplice (added in Ruby 3.2)
+unless String.method_defined?(:bytesplice)
+  module StringBytespliceCompat
+    # Compatibility implementation of bytesplice for Ruby < 3.2
+    # Uses clear/append which is slower but works with mutable strings
+    def bytesplice(index, length, other_string, other_index = 0, other_length = nil)
+      other_length ||= other_string.bytesize
+
+      # Build new string content
+      prefix = self.byteslice(0, index)
+      middle = other_string.byteslice(other_index, other_length)
+      suffix = self.byteslice(index + length..-1)
+      new_content = prefix + middle + suffix
+
+      # Modify receiver in place
+      self.clear
+      self << new_content
+
+      self
+    end
+  end
+
+  String.prepend(StringBytespliceCompat)
+end
+
 module Cabriolet
   module Decompressors
     # Quantum handles Quantum-compressed data using arithmetic coding
@@ -34,8 +59,13 @@ module Cabriolet
         @window_bits = window_bits
         @window_size = 1 << window_bits
 
-        # Initialize window
-        @window = "\0" * @window_size
+        # Initialize window (mutable for Ruby < 3.2 bytesplice compatibility)
+        if String.method_defined?(:bytesplice)
+          @window = "\0" * @window_size
+        else
+          # In Ruby < 3.2, create mutable window using String.new
+          @window = String.new("\0" * @window_size)
+        end
         @window_posn = 0
         @frame_todo = FRAME_SIZE
 
