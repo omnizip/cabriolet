@@ -53,20 +53,23 @@ module Cabriolet
       #
       # @return [Hash] Hash with :literal and :distance code tables
       def self.build_fixed_codes
-        # Fixed literal/length code lengths
-        literal_lengths = Array.new(288, 0)
-        (0...144).each { |i| literal_lengths[i] = 8 }
-        (144...256).each { |i| literal_lengths[i] = 9 }
-        (256...280).each { |i| literal_lengths[i] = 7 }
-        (280...288).each { |i| literal_lengths[i] = 8 }
+        # Memoize fixed codes since they never change
+        @build_fixed_codes ||= begin
+          # Fixed literal/length code lengths
+          literal_lengths = Array.new(288, 0)
+          (0...144).each { |i| literal_lengths[i] = 8 }
+          (144...256).each { |i| literal_lengths[i] = 9 }
+          (256...280).each { |i| literal_lengths[i] = 7 }
+          (280...288).each { |i| literal_lengths[i] = 8 }
 
-        # Fixed distance code lengths (all 5 bits)
-        distance_lengths = Array.new(32, 5)
+          # Fixed distance code lengths (all 5 bits)
+          distance_lengths = Array.new(32, 5)
 
-        {
-          literal: build_codes(literal_lengths, 288),
-          distance: build_codes(distance_lengths, 32),
-        }
+          {
+            literal: build_codes(literal_lengths, 288),
+            distance: build_codes(distance_lengths, 32),
+          }
+        end
       end
 
       # Encode a symbol using Huffman codes and write to bitstream

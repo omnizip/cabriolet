@@ -36,5 +36,6 @@ Gem::Specification.new do |spec|
 
   # Runtime dependencies
   spec.add_dependency "bindata", "~> 2.5"
+  spec.add_dependency "fractor", "~> 0.1"
   spec.add_dependency "thor", "~> 1.3"
 end

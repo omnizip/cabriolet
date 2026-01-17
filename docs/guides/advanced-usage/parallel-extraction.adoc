@@ -21,17 +21,17 @@ Use parallel extraction when:
 === References
 
 * xref:concepts/parallel-processing-model.adoc[Parallel Processing Model]
-* xref:reference/api/parallel-api.adoc[Parallel API Reference]
+* xref:reference/api/extraction-api.adoc[Extraction API Reference]
 
 === Concepts
 
-==== Thread Pool
+==== Worker Pool
 
-Worker threads process files concurrently, distributing the workload across CPU cores.
+Worker threads process files concurrently, distributing the workload across CPU cores using Fractor's lock-free Ractor-based architecture.
 
-==== Work Queue
+==== Work Distribution
 
-Files are queued and distributed to available workers for balanced processing.
+Files are distributed to available workers for balanced processing via Fractor's work queue system.
 
 === Basic Parallel Extraction
 
@@ -44,8 +44,8 @@ require 'cabriolet'
 # Parse archive
 cab = Cabriolet::CAB::Parser.new.parse('large.cab')
 
-# Extract with 8 workers
-extractor = Cabriolet::Parallel::Extractor.new(
+# Extract with 8 workers using the unified Extractor
+extractor = Cabriolet::Extraction::Extractor.new(
   cab,
   'output/',
   workers: 8
@@ -73,18 +73,22 @@ end
 
 === Batch Processing
 
+For batch processing multiple archives, use a simple loop with the Extractor:
+
 [example]
 ====
 [source,ruby]
 ----
-# Process multiple archives in parallel
-stats = Cabriolet::Parallel.process_batch(
-  Dir.glob('*.cab'),
-  'output/',
-  workers: 4
-)
+# Process multiple archives
+Dir.glob('*.cab').each do |cab_path|
+  cab = Cabriolet.open(cab_path)
+  output_dir = File.join('output', File.basename(cab_path, '.*'))
 
-puts "Total: #{stats[:total]}, Success: #{stats[:successful]}"
+  extractor = Cabriolet::Extraction::Extractor.new(cab, output_dir, workers: 4)
+  stats = extractor.extract_all
+
+  puts "#{cab_path}: #{stats[:extracted]} files extracted"
+end
 ----
 ====
 

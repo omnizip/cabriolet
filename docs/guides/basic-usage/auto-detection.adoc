@@ -67,7 +67,7 @@ The simplest way to use auto-detection:
 require 'cabriolet'
 
 # Open archive with automatic format detection
-archive = Cabriolet::Auto.open('unknown.archive')
+archive = Cabriolet.open('unknown.archive')
 
 # Use archive normally
 puts "Format: #{archive.class}"
@@ -92,7 +92,7 @@ Extract without knowing the format:
 require 'cabriolet'
 
 # Extract with auto-detection
-stats = Cabriolet::Auto.extract('archive.file', 'output/')
+stats = Cabriolet.extract('archive.file', 'output/')
 
 puts "Extracted #{stats[:extracted]} files"
 puts "Failed: #{stats[:failed]}"
@@ -119,7 +119,7 @@ Sometimes you only need to know the format:
 require 'cabriolet'
 
 # Detect without parsing
-format = Cabriolet::Auto.detect_format('file.xyz')
+format = Cabriolet.detect_format('file.xyz')
 
 case format
 when :cab
@@ -143,7 +143,7 @@ Pass options to the underlying parser:
 [source,ruby]
 ----
 # Auto-detect with salvage mode enabled
-archive = Cabriolet::Auto.open('possibly_corrupted.cab',
+archive = Cabriolet.open('possibly_corrupted.cab',
   salvage_mode: true,
   skip_checksum: true
 )
@@ -158,7 +158,7 @@ Retrieve comprehensive archive information:
 ====
 [source,ruby]
 ----
-info = Cabriolet::Auto.info('archive.cab')
+info = Cabriolet.info('archive.cab')
 
 # Full information hash
 puts info[:format]            # => :cab
@@ -185,7 +185,7 @@ Combine auto-detection with parallel processing:
 [source,ruby]
 ----
 # Auto-detect and extract with 8 workers
-stats = Cabriolet::Auto.extract(
+stats = Cabriolet.extract(
   'large_archive.cab',
   'output/',
   parallel: true,
@@ -211,7 +211,7 @@ This automatically:
 [source,ruby]
 ----
 begin
-  archive = Cabriolet::Auto.open('unknown.file')
+  archive = Cabriolet.open('unknown.file')
 rescue Cabriolet::UnsupportedFormatError => e
   puts "Could not detect format: #{e.message}"
 
@@ -231,7 +231,7 @@ end
 [source,ruby]
 ----
 begin
-  archive = Cabriolet::Auto.open('corrupted.cab')
+  archive = Cabriolet.open('corrupted.cab')
 rescue Cabriolet::InvalidFormatError => e
   puts "Invalid format: #{e.message}"
 
@@ -282,7 +282,7 @@ For batch operations on thousands of files, this is negligible compared to actua
 [source,ruby]
 ----
 # Detect once, use multiple times
-format = Cabriolet::Auto.detect_format('archive.cab')
+format = Cabriolet.detect_format('archive.cab')
 
 if format == :cab
   # Use format-specific API for optimal performance
@@ -301,7 +301,7 @@ end
 ----
 # Detect all formats first
 files_by_format = Dir.glob('*.{cab,chm,hlp}').group_by do |file|
-  Cabriolet::Auto.detect_format(file)
+  Cabriolet.detect_format(file)
 end
 
 # Process by format
