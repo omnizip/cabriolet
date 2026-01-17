@@ -7,17 +7,18 @@ unless String.method_defined?(:bytesplice)
   module StringBytespliceCompat
     # Compatibility implementation of bytesplice for Ruby < 3.2
     # Uses clear/append which is slower but works with mutable strings
-    def bytesplice(index, length, other_string, other_index = 0, other_length = nil)
+    def bytesplice(index, length, other_string, other_index = 0,
+other_length = nil)
       other_length ||= other_string.bytesize
 
       # Build new string content
-      prefix = self.byteslice(0, index)
+      prefix = byteslice(0, index)
       middle = other_string.byteslice(other_index, other_length)
-      suffix = self.byteslice(index + length..-1)
+      suffix = byteslice((index + length)..-1)
       new_content = prefix + middle + suffix
 
       # Modify receiver in place
-      self.clear
+      clear
       self << new_content
 
       self
@@ -60,12 +61,12 @@ module Cabriolet
         @window_size = 1 << window_bits
 
         # Initialize window (mutable for Ruby < 3.2 bytesplice compatibility)
-        if String.method_defined?(:bytesplice)
-          @window = "\0" * @window_size
-        else
-          # In Ruby < 3.2, create mutable window using String.new
-          @window = String.new("\0" * @window_size)
-        end
+        @window = if String.method_defined?(:bytesplice)
+                    "\0" * @window_size
+                  else
+                    # In Ruby < 3.2, create mutable window using String.new
+                    String.new("\0" * @window_size)
+                  end
         @window_posn = 0
         @frame_todo = FRAME_SIZE
 
