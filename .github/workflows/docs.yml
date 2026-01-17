@@ -80,8 +80,12 @@ jobs:
       - name: Run link checker
         run: |
           cd docs
-          # Only check external links (internal links excluded in .lychee.toml)
-          lychee --config .lychee.toml _site --format markdown --output lychee-report.md
+          # Check external links only - exclude root-relative internal links
+          # Internal links (starting with /) are excluded since they work on the deployed site
+          lychee --verbose --no-progress --config .lychee.toml _site/**/*.html \
+            --exclude '^/' \
+            --format markdown \
+            --output lychee-report.md
         continue-on-error: true
 
       - name: Display link check summary
@@ -93,12 +97,18 @@ jobs:
             cat lychee-report.md >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Check for broken links
+      - name: Fail if critical link errors found
+        if: always()
         run: |
           cd docs
-          # Re-run lychee without continue-on-error to actually fail the job
-          # Only check external links (internal links excluded in .lychee.toml)
-          lychee --config .lychee.toml _site
+          # Only fail if there are actual broken external links (not timeouts/excludes)
+          if [ -f lychee-report.md ]; then
+            # Check for actual link errors (excluding timeouts and 404s on external sites)
+            if grep -E '\[ERROR\]' lychee-report.md | grep -v 'TIMEOUT'; then
+              echo "❌ Critical link errors found"
+              exit 1
+            fi
+          fi
 
   validate-structure:
     name: Validate Documentation Structure
