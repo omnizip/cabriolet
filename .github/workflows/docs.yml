@@ -66,22 +66,28 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: docs/_site
+
       - name: Install lychee
         run: |
           curl -sSL https://github.com/lycheeverse/lychee/releases/download/lychee-v0.22.0/lychee-x86_64-unknown-linux-gnu.tar.gz | tar -xz
           sudo mv lychee /usr/local/bin/
 
-      - name: Check external links in documentation
+      - name: Clear stale lychee cache
         run: |
           cd docs
-          # Check only external links in source files (.adoc and .md)
-          # Skip the built _site since root-relative links won't resolve locally
-          # The baseurl /cabriolet/ generates links that work on GitHub Pages but not locally
-          lychee --verbose --no-progress --config .lychee.toml \
-            '**/*.adoc' \
-            '**/*.md' \
-            --format markdown \
-            --output lychee-report.md
+          rm -rf .lycheecache
+
+      - name: Check links in built site
+        run: |
+          cd docs
+          # Check external links only (exclude file:// URLs for internal navigation)
+          # Internal navigation links work in browsers but can't be checked as file paths
+          find _site -name "*.html" -print0 | xargs -0 lychee --cache --exclude 'file:///' --config .lychee.toml
         continue-on-error: true
 
       - name: Display link check summary
