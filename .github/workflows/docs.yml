@@ -66,24 +66,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: site
-          path: docs/_site
-
       - name: Install lychee
         run: |
           curl -sSL https://github.com/lycheeverse/lychee/releases/download/lychee-v0.22.0/lychee-x86_64-unknown-linux-gnu.tar.gz | tar -xz
           sudo mv lychee /usr/local/bin/
 
-      - name: Run link checker
+      - name: Check external links in documentation
         run: |
           cd docs
-          # Check external links only - exclude root-relative internal links
-          # Internal links (starting with /) are excluded since they work on the deployed site
-          lychee --verbose --no-progress --config .lychee.toml _site/**/*.html \
-            --exclude '^/' \
+          # Check only external links in source files (.adoc and .md)
+          # Skip the built _site since root-relative links won't resolve locally
+          # The baseurl /cabriolet/ generates links that work on GitHub Pages but not locally
+          lychee --verbose --no-progress --config .lychee.toml \
+            '**/*.adoc' \
+            '**/*.md' \
             --format markdown \
             --output lychee-report.md
         continue-on-error: true
@@ -97,15 +93,16 @@ jobs:
             cat lychee-report.md >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Fail if critical link errors found
+      - name: Check for critical link errors
         if: always()
         run: |
           cd docs
-          # Only fail if there are actual broken external links (not timeouts/excludes)
+          # Only fail if there are actual broken external links (excluding timeouts)
           if [ -f lychee-report.md ]; then
-            # Check for actual link errors (excluding timeouts and 404s on external sites)
+            # Check for actual link errors (excluding timeouts which are expected)
             if grep -E '\[ERROR\]' lychee-report.md | grep -v 'TIMEOUT'; then
               echo "❌ Critical link errors found"
+              grep -E '\[ERROR\]' lychee-report.md | grep -v 'TIMEOUT'
               exit 1
             fi
           fi
