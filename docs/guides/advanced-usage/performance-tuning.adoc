@@ -16,7 +16,7 @@ This guide covers optimization techniques for compression and extraction operati
 === References
 
 * xref:../../concepts/compression-algorithms.adoc[Compression Algorithms]
-* xref:memory-operations.adoc[Memory Operations Guide]
+* xref:../memory-operations.adoc[Memory Operations Guide]
 * xref:../../architecture/compression-layer.adoc[Compression Layer]
 
 === Understanding Performance Factors
@@ -661,6 +661,6 @@ PerformanceMonitor.monitor_extraction('archive.cab', 'output')
 === Bibliography
 
 * xref:../../concepts/compression-algorithms.adoc[Compression Algorithms]
-* xref:memory-operations.adoc[Memory Operations]
+* xref:../memory-operations.adoc[Memory Operations]
 * Ruby Performance Optimization Guide
 * Systems Performance by Brendan Gregg

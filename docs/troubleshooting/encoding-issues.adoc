@@ -118,5 +118,5 @@ safe_name = filename.gsub(/[^\w\s\-.]/, '_')
 
 === See also
 
-* xref:platform-specific.adoc[Platform-Specific Issues]
-* xref:common-errors.adoc[Common Errors]
+* xref:../platform-specific.adoc[Platform-Specific Issues]
+* xref:../common-errors.adoc[Common Errors]

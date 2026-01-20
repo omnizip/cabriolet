@@ -586,8 +586,8 @@ LZX Window (32KB - 2MB depending on type code)
 
 === See also
 
-* xref:index.adoc[Architecture Overview]
-* xref:system-layer.adoc[System Layer]
-* xref:format-layer.adoc[Format Layer]
+* xref:../index.adoc[Architecture Overview]
+* xref:../system-layer.adoc[System Layer]
+* xref:../format-layer.adoc[Format Layer]
 * xref:../../concepts/cabinet-structure.adoc[Cabinet Structure]
 * xref:../../concepts/compression-algorithms.adoc[Compression Algorithms]

@@ -120,5 +120,5 @@ Performance on 512MB RAM system:
 
 === See also
 
-* xref:compression-benchmarks.adoc[Compression Benchmarks]
+* xref:../compression-benchmarks.adoc[Compression Benchmarks]
 * xref:guides/advanced-usage/performance-tuning.adoc[Performance Tuning]

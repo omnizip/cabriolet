@@ -16,7 +16,7 @@ This guide covers error recovery and handling strategies when working with Cabri
 === References
 
 * xref:../../reference/api/error-classes.adoc[Error Classes Reference]
-* xref:salvage-mode.adoc[Salvage Mode Guide]
+* xref:../salvage-mode.adoc[Salvage Mode Guide]
 * xref:../../concepts/compression-algorithms.adoc[Compression Algorithms]
 
 === Error Class Hierarchy
@@ -591,6 +591,6 @@ end
 ==== Bibliography
 
 * xref:../../reference/api/error-classes.adoc[Error Classes Reference]
-* xref:salvage-mode.adoc[Salvage Mode Guide]
+* xref:../salvage-mode.adoc[Salvage Mode Guide]
 * xref:../formats/cab-format.adoc[CAB Format Guide]
 * Ruby Exception Handling Best Practices

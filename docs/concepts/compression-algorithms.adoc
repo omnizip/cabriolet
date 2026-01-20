@@ -14,8 +14,8 @@ Understanding the compression algorithms used in Microsoft Cabinet files and rel
 
 === References
 
-* xref:huffman-coding.adoc[Huffman Coding]
-* xref:bitstreams.adoc[Bitstream Processing]
+* xref:../huffman-coding.adoc[Huffman Coding]
+* xref:../bitstreams.adoc[Bitstream Processing]
 
 == Overview
 
@@ -431,7 +431,7 @@ Encoded: 111 0 10 10 0 10 10 0 110 110 0
          = 1110101001010011001 (19 bits vs 88 bits uncompressed)
 ----
 
-See xref:huffman-coding.adoc[Huffman Coding] for details.
+See xref:../huffman-coding.adoc[Huffman Coding] for details.
 
 == Comparison
 

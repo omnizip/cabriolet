@@ -64,5 +64,5 @@ FileUtils.chmod(mode, output_path)
 
 === See also
 
-* xref:encoding-issues.adoc[Encoding Issues]
-* xref:common-errors.adoc[Common Errors]
+* xref:../encoding-issues.adoc[Encoding Issues]
+* xref:../common-errors.adoc[Common Errors]

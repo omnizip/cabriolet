@@ -792,4 +792,4 @@ end
 * Ruby I/O Documentation
 * xref:../../concepts/io-abstraction.adoc[I/O Abstraction Concepts]
 * xref:../../architecture/system-layer.adoc[System Layer Architecture]
-* xref:memory-operations.adoc[Memory Operations Guide]
+* xref:../memory-operations.adoc[Memory Operations Guide]

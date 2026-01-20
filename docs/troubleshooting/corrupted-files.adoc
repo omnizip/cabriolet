@@ -110,4 +110,4 @@ File.write('archive.cab.sha256', checksum)
 
 * xref:examples/recover-corrupted-archive.adoc[Recovery Example]
 * xref:guides/advanced-usage/salvage-mode.adoc[Salvage Mode Guide]
-* xref:common-errors.adoc[Common Errors]
+* xref:../common-errors.adoc[Common Errors]

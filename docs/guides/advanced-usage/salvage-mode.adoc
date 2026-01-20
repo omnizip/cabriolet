@@ -15,7 +15,7 @@ This guide explains how to use salvage mode to recover data from corrupted or da
 
 === References
 
-* xref:error-handling.adoc[Error Handling Guide]
+* xref:../error-handling.adoc[Error Handling Guide]
 * xref:../../reference/api/cab-api.adoc[CAB API Reference]
 * xref:../../concepts/compression-algorithms.adoc[Compression Algorithms]
 
@@ -627,7 +627,7 @@ end
 
 ==== Bibliography
 
-* xref:error-handling.adoc[Error Handling Guide]
+* xref:../error-handling.adoc[Error Handling Guide]
 * xref:../formats/cab-format.adoc[CAB Format Specification]
 * Data Recovery Best Practices
 * Digital Forensics Guidelines

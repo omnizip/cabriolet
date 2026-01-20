@@ -14,8 +14,8 @@ Understanding bit-level I/O operations used in compression algorithms.
 
 === References
 
-* xref:compression-algorithms.adoc[Compression Algorithms]
-* xref:huffman-coding.adoc[Huffman Coding]
+* xref:../compression-algorithms.adoc[Compression Algorithms]
+* xref:../huffman-coding.adoc[Huffman Coding]
 
 == Bit-Level Reading
 
@@ -172,5 +172,5 @@ end
 
 == Bibliography
 
-* xref:compression-algorithms.adoc[Compression Algorithms]
+* xref:../compression-algorithms.adoc[Compression Algorithms]
 * Binary I/O Best Practices
