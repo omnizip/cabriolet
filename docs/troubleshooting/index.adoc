@@ -19,28 +19,28 @@ This section provides solutions to common problems encountered when using Cabrio
 
 | "Invalid CAB signature"
 | Corrupted or wrong file type
-| xref:common-errors.adoc[Common Errors]
+| xref:../common-errors.adoc[Common Errors]
 
 | Slow extraction
 | Large LZX window or system resources
-| xref:performance-issues.adoc[Performance Issues]
+| xref:../performance-issues.adoc[Performance Issues]
 
 | Encoding errors
 | Character encoding mismatch
-| xref:encoding-issues.adoc[Encoding Issues]
+| xref:../encoding-issues.adoc[Encoding Issues]
 
 | Memory errors
 | Insufficient RAM for algorithm
-| xref:performance-issues.adoc[Performance Issues]
+| xref:../performance-issues.adoc[Performance Issues]
 
 | Platform-specific failures
 | OS compatibility issues
-| xref:platform-specific.adoc[Platform-Specific]
+| xref:../platform-specific.adoc[Platform-Specific]
 |===
 
 === Available Guides
 
-==== xref:common-errors.adoc[Common Errors and Solutions]
+==== xref:../common-errors.adoc[Common Errors and Solutions]
 
 Solutions for frequently encountered errors:
 
@@ -49,7 +49,7 @@ Solutions for frequently encountered errors:
 * Decompression errors
 * File not found issues
 
-==== xref:platform-specific.adoc[Platform-Specific Issues]
+==== xref:../platform-specific.adoc[Platform-Specific Issues]
 
 Operating system-specific problems:
 
@@ -58,7 +58,7 @@ Operating system-specific problems:
 * Linux permission problems
 * Character encoding differences
 
-==== xref:performance-issues.adoc[Performance and Memory Problems]
+==== xref:../performance-issues.adoc[Performance and Memory Problems]
 
 Resolving speed and resource issues:
 
@@ -67,7 +67,7 @@ Resolving speed and resource issues:
 * Memory allocation failures
 * Optimization strategies
 
-==== xref:corrupted-files.adoc[Handling Corrupted Archives]
+==== xref:../corrupted-files.adoc[Handling Corrupted Archives]
 
 Dealing with damaged archives:
 
@@ -76,7 +76,7 @@ Dealing with damaged archives:
 * Partial recovery
 * Prevention strategies
 
-==== xref:encoding-issues.adoc[Character Encoding Problems]
+==== xref:../encoding-issues.adoc[Character Encoding Problems]
 
 Resolving text encoding issues:
 

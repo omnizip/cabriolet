@@ -78,5 +78,5 @@ CAB extraction performance (MB/s):
 
 === See also
 
-* xref:compression-benchmarks.adoc[Compression Benchmarks]
-* xref:memory-benchmarks.adoc[Memory Benchmarks]
+* xref:../compression-benchmarks.adoc[Compression Benchmarks]
+* xref:../memory-benchmarks.adoc[Memory Benchmarks]

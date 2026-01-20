@@ -15,7 +15,7 @@ Understanding the internal structure of Microsoft Cabinet (CAB) files.
 === References
 
 * xref:../guides/formats/cab-format.adoc[CAB Format Guide]
-* xref:folders-and-files.adoc[Folders and Files]
+* xref:../folders-and-files.adoc[Folders and Files]
 
 == File Layout
 
