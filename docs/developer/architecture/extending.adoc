@@ -37,4 +37,4 @@ To add a new algorithm:
 === Bibliography
 
 * xref:../developer/contributing.adoc[Contributing Guide]
-* xref:design-principles.adoc[Design Principles]
+* xref:../design-principles.adoc[Design Principles]

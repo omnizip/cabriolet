@@ -73,4 +73,4 @@ CAB spanning across 3 volumes (650MB each):
 === See also
 
 * xref:../../guides/formats/format-comparison.adoc[Format Comparison]
-* xref:compression-benchmarks.adoc[Compression Benchmarks]
+* xref:../compression-benchmarks.adoc[Compression Benchmarks]

@@ -15,8 +15,8 @@ API reference for all data model classes used throughout Cabriolet.
 
 === References
 
-* xref:cab-api.adoc[CAB API]
-* xref:chm-api.adoc[CHM API]
+* xref:../cab-api.adoc[CAB API]
+* xref:../chm-api.adoc[CHM API]
 
 == CAB Models
 

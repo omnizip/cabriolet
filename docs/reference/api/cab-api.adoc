@@ -16,7 +16,7 @@ Complete API reference for [`Cabriolet::CAB::Decompressor`](lib/cabriolet/cab/de
 === References
 
 * xref:../../guides/formats/cab-format.adoc[CAB Format Guide]
-* xref:models.adoc[Model Classes]
+* xref:../models.adoc[Model Classes]
 * xref:system-io.adoc[System I/O Classes]
 
 == CAB::Decompressor

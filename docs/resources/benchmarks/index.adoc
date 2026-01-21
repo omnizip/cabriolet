@@ -57,7 +57,7 @@ The benchmark suite uses a standardized dataset:
 
 === Available Benchmark Reports
 
-==== xref:compression-benchmarks.adoc[Compression Algorithm Benchmarks]
+==== xref:../compression-benchmarks.adoc[Compression Algorithm Benchmarks]
 
 Detailed performance metrics for each compression algorithm:
 
@@ -66,7 +66,7 @@ Detailed performance metrics for each compression algorithm:
 * Compression ratio (%)
 * Memory usage during compression/decompression
 
-==== xref:format-benchmarks.adoc[Format-Specific Benchmarks]
+==== xref:../format-benchmarks.adoc[Format-Specific Benchmarks]
 
 Performance comparisons across different archive formats:
 
@@ -75,7 +75,7 @@ Performance comparisons across different archive formats:
 * Multi-volume performance
 * Metadata extraction speed
 
-==== xref:platform-benchmarks.adoc[Platform and Ruby Version Benchmarks]
+==== xref:../platform-benchmarks.adoc[Platform and Ruby Version Benchmarks]
 
 Cross-platform and Ruby version comparisons:
 
@@ -84,7 +84,7 @@ Cross-platform and Ruby version comparisons:
 * 32-bit vs. 64-bit performance
 * JRuby vs. MRI performance
 
-==== xref:memory-benchmarks.adoc[Memory Usage Profiles]
+==== xref:../memory-benchmarks.adoc[Memory Usage Profiles]
 
 Memory consumption analysis:
 

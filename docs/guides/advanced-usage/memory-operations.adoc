@@ -16,8 +16,8 @@ This guide covers in-memory archive processing, including creating, manipulating
 === References
 
 * xref:../../reference/api/system-io.adoc[System I/O API]
-* xref:custom-io-handlers.adoc[Custom I/O Handlers]
-* xref:performance-tuning.adoc[Performance Tuning]
+* xref:../custom-io-handlers.adoc[Custom I/O Handlers]
+* xref:../performance-tuning.adoc[Performance Tuning]
 
 === Understanding In-Memory Operations
 
@@ -707,6 +707,6 @@ end
 ==== Bibliography
 
 * xref:../../reference/api/system-io.adoc[System I/O API Reference]
-* xref:custom-io-handlers.adoc[Custom I/O Handlers]
-* xref:performance-tuning.adoc[Performance Tuning Guide]
+* xref:../custom-io-handlers.adoc[Custom I/O Handlers]
+* xref:../performance-tuning.adoc[Performance Tuning Guide]
 * Ruby Memory Management Best Practices

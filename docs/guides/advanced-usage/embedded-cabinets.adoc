@@ -495,4 +495,4 @@ end
 * Microsoft Cabinet SDK Documentation
 * Portable Executable (PE) File Format
 * xref:../formats/cab-format.adoc[CAB Format Guide]
-* xref:salvage-mode.adoc[Salvage Mode Guide]
+* xref:../salvage-mode.adoc[Salvage Mode Guide]

@@ -178,4 +178,4 @@ grand_parent: Appendix
 === See also
 
 * xref:guides/compression/choosing-algorithm.adoc[Choosing Algorithm]
-* xref:format-benchmarks.adoc[Format Benchmarks]
+* xref:../format-benchmarks.adoc[Format Benchmarks]

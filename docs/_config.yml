@@ -14,6 +14,7 @@ asciidoctor:
     - source-highlighter=rouge
     - icons=font
     - experimental=''
+    - relfilesuffix=
 
 plugins:
   - jekyll-asciidoc

@@ -49,10 +49,11 @@ cache = true
 # Only check unique links
 no_progress = true
 
-# Check HTTPS certificates
-insecure = false
+# Exclude all private IPs (localhost, file://, etc.)
+exclude_all_private = true
 
 # Scheme (http, https, file)
+# Only check http/https links, skip file:// links (internal navigation)
 scheme = ["https", "http"]
 
 # Don't fail on missing local files

@@ -16,7 +16,7 @@ API reference for [`Cabriolet::CHM::Decompressor`](lib/cabriolet/chm/decompresso
 === References
 
 * xref:../../guides/formats/chm-format.adoc[CHM Format Guide]
-* xref:models.adoc[Model Classes]
+* xref:../models.adoc[Model Classes]
 
 == CHM::Decompressor
 

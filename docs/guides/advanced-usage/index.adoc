@@ -14,7 +14,7 @@ This section covers advanced topics for power users and developers who need to g
 
 === Topics Covered
 
-==== xref:multi-part-cabinets.adoc[Multi-Part Cabinets]
+==== xref:../multi-part-cabinets.adoc[Multi-Part Cabinets]
 
 Working with cabinet files split across multiple parts:
 
@@ -23,7 +23,7 @@ Working with cabinet files split across multiple parts:
 * Handling disk spanning scenarios
 * Managing continuation cabinets
 
-==== xref:embedded-cabinets.adoc[Embedded Cabinets]
+==== xref:../embedded-cabinets.adoc[Embedded Cabinets]
 
 Finding and extracting cabinets embedded in other files:
 
@@ -32,7 +32,7 @@ Finding and extracting cabinets embedded in other files:
 * Handling multiple embedded cabinets
 * Forensic analysis techniques
 
-==== xref:custom-io-handlers.adoc[Custom I/O Handlers]
+==== xref:../custom-io-handlers.adoc[Custom I/O Handlers]
 
 Implementing custom storage backends:
 
@@ -41,7 +41,7 @@ Implementing custom storage backends:
 * Network and cloud storage
 * Database and encrypted file support
 
-==== xref:error-handling.adoc[Error Handling]
+==== xref:../error-handling.adoc[Error Handling]
 
 Robust error recovery and handling:
 
@@ -50,7 +50,7 @@ Robust error recovery and handling:
 * Retry and recovery patterns
 * Production-ready error handling
 
-==== xref:salvage-mode.adoc[Salvage Mode]
+==== xref:../salvage-mode.adoc[Salvage Mode]
 
 Recovering data from corrupted archives:
 
@@ -59,7 +59,7 @@ Recovering data from corrupted archives:
 * Block-level recovery techniques
 * Quality assessment of recovered data
 
-==== xref:performance-tuning.adoc[Performance Tuning]
+==== xref:../performance-tuning.adoc[Performance Tuning]
 
 Optimizing compression and extraction:
 
@@ -68,7 +68,7 @@ Optimizing compression and extraction:
 * Parallel processing
 * Benchmarking and profiling
 
-==== xref:memory-operations.adoc[Memory Operations]
+==== xref:../memory-operations.adoc[Memory Operations]
 
 In-memory archive processing:
 
@@ -89,9 +89,9 @@ These guides assume you're familiar with:
 
 If you encounter issues with advanced features:
 
-1. Check the xref:error-handling.adoc[Error Handling guide]
+1. Check the xref:../error-handling.adoc[Error Handling guide]
 2. Review relevant xref:../../reference/api/index.adoc[API documentation]
-3. Try xref:salvage-mode.adoc[salvage mode] for corrupted archives
+3. Try xref:../salvage-mode.adoc[salvage mode] for corrupted archives
 4. Consult the xref:../../troubleshooting/index.adoc[Troubleshooting guide]
 
 === Related sections

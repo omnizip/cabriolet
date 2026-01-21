@@ -98,6 +98,6 @@ puts "Extraction took #{time.real} seconds"
 
 === See also
 
-* xref:common-errors.adoc[Common Errors]
+* xref:../common-errors.adoc[Common Errors]
 * xref:guides/advanced-usage/performance-tuning.adoc[Performance Tuning]
 * xref:resources/benchmarks/index.adoc[Benchmarks]

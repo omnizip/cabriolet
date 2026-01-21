@@ -14,8 +14,8 @@ Understanding Huffman coding, a fundamental statistical compression technique.
 
 === References
 
-* xref:compression-algorithms.adoc[Compression Algorithms]
-* xref:bitstreams.adoc[Bitstream Processing]
+* xref:../compression-algorithms.adoc[Compression Algorithms]
+* xref:../bitstreams.adoc[Bitstream Processing]
 
 == Principle
 
@@ -175,4 +175,4 @@ E       3       110
 == Bibliography
 
 * "A Method for the Construction of Minimum-Redundancy Codes" - D.A. Huffman
-* xref:compression-algorithms.adoc[Compression Algorithms]
+* xref:../compression-algorithms.adoc[Compression Algorithms]

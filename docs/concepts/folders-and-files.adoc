@@ -14,8 +14,8 @@ Understanding how CAB files organize content using folders and files.
 
 === References
 
-* xref:cabinet-structure.adoc[Cabinet Structure]
-* xref:compression-algorithms.adoc[Compression Algorithms]
+* xref:../cabinet-structure.adoc[Cabinet Structure]
+* xref:../compression-algorithms.adoc[Compression Algorithms]
 
 == Folder Concept
 
