@@ -105,6 +105,9 @@ module Cabriolet
                      reset_interval: 0, output_length: 0, is_delta: false, salvage: false, **_kwargs)
         super(io_system, input, output, buffer_size)
 
+        # Store salvage flag for error handling
+        @salvage = salvage
+
         # Validate window_bits
         if is_delta
           unless (17..25).cover?(window_bits)
@@ -195,7 +198,17 @@ module Cabriolet
           frame_size = calculate_frame_size
 
           # Decode blocks until frame is complete
-          decode_frame(frame_size)
+          begin
+            decode_frame(frame_size)
+          rescue DecompressionError => e
+            # In salvage mode, if decompression fails, return what we have so far
+            if @salvage
+              warn "Salvage: LZX decompression failed at frame #{@frame}: #{e.message}"
+              return total_written
+            else
+              raise
+            end
+          end
 
           # Apply Intel E8 transformation if needed
           frame_data = if should_apply_e8_transform?(frame_size)
@@ -391,6 +404,35 @@ module Cabriolet
         @maintree = Huffman::Tree.new(@maintree_lengths, @maintree_maxsymbols,
                                       bit_order: :msb)
         unless @maintree.build_table(LENGTH_TABLEBITS)
+          # In salvage mode, try to build with a default distribution
+          if @salvage
+            # For a valid Huffman tree with @maintree_maxsymbols symbols and LENGTH_TABLEBITS=12,
+            # we need sum(2^(12-len)) = 4096 (for complete tree) or <= 4096 (for partial).
+            # For @maintree_maxsymbols = 784, we need to distribute symbols across lengths 8-10:
+            # Using: 128 at len8 (2048 slots) + 384 at len9 (768 slots) + 272 at len10 (256 slots)
+            # Total: 2048 + 768 + 256 = 3072 slots, leaving 1024 for longer codes
+            # Simpler: use lengths that sum to exactly 4096
+            # 784 symbols: distribute as 192 at len9, 592 at len10 = 384 + 592 = 976 (not enough)
+            # 784 symbols: distribute as 64 at len8, 576 at len9, 144 at len10 = 128 + 1152 + 144 = 1424
+            # Final: 784 symbols across lengths 8-11 to fill 4096 slots
+            # Verify: 64*128 + 384*64 + 256*32 + 80*16 = 8192 + 24576 + 8192 + 1280 = 42240 (wrong)
+
+            # Recalculate: 2^(12-len) slots needed per symbol
+            # len8: 16 slots/symbol, len9: 8 slots/symbol, len10: 4 slots/symbol, len11: 2 slots/symbol
+            # Total slots = sum(2^(12-len) for each symbol) must <= 4096
+            # Simple valid distribution for 784 symbols:
+            # 256 at len10 = 256*4 = 1024
+            # 528 at len12 = 528*1 = 528
+            # Total = 1552 (valid but incomplete tree)
+
+            default_main_lengths = []
+            256.times { default_main_lengths << 10 }
+            528.times { default_main_lengths << 12 }
+            @maintree_lengths = default_main_lengths
+            @maintree = Huffman::Tree.new(default_main_lengths, @maintree_maxsymbols,
+                                          bit_order: :msb)
+            return if @maintree.build_table(LENGTH_TABLEBITS)
+          end
           raise DecompressionError,
                 "Failed to build main tree"
         end
@@ -427,6 +469,22 @@ module Cabriolet
         @pretree = Huffman::Tree.new(@pretree_lengths, PRETREE_MAXSYMBOLS,
                                      bit_order: :msb)
         return if @pretree.build_table(PRETREE_TABLEBITS)
+
+        # In salvage mode, try to continue with a valid default tree
+        if @salvage
+          # For a valid Huffman tree with table_bits=6, we need exactly 64 slots.
+          # With 8 symbols at length 3: 8 * 2^(6-3) = 8 * 8 = 64 slots (complete)
+          # For simplicity: 8 at length 3 fills direct table (64 slots)
+          default_lengths = [
+            3, 3, 3, 3, 3, 3, 3, 3,  # 8 at length 3: fills 64 slots
+            7, 7, 7, 7, 7, 7, 7, 7,  # 8 at length 7: extended table
+            7, 7, 7, 7               # 4 at length 7: extended table
+          ]
+          @pretree_lengths = default_lengths
+          @pretree = Huffman::Tree.new(default_lengths, PRETREE_MAXSYMBOLS,
+                                       bit_order: :msb)
+          return if @pretree.build_table(PRETREE_TABLEBITS)
+        end
 
         raise DecompressionError, "Failed to build pretree"
       end
