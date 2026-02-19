@@ -34,25 +34,7 @@ module Cabriolet
       def extract_file(file, output_path, **options)
         salvage = options[:salvage] || @decompressor.salvage
         folder = file.folder
-
-        # Validate file
-        raise Cabriolet::ArgumentError, "File has no folder" unless folder
-
-        if file.offset > Constants::LENGTH_MAX
-          raise DecompressionError,
-                "File offset beyond 2GB limit"
-        end
-
-        # Check file length
-        filelen = file.length
-        if filelen > (Constants::LENGTH_MAX - file.offset)
-          unless salvage
-            raise DecompressionError,
-                  "File length exceeds 2GB limit"
-          end
-
-          filelen = Constants::LENGTH_MAX - file.offset
-        end
+        filelen = validate_file_for_extraction(file, folder, salvage)
 
         # Check for merge requirements
         if folder.needs_prev_merge?
@@ -60,86 +42,36 @@ module Cabriolet
                 "File requires previous cabinet, cabinet set is incomplete"
         end
 
-        # Check file fits within folder
-        unless salvage
-          max_len = folder.num_blocks * Constants::BLOCK_MAX
-          if file.offset > max_len || filelen > (max_len - file.offset)
-            raise DecompressionError, "File extends beyond folder data"
-          end
-        end
+        validate_file_in_folder(folder, file.offset, filelen, salvage)
 
         # Create output directory if needed
         output_dir = ::File.dirname(output_path)
         FileUtils.mkdir_p(output_dir) unless ::File.directory?(output_dir)
 
-        # Check if we need to change folder or reset (libmspack lines 1076-1078)
-        if ENV["DEBUG_BLOCK"]
-          warn "DEBUG extract_file: Checking reset condition for file #{file.filename} (offset=#{file.offset}, length=#{file.length})"
-          warn "  @current_folder == folder: #{@current_folder == folder} (current=#{@current_folder.object_id}, new=#{folder.object_id})"
-          warn "  @current_offset (#{@current_offset}) > file.offset (#{file.offset}): #{@current_offset > file.offset}"
-          warn "  @current_decomp.nil?: #{@current_decomp.nil?}"
-          warn "  Reset needed?: #{@current_folder != folder || @current_offset > file.offset || !@current_decomp}"
-        end
-
-        if @current_folder != folder || @current_offset > file.offset || !@current_decomp
-          if ENV["DEBUG_BLOCK"]
-            warn "DEBUG extract_file: RESETTING state (creating new BlockReader)"
-          end
-
-          # Reset state
-          @current_input&.close
-          @current_input = nil
-          @current_decomp = nil
-
-          # Create new input (libmspack lines 1092-1095)
-          # This BlockReader will be REUSED across all files in this folder
-          @current_input = BlockReader.new(@io_system, folder.data,
-                                           folder.num_blocks, salvage)
-          @current_folder = folder
-          @current_offset = 0
-
-          # Create decompressor ONCE and reuse it (this is the key fix!)
-          # The decompressor maintains bitstream state across files
-          @current_decomp = @decompressor.create_decompressor(folder,
-                                                              @current_input, nil)
-        elsif ENV["DEBUG_BLOCK"]
-          warn "DEBUG extract_file: NOT resetting (reusing existing BlockReader and decompressor)"
-        end
-
-        # Skip ahead if needed (libmspack lines 1130-1134)
-        if file.offset > @current_offset
-          skip_bytes = file.offset - @current_offset
-
-          # Decompress with NULL output to skip (libmspack line 1130: self->d->outfh = NULL)
-          null_output = System::MemoryHandle.new("", Constants::MODE_WRITE)
-
-          # Reuse existing decompressor, change output to NULL
-          @current_decomp.instance_variable_set(:@output, null_output)
-
-          # Set output length for LZX frame limiting
-          @current_decomp.set_output_length(skip_bytes) if @current_decomp.respond_to?(:set_output_length)
-
-          @current_decomp.decompress(skip_bytes)
-          @current_offset += skip_bytes
-        end
+        setup_decompressor_for_folder(folder, salvage, file.offset)
+        skip_to_file_offset(file.offset, salvage, file.filename)
 
         # Extract actual file (libmspack lines 1137-1141)
         output_fh = @io_system.open(output_path, Constants::MODE_WRITE)
 
         begin
-          # Reuse existing decompressor, change output to real file
-          @current_decomp.instance_variable_set(:@output, output_fh)
-
-          # Set output length for LZX frame limiting
-          @current_decomp.set_output_length(filelen) if @current_decomp.respond_to?(:set_output_length)
-
-          @current_decomp.decompress(filelen)
-          @current_offset += filelen
+          write_file_data(output_fh, filelen)
+        rescue DecompressionError
+          handle_extraction_error(output_fh, output_path, file.filename, salvage, filelen)
         ensure
           output_fh.close
         end
 
         filelen
+      end
+
+      # Reset extraction state (used in salvage mode to recover from errors)
+      def reset_state
+        @current_input&.close
+        @current_input = nil
+        @current_decomp = nil
+        @current_folder = nil
+        @current_offset = 0
       end
 
       # Extract all files from a cabinet
@@ -150,16 +82,19 @@ module Cabriolet
       # @option options [Boolean] :preserve_paths Preserve directory structure (default: true)
       # @option options [Boolean] :set_timestamps Set file modification times (default: true)
       # @option options [Proc] :progress Progress callback
+      # @option options [Boolean] :salvage Skip files that fail to extract (default: false)
       # @return [Integer] Number of files extracted
       def extract_all(cabinet, output_dir, **options)
         preserve_paths = options.fetch(:preserve_paths, true)
         set_timestamps = options.fetch(:set_timestamps, true)
         progress = options[:progress]
+        salvage = options[:salvage] || false
 
         # Create output directory
         FileUtils.mkdir_p(output_dir) unless ::File.directory?(output_dir)
 
         count = 0
+        failed_count = 0
         cabinet.files.each do |file|
           # Determine output path
           output_path = if preserve_paths
@@ -169,8 +104,18 @@ module Cabriolet
                                       ::File.basename(file.filename))
                         end
 
-          # Extract file
-          extract_file(file, output_path, **options)
+          # Extract file (skip if salvage mode and extraction fails)
+          begin
+            extract_file(file, output_path, **options)
+          rescue DecompressionError => e
+            if salvage
+              warn "Salvage: skipping #{file.filename}: #{e.message}"
+              failed_count += 1
+              next
+            else
+              raise
+            end
+          end
 
           # Set timestamp if requested
           if set_timestamps && file.modification_time
@@ -185,10 +130,147 @@ module Cabriolet
           progress&.call(file, count, cabinet.files.size)
         end
 
+        warn "Salvage: #{failed_count} file(s) skipped due to extraction errors" if failed_count.positive?
+
         count
       end
 
       private
+
+      # Validate file for extraction
+      #
+      # @param file [Models::File] File to validate
+      # @param folder [Models::Folder] Folder containing the file
+      # @param salvage [Boolean] Salvage mode flag
+      # @return [Integer] Validated file length
+      def validate_file_for_extraction(file, folder, salvage)
+        raise Cabriolet::ArgumentError, "File has no folder" unless folder
+
+        if file.offset > Constants::LENGTH_MAX
+          raise DecompressionError,
+                "File offset beyond 2GB limit"
+        end
+
+        filelen = file.length
+        if filelen > (Constants::LENGTH_MAX - file.offset)
+          unless salvage
+            raise DecompressionError,
+                  "File length exceeds 2GB limit"
+          end
+
+          filelen = Constants::LENGTH_MAX - file.offset
+        end
+
+        filelen
+      end
+
+      # Validate file fits within folder
+      #
+      # @param folder [Models::Folder] Folder to check
+      # @param file_offset [Integer] File offset
+      # @param filelen [Integer] File length
+      # @param salvage [Boolean] Salvage mode flag
+      def validate_file_in_folder(folder, file_offset, filelen, salvage)
+        return if salvage
+
+        max_len = folder.num_blocks * Constants::BLOCK_MAX
+        return unless file_offset > max_len || filelen > (max_len - file_offset)
+
+        raise DecompressionError, "File extends beyond folder data"
+      end
+
+      # Setup decompressor for folder
+      #
+      # @param folder [Models::Folder] Folder to setup for
+      # @param salvage [Boolean] Salvage mode flag
+      # @param file_offset [Integer] File offset for reset condition check
+      def setup_decompressor_for_folder(folder, salvage, file_offset)
+        if ENV["DEBUG_BLOCK"]
+          warn "DEBUG extract_file: Checking reset condition"
+          warn "  @current_folder == folder: #{@current_folder == folder}"
+          warn "  @current_offset (#{@current_offset}) > file_offset (#{file_offset})"
+          warn "  @current_decomp.nil?: #{@current_decomp.nil?}"
+        end
+
+        if @current_folder != folder || @current_offset > file_offset || !@current_decomp
+          if ENV["DEBUG_BLOCK"]
+            warn "DEBUG extract_file: RESETTING state (creating new BlockReader)"
+          end
+
+          # Reset state
+          @current_input&.close
+          @current_input = nil
+          @current_decomp = nil
+
+          # Create new input (libmspack lines 1092-1095)
+          @current_input = BlockReader.new(@io_system, folder.data,
+                                           folder.num_blocks, salvage)
+          @current_folder = folder
+          @current_offset = 0
+
+          # Create decompressor ONCE and reuse it
+          @current_decomp = @decompressor.create_decompressor(folder,
+                                                              @current_input, nil)
+        elsif ENV["DEBUG_BLOCK"]
+          warn "DEBUG extract_file: NOT resetting (reusing existing BlockReader)"
+        end
+      end
+
+      # Skip to file offset
+      #
+      # @param file_offset [Integer] Target offset
+      # @param salvage [Boolean] Salvage mode flag
+      # @param filename [String] Filename for error messages
+      def skip_to_file_offset(file_offset, salvage, filename)
+        return unless file_offset > @current_offset
+
+        skip_bytes = file_offset - @current_offset
+        null_output = System::MemoryHandle.new("", Constants::MODE_WRITE)
+
+        @current_decomp.instance_variable_set(:@output, null_output)
+        @current_decomp.set_output_length(skip_bytes) if @current_decomp.respond_to?(:set_output_length)
+
+        begin
+          @current_decomp.decompress(skip_bytes)
+        rescue DecompressionError
+          if salvage
+            warn "Salvage: unable to skip to file #{filename}, resetting state"
+            reset_state
+          else
+            raise
+          end
+        end
+        @current_offset += skip_bytes
+      end
+
+      # Write file data using decompressor
+      #
+      # @param output_fh [System::FileHandle] Output file handle
+      # @param filelen [Integer] Number of bytes to write
+      def write_file_data(output_fh, filelen)
+        @current_decomp.instance_variable_set(:@output, output_fh)
+        @current_decomp.set_output_length(filelen) if @current_decomp.respond_to?(:set_output_length)
+        @current_decomp.decompress(filelen)
+        @current_offset += filelen
+      end
+
+      # Handle extraction error
+      #
+      # @param output_fh [System::FileHandle] Output file handle
+      # @param output_path [String] Output file path
+      # @param filename [String] Filename for error messages
+      # @param salvage [Boolean] Salvage mode flag
+      # @raise [DecompressionError] If not in salvage mode
+      def handle_extraction_error(output_fh, output_path, filename, salvage, _filelen)
+        output_fh.close
+        if salvage
+          ::File.write(output_path, "", mode: "wb")
+          warn "Salvage: created empty file for #{filename} due to decompression error"
+          reset_state
+        else
+          raise
+        end
+      end
 
       # Set file attributes based on CAB attributes
       #
