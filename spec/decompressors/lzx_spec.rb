@@ -492,4 +492,59 @@ RSpec.describe Cabriolet::Decompressors::LZX do
       expect(lzx.instance_variable_get(:@frame_posn)).to eq(32_768)
     end
   end
+
+  describe "nil frame_data guard" do
+    # The nil guard is a defensive check: if @frame_posn is somehow out of
+    # bounds (corrupt stream, regression in the >= wrap check), we get a
+    # clear DecompressionError instead of a cryptic NoMethodError on nil.
+
+    it "raises DecompressionError when frame_data is nil" do
+      input = Cabriolet::System::MemoryHandle.new("\x00" * 65_536)
+      output = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
+
+      lzx = described_class.new(io_system, input, output, 4096,
+                                window_bits: 15, output_length: 32_768)
+
+      lzx.instance_variable_set(:@header_read, true)
+      lzx.instance_variable_set(:@intel_filesize, 0)
+      # Place frame_posn beyond window — forces @window[@frame_posn, n] → nil
+      lzx.instance_variable_set(:@frame_posn, 40_000)
+      lzx.instance_variable_set(:@window_posn, 0)
+      lzx.instance_variable_set(:@frame, 0)
+      lzx.instance_variable_set(:@offset, 0)
+      lzx.instance_variable_set(:@window, "A".b * 32_768)
+
+      allow(lzx).to receive(:decode_frame)
+      bs = lzx.instance_variable_get(:@bitstream)
+      allow(bs).to receive(:byte_align)
+
+      expect { lzx.decompress(32_768) }.to raise_error(
+        Cabriolet::DecompressionError, /nil frame data/
+      )
+    end
+
+    it "breaks gracefully in salvage mode when frame_data is nil" do
+      input = Cabriolet::System::MemoryHandle.new("\x00" * 65_536)
+      output = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
+
+      lzx = described_class.new(io_system, input, output, 4096,
+                                window_bits: 15, output_length: 32_768, salvage: true)
+
+      lzx.instance_variable_set(:@header_read, true)
+      lzx.instance_variable_set(:@intel_filesize, 0)
+      lzx.instance_variable_set(:@frame_posn, 40_000)
+      lzx.instance_variable_set(:@window_posn, 0)
+      lzx.instance_variable_set(:@frame, 0)
+      lzx.instance_variable_set(:@offset, 0)
+      lzx.instance_variable_set(:@window, "A".b * 32_768)
+
+      allow(lzx).to receive(:decode_frame)
+      bs = lzx.instance_variable_get(:@bitstream)
+      allow(bs).to receive(:byte_align)
+
+      # Should not raise — returns 0 bytes written and prints a warning
+      result = lzx.decompress(32_768)
+      expect(result).to eq(0)
+    end
+  end
 end

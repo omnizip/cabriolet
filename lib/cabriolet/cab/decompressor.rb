@@ -157,8 +157,11 @@ module Cabriolet
               offset = cab_offset + 4
             end
           else
-            # No cabinet found in this chunk, move to next
-            offset += length
+            # No cabinet found in this chunk, move to next.
+            # Overlap by 20 bytes so MSCF signatures spanning chunk
+            # boundaries are not missed (state machine reads 20 bytes).
+            overlap = length > 20 ? 20 : 0
+            offset += [length - overlap, 1].max
           end
         end
 

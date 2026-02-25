@@ -60,12 +60,11 @@ module Cabriolet
         @window_bits = window_bits
         @window_size = 1 << window_bits
 
-        # Initialize window (mutable for Ruby < 3.2 bytesplice compatibility)
+        # Initialize window (must be binary to avoid UTF-8 character vs byte mismatch)
         @window = if String.method_defined?(:bytesplice)
-                    "\0" * @window_size
+                    ("\0" * @window_size).b
                   else
-                    # In Ruby < 3.2, create mutable window using String.new
-                    String.new("\0" * @window_size)
+                    String.new("\0" * @window_size, encoding: Encoding::BINARY)
                   end
         @window_posn = 0
         @frame_todo = FRAME_SIZE

@@ -89,7 +89,7 @@ module Cabriolet
                                                  buffer_size, bit_order: :msb)
 
         # Initialize sliding window for LZ77
-        @window = "\0" * @window_size
+        @window = ("\0" * @window_size).b
         @window_pos = 0
 
         # Initialize R0, R1, R2 (LRU offset registers)
