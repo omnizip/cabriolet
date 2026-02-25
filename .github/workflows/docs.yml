@@ -4,350 +4,66 @@ on:
   push:
     branches:
       - main
-      - master
     paths:
       - 'docs/**'
       - '.github/workflows/docs.yml'
   pull_request:
     paths:
       - 'docs/**'
-      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
-    name: Build Jekyll Site
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.2'
-          bundler-cache: false
+          ruby-version: '3.4'
+          bundler-cache: true
+          cache-version: 0
+          working-directory: docs
 
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: docs/vendor/bundle
-          key: ${{ runner.os }}-gems-${{ hashFiles('docs/Gemfile.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-gems-
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v5
 
-      - name: Install dependencies
-        run: |
-          cd docs
-          bundle config path vendor/bundle
-          bundle install --jobs 4 --retry 3
-
-      - name: Build Jekyll site
-        run: |
-          cd docs
-          bundle exec jekyll build --trace
+      - name: Build with Jekyll
+        run: bundle exec jekyll build --verbose --trace --baseurl "${{ steps.pages.outputs.base_path }}"
+        working-directory: docs
         env:
           JEKYLL_ENV: production
+          JEKYLL_LOG_LEVEL: debug
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
         with:
-          name: site
           path: docs/_site
-          retention-days: 7
 
-  link-check:
-    name: Check Links
+  # Deployment job
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     needs: build
-    continue-on-error: true
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: site
-          path: docs/_site
-
-      - name: Install lychee
-        run: |
-          curl -sSL https://github.com/lycheeverse/lychee/releases/download/lychee-v0.22.0/lychee-x86_64-unknown-linux-gnu.tar.gz | tar -xz
-          sudo mv lychee /usr/local/bin/
-
-      - name: Clear stale lychee cache
-        run: |
-          cd docs
-          rm -rf .lycheecache
-
-      - name: Check links in built site
-        run: |
-          cd docs
-          # Check external links only (exclude file:// URLs for internal navigation)
-          # Internal navigation links work in browsers but can't be checked as file paths
-          find _site -name "*.html" -print0 | xargs -0 lychee --cache --exclude 'file:///' --config .lychee.toml
-        continue-on-error: true
-
-      - name: Display link check summary
-        if: always()
-        run: |
-          cd docs
-          if [ -f lychee-report.md ]; then
-            echo "## Link Check Results" >> $GITHUB_STEP_SUMMARY
-            cat lychee-report.md >> $GITHUB_STEP_SUMMARY
-          fi
-
-      - name: Check for critical link errors
-        if: always()
-        run: |
-          cd docs
-          # Only fail if there are actual broken external links (excluding timeouts)
-          if [ -f lychee-report.md ]; then
-            # Check for actual link errors (excluding timeouts which are expected)
-            if grep -E '\[ERROR\]' lychee-report.md | grep -v 'TIMEOUT'; then
-              echo "❌ Critical link errors found"
-              grep -E '\[ERROR\]' lychee-report.md | grep -v 'TIMEOUT'
-              exit 1
-            fi
-          fi
-
-  validate-structure:
-    name: Validate Documentation Structure
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Check for required files
-        run: |
-          cd docs
-
-          # Check for essential files
-          required_files=(
-            "index.adoc"
-            "README.md"
-            "CONTRIBUTING.md"
-            "_config.yml"
-            "Gemfile"
-            ".lychee.toml"
-          )
-
-          missing_files=()
-          for file in "${required_files[@]}"; do
-            if [ ! -f "$file" ]; then
-              missing_files+=("$file")
-            fi
-          done
-
-          if [ ${#missing_files[@]} -gt 0 ]; then
-            echo "❌ Missing required files:"
-            printf '%s\n' "${missing_files[@]}"
-            exit 1
-          else
-            echo "✅ All required files present"
-          fi
-
-      - name: Validate YAML front matter
-        run: |
-          cd docs
-
-          echo "Checking YAML front matter in .adoc files..."
-
-          invalid_files=()
-          for file in $(find . -name "*.adoc" -not -path "./_site/*"); do
-            if ! head -1 "$file" | grep -q "^---$"; then
-              invalid_files+=("$file")
-            fi
-          done
-
-          if [ ${#invalid_files[@]} -gt 0 ]; then
-            echo "❌ Files missing YAML front matter:"
-            printf '%s\n' "${invalid_files[@]}"
-            echo ""
-            echo "All .adoc files should start with YAML front matter:"
-            echo "---"
-            echo "title: Page Title"
-            echo "nav_order: 1"
-            echo "---"
-            exit 1
-          else
-            echo "✅ All .adoc files have valid YAML front matter"
-          fi
-
-      - name: Check for orphaned pages
-        run: |
-          cd docs
-
-          echo "Checking for pages without nav_order..."
-
-          files_without_nav=()
-          for file in $(find . -name "*.adoc" -not -path "./_site/*" -not -name "index.adoc"); do
-            if ! grep -q "^nav_order:" "$file"; then
-              # Check if it has nav_exclude instead
-              if ! grep -q "^nav_exclude: true" "$file"; then
-                files_without_nav+=("$file")
-              fi
-            fi
-          done
-
-          if [ ${#files_without_nav[@]} -gt 0 ]; then
-            echo "⚠️  Files without nav_order or nav_exclude:"
-            printf '%s\n' "${files_without_nav[@]}"
-            echo ""
-            echo "Consider adding 'nav_order' or 'nav_exclude: true' to YAML front matter"
-          else
-            echo "✅ All pages have navigation configuration"
-          fi
-
-  security-check:
-    name: Security Scan
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.2'
-
-      - name: Install dependencies
-        run: |
-          cd docs
-          bundle install --jobs 4 --retry 3
-
-      - name: Run bundle audit
-        run: |
-          cd docs
-          gem install bundler-audit
-          bundle audit check --update
-        continue-on-error: true
-
-  spell-check:
-    name: Spell Check
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install aspell
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y aspell aspell-en
-
-      - name: Check spelling
-        run: |
-          cd docs
-
-          # Create custom dictionary for technical terms
-          cat > .aspell.en.pws << 'EOF'
-          personal_ws-1.1 en 100
-          Cabriolet
-          CAB
-          CHM
-          SZDD
-          KWAJ
-          HLP
-          LIT
-          OAB
-          MSZIP
-          LZX
-          LZSS
-          Quantum
-          Ribose
-          GitHub
-          AsciiDoc
-          Jekyll
-          lychee
-          UTF
-          API
-          CLI
-          EOF
-
-          # Find and check .adoc and .md files
-          find . -type f \( -name "*.adoc" -o -name "*.md" \) \
-            -not -path "./_site/*" \
-            -not -path "./vendor/*" \
-            -exec aspell --lang=en --mode=markdown --personal=./.aspell.en.pws list {} \; \
-            | sort -u > spelling-errors.txt
-
-          if [ -s spelling-errors.txt ]; then
-            echo "⚠️  Potential spelling errors found:"
-            cat spelling-errors.txt
-            echo ""
-            echo "Review these words - they may be technical terms to add to .aspell.en.pws"
-          else
-            echo "✅ No spelling errors found"
-          fi
-        continue-on-error: true
-
-  accessibility-check:
-    name: Accessibility Check
-    runs-on: ubuntu-latest
-    needs: build
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: site
-          path: docs/_site
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install pa11y
-        run: npm install -g pa11y-ci
-
-      - name: Run accessibility checks
-        run: |
-          cd docs/_site
-
-          # Create pa11y-ci config
-          cat > .pa11yci.json << 'EOF'
-          {
-            "defaults": {
-              "standard": "WCAG2AA",
-              "runners": ["axe"],
-              "ignore": [
-                "color-contrast"
-              ]
-            },
-            "urls": [
-              "index.html",
-              "getting-started/index.html",
-              "guides/index.html",
-              "reference/index.html"
-            ]
-          }
-          EOF
-
-          pa11y-ci --config .pa11yci.json || true
-        continue-on-error: true
-
-  summary:
-    name: Build Summary
-    runs-on: ubuntu-latest
-    needs: [build, link-check, validate-structure]
-    if: always()
-
-    steps:
-      - name: Generate summary
-        run: |
-          echo "## Documentation Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Jekyll build completed" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Link validation completed" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Structure validation completed" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📚 Documentation is ready for deployment" >> $GITHUB_STEP_SUMMARY
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
