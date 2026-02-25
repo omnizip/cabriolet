@@ -226,8 +226,8 @@ module Cabriolet
           # Advance frame
           @frame += 1
           @frame_posn += frame_size
-          @frame_posn = 0 if @frame_posn == @window_size
-          @window_posn = 0 if @window_posn == @window_size
+          @frame_posn = 0 if @frame_posn >= @window_size
+          @window_posn = 0 if @window_posn >= @window_size
 
           # Re-align bitstream (byte_align is safe to call even if already aligned)
           @bitstream.byte_align

@@ -452,7 +452,7 @@ file_length)
                                                         cablen_u32, caboff, file_length)
 
             # Not valid, restart search after "MSCF"
-            return nil
+            state = 0
           end
         end
 
