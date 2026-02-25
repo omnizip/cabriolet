@@ -66,7 +66,7 @@ module Cabriolet
         @fixed_codes = Huffman::Encoder.build_fixed_codes
 
         # Initialize sliding window for LZ77
-        @window = "\0" * WINDOW_SIZE
+        @window = ("\0" * WINDOW_SIZE).b
         @window_pos = 0
       end
 

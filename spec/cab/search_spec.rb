@@ -303,6 +303,56 @@ RSpec.describe Cabriolet::CAB::Decompressor, "#search" do
     end
   end
 
+  describe "chunk boundary overlap in search" do
+    # The search method reads the file in chunks of search_buffer_size.
+    # An MSCF header is 20 bytes. Without overlap, a signature spanning
+    # two chunks would be missed. The overlap ensures re-scanning.
+
+    it "finds a cabinet whose MSCF header spans a chunk boundary" do
+      require "tempfile"
+
+      # Use a fixture with exactly ONE MSCF signature so we know the
+      # overlap is the only way to find it when the header is split.
+      cab_data = File.binread(File.join(fixtures_dir, "normal_2files_1folder.cab"))
+
+      # Build a file: 30 bytes of non-MSCF padding + the single CAB.
+      # MSCF lands at absolute offset 30. The 20-byte header spans bytes 30-49.
+      temp_file = Tempfile.new("boundary_cab")
+      temp_file.binmode
+      temp_file.write("X" * 30)
+      temp_file.write(cab_data)
+      temp_file.close
+
+      # buffer_size=40: first chunk has bytes 0-39, capturing "MSCF" at 30
+      # but only 10 of the 20 header bytes (30-39). The state machine exits
+      # incomplete. The 20-byte overlap re-reads bytes 20-39 in the next
+      # chunk, placing the full 20-byte header in range.
+      decompressor.search_buffer_size = 40
+
+      cabinet = decompressor.search(temp_file.path)
+      expect(cabinet).not_to be_nil,
+                             "search should find cabinet when MSCF header spans chunk boundary " \
+                             "(MSCF at offset 30, buffer_size=40)"
+
+      temp_file.unlink
+    end
+
+    it "does not loop infinitely on a tiny file with no cabinet" do
+      require "tempfile"
+      temp_file = Tempfile.new("tiny_nocab")
+      # 20 bytes — exactly the overlap size; must not cause infinite loop
+      temp_file.write("X" * 20)
+      temp_file.close
+
+      decompressor.search_buffer_size = 20
+      # Should terminate and return nil, not hang
+      cabinet = decompressor.search(temp_file.path)
+      expect(cabinet).to be_nil
+
+      temp_file.unlink
+    end
+  end
+
   describe "cabinet properties" do
     it "parses cabinet properties correctly" do
       file_path = File.join(fixtures_dir, "search_basic.cab")

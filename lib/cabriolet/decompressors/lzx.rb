@@ -129,8 +129,8 @@ module Cabriolet
         @num_offsets = POSITION_SLOTS[window_bits - 15] << 3
         @maintree_maxsymbols = NUM_CHARS + @num_offsets
 
-        # Initialize window
-        @window = "\0" * @window_size
+        # Initialize window (must be binary to avoid UTF-8 character vs byte mismatch)
+        @window = ("\0" * @window_size).b
         @window_posn = 0
         @frame_posn = 0
         @frame = 0
@@ -149,7 +149,7 @@ module Cabriolet
         # Intel E8 transformation state
         @intel_filesize = 0
         @intel_started = false
-        @e8_buf = "\0" * FRAME_SIZE
+        @e8_buf = ("\0" * FRAME_SIZE).b
 
         # Initialize bitstream (LZX uses MSB-first bit ordering per libmspack lzxd.c)
         @bitstream = Binary::Bitstream.new(io_system, input, buffer_size,
@@ -216,6 +216,19 @@ module Cabriolet
                        else
                          @window[@frame_posn, frame_size]
                        end
+
+          # Defensive guard: frame_data should never be nil if the >= window
+          # wrap checks below are correct. If it is, the stream is corrupt
+          # or a regression has been introduced.
+          if frame_data.nil?
+            if @salvage
+              warn "Salvage: nil frame data at frame_posn=#{@frame_posn}, frame=#{@frame}"
+              break
+            end
+
+            raise DecompressionError,
+                  "LZX: nil frame data at position #{@frame_posn}, frame_size=#{frame_size}"
+          end
 
           # Write frame
           write_amount = [bytes - total_written, frame_size].min

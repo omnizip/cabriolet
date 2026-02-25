@@ -62,8 +62,8 @@ salvage: false, **_kwargs)
         super(io_system, input, output, buffer_size)
         @fix_mszip = fix_mszip
 
-        # Initialize sliding window
-        @window = "\0" * FRAME_SIZE
+        # Initialize sliding window (must be binary to avoid UTF-8 character vs byte mismatch)
+        @window = ("\0" * FRAME_SIZE).b
         @window_posn = 0
         @bytes_output = 0
         @window_offset = 0 # Offset into window for unconsumed data (for multi-file CFDATA blocks)
