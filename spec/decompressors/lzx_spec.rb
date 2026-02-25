@@ -375,4 +375,121 @@ RSpec.describe Cabriolet::Decompressors::LZX do
       expect(lzx.instance_variable_get(:@aligned_tree)).to be_nil
     end
   end
+
+  describe "frame position wrapping" do
+    # Regression tests for frame_posn/window_posn wrapping.
+    #
+    # The window is a circular buffer of @window_size bytes. frame_posn tracks
+    # where each frame starts. Normally frame_posn advances by exactly
+    # FRAME_SIZE (32768), landing exactly on window_size, so == works.
+    #
+    # But the last frame of an output can be shorter than FRAME_SIZE (when
+    # output_length is not a multiple of FRAME_SIZE). This leaves frame_posn
+    # at a misaligned position. The next full frame then overshoots
+    # window_size, so >= is required to catch it.
+    #
+    # Example with window_bits=15 (window_size=32768):
+    #   Short frame: frame_posn = 0 + 232 = 232  (no reset, 232 < 32768)
+    #   Next frame:  frame_posn = 232 + 32768 = 33000  (33000 > 32768!)
+    #   With ==:  33000 == 32768 is false → no reset → nil window read → crash
+    #   With >=:  33000 >= 32768 is true  → reset to 0 → correct
+
+    it "resets frame_posn to 0 when it overshoots window_size" do
+      input = Cabriolet::System::MemoryHandle.new("\x00" * 65_536)
+      output = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
+
+      lzx = described_class.new(io_system, input, output, 4096,
+                                window_bits: 15, output_length: 33_000)
+
+      # Simulate state after a short frame left frame_posn at 232
+      lzx.instance_variable_set(:@header_read, true)
+      lzx.instance_variable_set(:@intel_filesize, 0)
+      lzx.instance_variable_set(:@frame_posn, 232)
+      lzx.instance_variable_set(:@window_posn, 232)
+      lzx.instance_variable_set(:@frame, 1)
+      lzx.instance_variable_set(:@offset, 232)
+
+      # Fill window with data so @window[232, 32768] doesn't return nil
+      lzx.instance_variable_set(:@window, "A".b * 32_768)
+
+      # Stub decode_frame so we don't need valid LZX bitstream data
+      allow(lzx).to receive(:decode_frame) do |frame_size|
+        wp = lzx.instance_variable_get(:@window_posn)
+        new_wp = wp + frame_size
+        new_wp = 0 if new_wp >= 32_768
+        lzx.instance_variable_set(:@window_posn, new_wp)
+      end
+
+      bs = lzx.instance_variable_get(:@bitstream)
+      allow(bs).to receive(:byte_align)
+
+      lzx.decompress(32_768)
+
+      # frame_posn went from 232 + 32768 = 33000, which overshoots window_size (32768).
+      # The >= check must reset it to 0. If == were used, it would stay at 33000.
+      frame_posn = lzx.instance_variable_get(:@frame_posn)
+      expect(frame_posn).to eq(0),
+                            "frame_posn should wrap to 0 when it overshoots window_size " \
+                            "(got #{frame_posn}). The boundary check must use >= not =="
+    end
+
+    it "resets window_posn to 0 when it reaches window_size exactly" do
+      input = Cabriolet::System::MemoryHandle.new("\x00" * 65_536)
+      output = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
+
+      lzx = described_class.new(io_system, input, output, 4096,
+                                window_bits: 15, output_length: 32_768)
+
+      lzx.instance_variable_set(:@header_read, true)
+      lzx.instance_variable_set(:@intel_filesize, 0)
+      lzx.instance_variable_set(:@frame_posn, 0)
+      lzx.instance_variable_set(:@window_posn, 0)
+      lzx.instance_variable_set(:@frame, 0)
+      lzx.instance_variable_set(:@offset, 0)
+      lzx.instance_variable_set(:@window, "A".b * 32_768)
+
+      allow(lzx).to receive(:decode_frame) do |frame_size|
+        lzx.instance_variable_set(:@window_posn, frame_size)
+      end
+
+      bs = lzx.instance_variable_get(:@bitstream)
+      allow(bs).to receive(:byte_align)
+
+      lzx.decompress(32_768)
+
+      # frame_posn = 0 + 32768 = 32768 == window_size → reset to 0
+      # This is the exact-match case that == also handles.
+      expect(lzx.instance_variable_get(:@frame_posn)).to eq(0)
+      expect(lzx.instance_variable_get(:@window_posn)).to eq(0)
+    end
+
+    it "does not reset frame_posn when it is within window_size" do
+      input = Cabriolet::System::MemoryHandle.new("\x00" * 65_536)
+      output = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
+
+      # window_bits=16 → window_size=65536, so one FRAME_SIZE frame won't wrap
+      lzx = described_class.new(io_system, input, output, 4096,
+                                window_bits: 16, output_length: 32_768)
+
+      lzx.instance_variable_set(:@header_read, true)
+      lzx.instance_variable_set(:@intel_filesize, 0)
+      lzx.instance_variable_set(:@frame_posn, 0)
+      lzx.instance_variable_set(:@window_posn, 0)
+      lzx.instance_variable_set(:@frame, 0)
+      lzx.instance_variable_set(:@offset, 0)
+      lzx.instance_variable_set(:@window, "A".b * 65_536)
+
+      allow(lzx).to receive(:decode_frame) do |frame_size|
+        lzx.instance_variable_set(:@window_posn, frame_size)
+      end
+
+      bs = lzx.instance_variable_get(:@bitstream)
+      allow(bs).to receive(:byte_align)
+
+      lzx.decompress(32_768)
+
+      # frame_posn = 0 + 32768 = 32768 < 65536 → no reset
+      expect(lzx.instance_variable_get(:@frame_posn)).to eq(32_768)
+    end
+  end
 end

@@ -221,6 +221,88 @@ RSpec.describe Cabriolet::CAB::Decompressor, "#search" do
     end
   end
 
+  describe "searching past invalid MSCF signatures" do
+    # Regression test: find_cabinet_in_buffer must continue searching after
+    # encountering an MSCF signature that fails validation, not give up.
+    #
+    # Real-world case: EuroFix.exe has MSCF signatures at offsets 5175,
+    # 6222, and 21504. The first two fail validation but offset 21504
+    # is a real CAB with 134 extractable files.
+
+    it "finds a valid cabinet after invalid MSCF signatures" do
+      # Build a buffer with two MSCF signatures:
+      #   Offset 0:   invalid (foffset >= cablen → fails validation)
+      #   Offset 100: valid   (foffset < cablen, within file bounds)
+      buf = Array.new(300, 0)
+
+      # First MSCF at byte 0 — invalid: foffset(100) >= cablen(10)
+      "MSCF".bytes.each_with_index { |b, j| buf[j] = b }
+      buf[8] = 10 # cablen LSB = 10
+      buf[16] = 100 # foffset LSB = 100 (>= cablen, so invalid)
+
+      # Second MSCF at byte 100 — valid: foffset(50) < cablen(200)
+      "MSCF".bytes.each_with_index { |b, j| buf[100 + j] = b }
+      buf[108] = 200  # cablen LSB = 200
+      buf[116] = 50   # foffset LSB = 50 (< cablen, valid)
+
+      result = decompressor.send(:find_cabinet_in_buffer,
+                                 buf, 300, 0, nil, nil, 500)
+
+      expect(result).to eq(100),
+                        "find_cabinet_in_buffer should skip invalid MSCF at offset 0 " \
+                        "and return valid cabinet at offset 100 (got #{result.inspect})"
+    end
+
+    it "returns nil when all MSCF signatures are invalid" do
+      buf = Array.new(200, 0)
+
+      # MSCF at byte 0 — invalid: foffset(100) >= cablen(10)
+      "MSCF".bytes.each_with_index { |b, j| buf[j] = b }
+      buf[8] = 10
+      buf[16] = 100
+
+      result = decompressor.send(:find_cabinet_in_buffer,
+                                 buf, 200, 0, nil, nil, 500)
+      expect(result).to be_nil
+    end
+
+    it "finds cabinet at first position when first signature is valid" do
+      buf = Array.new(200, 0)
+
+      # MSCF at byte 0 — valid: foffset(50) < cablen(200)
+      "MSCF".bytes.each_with_index { |b, j| buf[j] = b }
+      buf[8] = 200 # cablen
+      buf[16] = 50 # foffset
+
+      result = decompressor.send(:find_cabinet_in_buffer,
+                                 buf, 200, 0, nil, nil, 500)
+      expect(result).to eq(0)
+    end
+
+    it "skips multiple invalid signatures before finding a valid one" do
+      buf = Array.new(500, 0)
+
+      # Invalid MSCF at byte 0
+      "MSCF".bytes.each_with_index { |b, j| buf[j] = b }
+      buf[8] = 10
+      buf[16] = 100 # foffset >= cablen
+
+      # Invalid MSCF at byte 100
+      "MSCF".bytes.each_with_index { |b, j| buf[100 + j] = b }
+      buf[108] = 5
+      buf[116] = 50 # foffset >= cablen
+
+      # Valid MSCF at byte 200
+      "MSCF".bytes.each_with_index { |b, j| buf[200 + j] = b }
+      buf[208] = 200 # cablen = 200 (low byte)
+      buf[216] = 50 # foffset = 50 (< cablen)
+
+      result = decompressor.send(:find_cabinet_in_buffer,
+                                 buf, 500, 0, nil, nil, 1000)
+      expect(result).to eq(200)
+    end
+  end
+
   describe "cabinet properties" do
     it "parses cabinet properties correctly" do
       file_path = File.join(fixtures_dir, "search_basic.cab")
