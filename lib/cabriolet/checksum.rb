@@ -28,14 +28,17 @@ module Cabriolet
         ul = 0
         offset = bytes.size - remainder
 
+        # Match libmspack's cabd_checksum remainder handling:
+        # The C fall-through switch processes bytes in decreasing shift
+        # order (first remaining byte gets the highest shift).
         case remainder
         when 3
-          ul |= bytes[offset + 2] << 16
+          ul |= bytes[offset] << 16
           ul |= bytes[offset + 1] << 8
-          ul |= bytes[offset]
+          ul |= bytes[offset + 2]
         when 2
-          ul |= bytes[offset + 1] << 8
-          ul |= bytes[offset]
+          ul |= bytes[offset] << 8
+          ul |= bytes[offset + 1]
         when 1
           ul |= bytes[offset]
         end

@@ -211,6 +211,19 @@ module Cabriolet
           # Create decompressor ONCE and reuse it
           @current_decomp = @decompressor.create_decompressor(folder,
                                                               @current_input, nil)
+
+          # Per libmspack cabd.c: set output_length from the folder's total
+          # uncompressed size (max file.offset + file.length across all files
+          # in the folder). This allows the LZX decompressor to reduce the
+          # last frame's size so it doesn't read past the end of the stream.
+          if @current_decomp.respond_to?(:set_output_length)
+            cab = folder.data&.cabinet
+            if cab&.files
+              folder_files = cab.files.select { |f| f.folder == folder }
+              max_end = folder_files.map { |f| f.offset + f.length }.max
+              @current_decomp.set_output_length(max_end) if max_end&.positive?
+            end
+          end
         elsif ENV["DEBUG_BLOCK"]
           warn "DEBUG extract_file: NOT resetting (reusing existing BlockReader)"
         end
@@ -228,7 +241,6 @@ module Cabriolet
         null_output = System::MemoryHandle.new("", Constants::MODE_WRITE)
 
         @current_decomp.instance_variable_set(:@output, null_output)
-        @current_decomp.set_output_length(skip_bytes) if @current_decomp.respond_to?(:set_output_length)
 
         begin
           @current_decomp.decompress(skip_bytes)
@@ -248,8 +260,11 @@ module Cabriolet
       # @param output_fh [System::FileHandle] Output file handle
       # @param filelen [Integer] Number of bytes to write
       def write_file_data(output_fh, filelen)
+        unless @current_decomp
+          raise DecompressionError, "Decompressor not available (state was reset)"
+        end
+
         @current_decomp.instance_variable_set(:@output, output_fh)
-        @current_decomp.set_output_length(filelen) if @current_decomp.respond_to?(:set_output_length)
         @current_decomp.decompress(filelen)
         @current_offset += filelen
       end

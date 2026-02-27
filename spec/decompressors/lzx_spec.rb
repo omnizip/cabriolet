@@ -5,6 +5,17 @@ require "spec_helper"
 RSpec.describe Cabriolet::Decompressors::LZX do
   let(:io_system) { Cabriolet::System::IOSystem.new }
 
+  # Helper: compress data using the LZX compressor for round-trip tests
+  def compress_with_lzx(data, window_bits)
+    io = Cabriolet::System::IOSystem.new
+    input = Cabriolet::System::MemoryHandle.new(data)
+    output = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
+    compressor = Cabriolet::Compressors::LZX.new(io, input, output, 4096,
+                                                 window_bits: window_bits)
+    compressor.compress
+    output.data
+  end
+
   describe "#initialize" do
     context "with valid window_bits" do
       it "initializes with window_bits 15 for regular LZX" do
@@ -545,6 +556,188 @@ RSpec.describe Cabriolet::Decompressors::LZX do
       # Should not raise — returns 0 bytes written and prints a warning
       result = lzx.decompress(32_768)
       expect(result).to eq(0)
+    end
+  end
+
+  describe "pending frame data for multi-file extraction" do
+    # Per libmspack: when decompress is called per-file within a shared
+    # folder, a frame may be partially consumed by one call. The
+    # remaining frame data must carry over to the next call.
+
+    it "stores pending data when partial frame is written" do
+      original = "Hello, World! This is test data."
+      compressed = compress_with_lzx(original, 15)
+
+      input = Cabriolet::System::MemoryHandle.new(compressed)
+      output = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
+      lzx = described_class.new(io_system, input, output, 4096,
+                                window_bits: 15, output_length: original.bytesize)
+
+      # Request only 10 bytes from a frame that contains more
+      result = lzx.decompress(10)
+      expect(result).to eq(10)
+      expect(output.data.bytesize).to eq(10)
+      expect(output.data).to eq(original[0, 10])
+
+      # Pending data should be stored for the next call
+      expect(lzx.instance_variable_get(:@pending_frame_data)).not_to be_nil
+    end
+
+    it "outputs pending data on subsequent decompress call" do
+      original = "Hello, World! This is test data."
+      compressed = compress_with_lzx(original, 15)
+
+      input = Cabriolet::System::MemoryHandle.new(compressed)
+      output1 = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
+      lzx = described_class.new(io_system, input, output1, 4096,
+                                window_bits: 15, output_length: original.bytesize)
+
+      # First call: read 10 bytes
+      lzx.decompress(10)
+
+      # Second call: read the rest, with a new output handle
+      output2 = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
+      lzx.instance_variable_set(:@output, output2)
+      remaining = original.bytesize - 10
+      result = lzx.decompress(remaining)
+
+      expect(result).to eq(remaining)
+      expect(output2.data).to eq(original[10, remaining])
+    end
+
+    it "handles exact frame-sized writes without pending data" do
+      # Data exactly one frame — no pending data should remain
+      original = "X" * 32_768
+      compressed = compress_with_lzx(original, 15)
+
+      input = Cabriolet::System::MemoryHandle.new(compressed)
+      output = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
+      lzx = described_class.new(io_system, input, output, 4096,
+                                window_bits: 15, output_length: original.bytesize)
+
+      lzx.decompress(32_768)
+      expect(lzx.instance_variable_get(:@pending_frame_data)).to be_nil
+    end
+  end
+
+  describe "offset tracking" do
+    # Per libmspack: @offset must track actual output bytes, not full
+    # frame sizes. This ensures end_frame is calculated correctly for
+    # subsequent decompress calls in multi-file extraction.
+
+    it "tracks actual output bytes, not full frame bytes" do
+      original = "A" * 100
+      compressed = compress_with_lzx(original, 15)
+
+      input = Cabriolet::System::MemoryHandle.new(compressed)
+      output = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
+      lzx = described_class.new(io_system, input, output, 4096,
+                                window_bits: 15, output_length: original.bytesize)
+
+      lzx.decompress(50)
+      # @offset should be 50 (bytes actually output), not 32768 (full frame)
+      expect(lzx.instance_variable_get(:@offset)).to eq(50)
+    end
+  end
+
+  describe "16-bit word alignment between frames" do
+    # Per libmspack: LZX frames are padded to 16-bit word boundaries,
+    # not 8-bit byte boundaries. This test verifies multi-frame
+    # round-trip where inter-frame alignment matters.
+
+    it "correctly round-trips data spanning multiple frames" do
+      # Data > 32KB forces multiple frames with inter-frame alignment
+      original = "MultiFrame" * 5000 # 50KB
+
+      compressed = compress_with_lzx(original, 15)
+
+      input = Cabriolet::System::MemoryHandle.new(compressed)
+      output = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
+      lzx = described_class.new(io_system, input, output, 4096,
+                                window_bits: 15, output_length: original.bytesize)
+      lzx.decompress(original.bytesize)
+
+      expect(output.data).to eq(original)
+    end
+  end
+
+  describe "uncompressed block round-trip" do
+    # The decompressor reads uncompressed block data via read_raw_byte
+    # (bypassing the MSB bitstream). The compressor must write these
+    # blocks as raw bytes too, not through the bitstream.
+
+    it "round-trips short data through uncompressed blocks" do
+      original = "Hello!"
+      compressed = compress_with_lzx(original, 15)
+
+      input = Cabriolet::System::MemoryHandle.new(compressed)
+      output = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
+      lzx = described_class.new(io_system, input, output, 4096,
+                                window_bits: 15, output_length: original.bytesize)
+      lzx.decompress(original.bytesize)
+
+      expect(output.data).to eq(original)
+    end
+
+    it "round-trips binary data through uncompressed blocks" do
+      original = (0..255).to_a.pack("C*")
+      compressed = compress_with_lzx(original, 15)
+
+      input = Cabriolet::System::MemoryHandle.new(compressed)
+      output = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
+      lzx = described_class.new(io_system, input, output, 4096,
+                                window_bits: 15, output_length: original.bytesize)
+      lzx.decompress(original.bytesize)
+
+      expect(output.data).to eq(original)
+    end
+
+    it "round-trips odd-length data correctly" do
+      # Odd-length exercises the padding byte between blocks
+      original = "A" * 13
+      compressed = compress_with_lzx(original, 15)
+
+      input = Cabriolet::System::MemoryHandle.new(compressed)
+      output = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
+      lzx = described_class.new(io_system, input, output, 4096,
+                                window_bits: 15, output_length: original.bytesize)
+      lzx.decompress(original.bytesize)
+
+      expect(output.data).to eq(original)
+    end
+  end
+
+  describe "match overrun handling" do
+    # Per libmspack: decode_huffman_block returns run_length which can
+    # go negative when a match crosses a block boundary. The overrun
+    # is detected by decode_frame and subtracted from block_remaining.
+
+    it "raises on excessive overrun" do
+      input = Cabriolet::System::MemoryHandle.new("\x00" * 1024)
+      output = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
+      lzx = described_class.new(io_system, input, output, 4096,
+                                window_bits: 15, output_length: 32_768)
+
+      lzx.instance_variable_set(:@header_read, true)
+      lzx.instance_variable_set(:@intel_filesize, 0)
+      lzx.instance_variable_set(:@frame_posn, 0)
+      lzx.instance_variable_set(:@window_posn, 0)
+      lzx.instance_variable_set(:@frame, 0)
+      lzx.instance_variable_set(:@offset, 0)
+      lzx.instance_variable_set(:@window, "A".b * 32_768)
+
+      # Stub decode_huffman_block to simulate a huge overrun
+      allow(lzx).to receive(:read_block_header) do
+        lzx.instance_variable_set(:@block_type, 1) # VERBATIM
+        lzx.instance_variable_set(:@block_remaining, 100)
+        lzx.instance_variable_set(:@block_length, 100)
+      end
+
+      allow(lzx).to receive(:decode_huffman_block).and_return(-200)
+
+      expect { lzx.decompress(32_768) }.to raise_error(
+        Cabriolet::DecompressionError, /Match overrun/
+      )
     end
   end
 end

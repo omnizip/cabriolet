@@ -337,4 +337,121 @@ RSpec.describe Cabriolet::Binary::Bitstream do
       end
     end
   end
+
+  describe "#bits_left" do
+    it "starts at 0" do
+      expect(bitstream.bits_left).to eq(0)
+    end
+
+    it "reflects bits loaded after a read" do
+      bitstream.read_bits(4)
+      # After reading 4 bits, some bits remain loaded from the refill
+      expect(bitstream.bits_left).to be >= 4
+    end
+  end
+
+  describe "#ensure_bits" do
+    context "in MSB mode" do
+      let(:msb_data) { "\xAB\xCD\xEF\x01".b }
+      let(:msb_handle) { Cabriolet::System::MemoryHandle.new(msb_data) }
+      let(:msb_bitstream) { described_class.new(io_system, msb_handle, 8, bit_order: :msb) }
+
+      it "loads at least the requested number of bits" do
+        msb_bitstream.ensure_bits(16)
+        expect(msb_bitstream.bits_left).to be >= 16
+      end
+
+      it "is idempotent when enough bits already loaded" do
+        msb_bitstream.ensure_bits(16)
+        bits_before = msb_bitstream.bits_left
+        msb_bitstream.ensure_bits(8) # already have >= 8
+        expect(msb_bitstream.bits_left).to eq(bits_before)
+      end
+    end
+
+    context "in LSB mode" do
+      it "loads at least the requested number of bits" do
+        bitstream.ensure_bits(8)
+        expect(bitstream.bits_left).to be >= 8
+      end
+    end
+  end
+
+  describe "#flush_bit_buffer" do
+    it "resets bit_buffer and bits_left to 0" do
+      bitstream.read_bits(4) # load some bits
+      expect(bitstream.bits_left).to be > 0
+
+      bitstream.flush_bit_buffer
+      expect(bitstream.bits_left).to eq(0)
+    end
+
+    it "discards any loaded bits" do
+      # Read 4 bits to load data — this refills the buffer
+      bitstream.read_bits(4)
+      bitstream.flush_bit_buffer
+
+      # Next read starts fresh from the underlying stream
+      result = bitstream.read_bits(8)
+      expect(result).to be_a(Integer)
+    end
+  end
+
+  describe "#read_raw_byte" do
+    it "reads a byte directly from the input stream" do
+      byte = bitstream.read_raw_byte
+      expect(byte).to eq(0x12) # first byte of test_data
+    end
+
+    it "reads sequential raw bytes" do
+      b1 = bitstream.read_raw_byte
+      b2 = bitstream.read_raw_byte
+      expect(b1).to eq(0x12)
+      expect(b2).to eq(0x34)
+    end
+
+    it "returns 0 on EOF" do
+      empty_handle = Cabriolet::System::MemoryHandle.new("")
+      empty_bs = described_class.new(io_system, empty_handle)
+      expect(empty_bs.read_raw_byte).to eq(0)
+    end
+
+    it "bypasses the bit buffer" do
+      # Load some bits into the buffer
+      bitstream.read_bits(4)
+      bitstream.bits_left
+
+      # flush the bit buffer to simulate the uncompressed block transition
+      bitstream.flush_bit_buffer
+
+      # read_raw_byte reads from the underlying stream position
+      byte = bitstream.read_raw_byte
+      expect(byte).to be_a(Integer)
+    end
+  end
+
+  describe "#byte_align MSB mode" do
+    let(:msb_data) { "\xAB\xCD\xEF\x01".b }
+    let(:msb_handle) { Cabriolet::System::MemoryHandle.new(msb_data) }
+    let(:msb_bitstream) { described_class.new(io_system, msb_handle, 8, bit_order: :msb) }
+
+    it "aligns to byte boundary by discarding partial bits" do
+      # Read 3 bits → 13 remaining from the 16-bit word
+      msb_bitstream.read_bits(3)
+      expect(msb_bitstream.bits_left).to eq(13)
+
+      msb_bitstream.byte_align
+      # 13 % 8 = 5 bits discarded → 8 bits remain
+      expect(msb_bitstream.bits_left).to eq(8)
+    end
+
+    it "does nothing when already aligned" do
+      # Read 8 bits from a 16-bit word → 8 remaining (already aligned)
+      msb_bitstream.read_bits(8)
+      bits_before = msb_bitstream.bits_left
+
+      msb_bitstream.byte_align
+      expect(msb_bitstream.bits_left).to eq(bits_before)
+    end
+  end
 end
