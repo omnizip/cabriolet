@@ -65,101 +65,99 @@ module Cabriolet
   # Default buffer size of 64KB - better for modern systems
   # Larger buffers reduce I/O syscall overhead significantly
   self.default_buffer_size = 65_536
-end
 
-# Models
-require_relative "cabriolet/models/cabinet"
-require_relative "cabriolet/models/folder"
-require_relative "cabriolet/models/folder_data"
-require_relative "cabriolet/models/file"
-require_relative "cabriolet/models/chm_header"
-require_relative "cabriolet/models/chm_section"
-require_relative "cabriolet/models/chm_file"
-require_relative "cabriolet/models/szdd_header"
-require_relative "cabriolet/models/kwaj_header"
-require_relative "cabriolet/models/hlp_header"
-require_relative "cabriolet/models/hlp_file"
-require_relative "cabriolet/models/winhelp_header"
-require_relative "cabriolet/models/lit_header"
-require_relative "cabriolet/models/oab_header"
+  # Models
+  require_relative "cabriolet/models/cabinet"
+  require_relative "cabriolet/models/folder"
+  require_relative "cabriolet/models/folder_data"
+  require_relative "cabriolet/models/file"
+  require_relative "cabriolet/models/chm_header"
+  require_relative "cabriolet/models/chm_section"
+  require_relative "cabriolet/models/chm_file"
+  require_relative "cabriolet/models/szdd_header"
+  require_relative "cabriolet/models/kwaj_header"
+  require_relative "cabriolet/models/hlp_header"
+  require_relative "cabriolet/models/hlp_file"
+  require_relative "cabriolet/models/winhelp_header"
+  require_relative "cabriolet/models/lit_header"
+  require_relative "cabriolet/models/oab_header"
 
-# Load errors first (needed by algorithm_factory)
+  # Load errors first (needed by algorithm_factory)
 
-# Load plugin system
-require_relative "cabriolet/plugin"
-require_relative "cabriolet/plugin_validator"
-require_relative "cabriolet/plugin_manager"
+  # Load plugin system
+  require_relative "cabriolet/plugin"
+  require_relative "cabriolet/plugin_validator"
+  require_relative "cabriolet/plugin_manager"
 
-# Load algorithm factory
-require_relative "cabriolet/algorithm_factory"
+  # Load algorithm factory
+  require_relative "cabriolet/algorithm_factory"
 
-# Load core components
+  # Load core components
 
-require_relative "cabriolet/quantum_shared"
+  require_relative "cabriolet/quantum_shared"
 
-require_relative "cabriolet/huffman/tree"
-require_relative "cabriolet/huffman/decoder"
-require_relative "cabriolet/huffman/encoder"
+  require_relative "cabriolet/huffman/tree"
+  require_relative "cabriolet/huffman/decoder"
+  require_relative "cabriolet/huffman/encoder"
 
-require_relative "cabriolet/decompressors/base"
-require_relative "cabriolet/decompressors/none"
-require_relative "cabriolet/decompressors/lzss"
-require_relative "cabriolet/decompressors/mszip"
-require_relative "cabriolet/decompressors/lzx"
-require_relative "cabriolet/decompressors/quantum"
+  require_relative "cabriolet/decompressors/base"
+  require_relative "cabriolet/decompressors/none"
+  require_relative "cabriolet/decompressors/lzss"
+  require_relative "cabriolet/decompressors/mszip"
+  require_relative "cabriolet/decompressors/lzx"
+  require_relative "cabriolet/decompressors/quantum"
 
-require_relative "cabriolet/compressors/base"
-require_relative "cabriolet/compressors/lzss"
-require_relative "cabriolet/compressors/mszip"
-require_relative "cabriolet/compressors/lzx"
-require_relative "cabriolet/compressors/quantum"
+  require_relative "cabriolet/compressors/base"
+  require_relative "cabriolet/compressors/lzss"
+  require_relative "cabriolet/compressors/mszip"
+  require_relative "cabriolet/compressors/lzx"
+  require_relative "cabriolet/compressors/quantum"
 
-require_relative "cabriolet/cab/parser"
-require_relative "cabriolet/cab/decompressor"
-require_relative "cabriolet/cab/extractor"
-require_relative "cabriolet/cab/compressor"
+  require_relative "cabriolet/cab/parser"
+  require_relative "cabriolet/cab/decompressor"
+  require_relative "cabriolet/cab/extractor"
+  require_relative "cabriolet/cab/compressor"
 
-require_relative "cabriolet/chm/parser"
-require_relative "cabriolet/chm/decompressor"
-require_relative "cabriolet/chm/compressor"
+  require_relative "cabriolet/chm/parser"
+  require_relative "cabriolet/chm/decompressor"
+  require_relative "cabriolet/chm/compressor"
 
-require_relative "cabriolet/szdd/parser"
-require_relative "cabriolet/szdd/decompressor"
-require_relative "cabriolet/szdd/compressor"
+  require_relative "cabriolet/szdd/parser"
+  require_relative "cabriolet/szdd/decompressor"
+  require_relative "cabriolet/szdd/compressor"
 
-require_relative "cabriolet/kwaj/parser"
-require_relative "cabriolet/kwaj/decompressor"
-require_relative "cabriolet/kwaj/compressor"
+  require_relative "cabriolet/kwaj/parser"
+  require_relative "cabriolet/kwaj/decompressor"
+  require_relative "cabriolet/kwaj/compressor"
 
-require_relative "cabriolet/hlp/parser"
-require_relative "cabriolet/hlp/decompressor"
-require_relative "cabriolet/hlp/compressor"
+  require_relative "cabriolet/hlp/parser"
+  require_relative "cabriolet/hlp/decompressor"
+  require_relative "cabriolet/hlp/compressor"
 
-require_relative "cabriolet/hlp/winhelp/parser"
-require_relative "cabriolet/hlp/winhelp/zeck_lz77"
-require_relative "cabriolet/hlp/winhelp/decompressor"
-require_relative "cabriolet/hlp/winhelp/compressor"
+  require_relative "cabriolet/hlp/winhelp/parser"
+  require_relative "cabriolet/hlp/winhelp/zeck_lz77"
+  require_relative "cabriolet/hlp/winhelp/decompressor"
+  require_relative "cabriolet/hlp/winhelp/compressor"
 
-require_relative "cabriolet/lit/decompressor"
-require_relative "cabriolet/lit/compressor"
+  require_relative "cabriolet/lit/decompressor"
+  require_relative "cabriolet/lit/compressor"
 
-require_relative "cabriolet/oab/decompressor"
-require_relative "cabriolet/oab/compressor"
+  require_relative "cabriolet/oab/decompressor"
+  require_relative "cabriolet/oab/compressor"
 
-# Load new advanced features
-require_relative "cabriolet/format_detector"
-require_relative "cabriolet/extraction/base_extractor"
-require_relative "cabriolet/extraction/extractor"
-require_relative "cabriolet/streaming"
-require_relative "cabriolet/validator"
-require_relative "cabriolet/repairer"
-require_relative "cabriolet/modifier"
+  # Load new advanced features
+  require_relative "cabriolet/format_detector"
+  require_relative "cabriolet/extraction/base_extractor"
+  require_relative "cabriolet/extraction/extractor"
+  require_relative "cabriolet/streaming"
+  require_relative "cabriolet/validator"
+  require_relative "cabriolet/repairer"
+  require_relative "cabriolet/modifier"
 
-# Load CLI (optional, for command-line usage)
-require_relative "cabriolet/cli"
+  # Load CLI (optional, for command-line usage)
+  require_relative "cabriolet/cli"
 
-# Convenience methods at top level
-module Cabriolet
+  # Convenience methods
   class << self
     # Open and parse an archive with automatic format detection
     #
