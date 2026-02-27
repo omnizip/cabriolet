@@ -52,8 +52,14 @@ num_symbols = nil)
                   "Huffman decode error: code too long"
           end
 
-          # Get the next bit from bit buffer at position idx
-          bit = (bitstream.peek_bits(idx + 1) >> idx) & 1
+          # Get the next bit from bit buffer at position idx.
+          # LSB mode: peek_bits returns bottom n bits; bit idx is at position idx.
+          # MSB mode: peek_bits returns top n bits right-justified; bit idx is the LSB.
+          bit = if bitstream.bit_order == :msb
+                  bitstream.peek_bits(idx + 1) & 1
+                else
+                  (bitstream.peek_bits(idx + 1) >> idx) & 1
+                end
 
           # Follow the tree path: (current_entry << 1) | bit
           next_idx = (sym << 1) | bit

@@ -153,6 +153,11 @@ module Cabriolet
 
       # Compress a single frame (32KB)
       #
+      # Per libmspack lzxd.c: uncompressed blocks write R0/R1/R2 and data
+      # as raw bytes directly to the stream, NOT through the MSB bitstream.
+      # The bitstream is flushed (padded to 16-bit boundary) after the
+      # block header, then raw bytes follow.
+      #
       # @param data [String] Frame data to compress
       # @return [void]
       def compress_frame(data)
@@ -163,12 +168,12 @@ module Cabriolet
         # Write UNCOMPRESSED block header
         write_block_header(BLOCKTYPE_UNCOMPRESSED, block_length)
 
-        # Write offset registers (R0, R1, R2)
+        # Write offset registers (R0, R1, R2) as raw bytes
         write_offset_registers
 
-        # Write raw uncompressed data
+        # Write raw uncompressed data (bypassing MSB bitstream)
         data.each_byte do |byte|
-          @bitstream.write_bits(byte, 8)
+          @bitstream.write_raw_byte(byte)
         end
       end
 
@@ -571,14 +576,17 @@ module Cabriolet
 
       # Write offset registers (R0, R1, R2) for uncompressed blocks
       #
+      # Per libmspack lzxd.c: R0/R1/R2 are written as raw bytes directly
+      # to the stream (not through the MSB bitstream) to avoid byte-swapping.
+      #
       # @return [void]
       def write_offset_registers
-        # Write R0, R1, R2 as 32-bit little-endian values (12 bytes total)
+        # Write R0, R1, R2 as 32-bit little-endian values (12 raw bytes total)
         [@r0, @r1, @r2].each do |offset|
-          @bitstream.write_bits(offset & 0xFF, 8)
-          @bitstream.write_bits((offset >> 8) & 0xFF, 8)
-          @bitstream.write_bits((offset >> 16) & 0xFF, 8)
-          @bitstream.write_bits((offset >> 24) & 0xFF, 8)
+          @bitstream.write_raw_byte(offset & 0xFF)
+          @bitstream.write_raw_byte((offset >> 8) & 0xFF)
+          @bitstream.write_raw_byte((offset >> 16) & 0xFF)
+          @bitstream.write_raw_byte((offset >> 24) & 0xFF)
         end
       end
 

@@ -288,7 +288,8 @@ RSpec.describe Cabriolet::CAB::Extractor do
       data = [0x12, 0x34, 0x56, 0x78, 0xAB, 0xCD].pack("C*")
       checksum = block_reader.send(:calculate_checksum, data)
 
-      expected = 0x78563412 ^ 0xCDAB
+      # Per libmspack cabd_checksum: first remaining byte gets highest shift
+      expected = 0x78563412 ^ 0xABCD
       expect(checksum).to eq(expected)
     end
 
@@ -296,7 +297,8 @@ RSpec.describe Cabriolet::CAB::Extractor do
       data = [0x12, 0x34, 0x56, 0x78, 0xAB, 0xCD, 0xEF].pack("C*")
       checksum = block_reader.send(:calculate_checksum, data)
 
-      expected = 0x78563412 ^ 0xEFCDAB
+      # Per libmspack cabd_checksum: first remaining byte gets highest shift
+      expected = 0x78563412 ^ 0xABCDEF
       expect(checksum).to eq(expected)
     end
   end

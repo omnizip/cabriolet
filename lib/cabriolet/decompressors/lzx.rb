@@ -162,6 +162,12 @@ module Cabriolet
         @offset = 0
         @output_ptr = 0
         @output_end = 0
+
+        # Per libmspack: pending frame data for multi-file extraction.
+        # When a decompress call ends mid-frame, the unwritten portion
+        # of the frame is stored here for the next call to output.
+        @pending_frame_data = nil
+        @pending_frame_offset = 0
       end
 
       # Set output length (for Intel E8 processing)
@@ -174,6 +180,11 @@ module Cabriolet
 
       # Decompress LZX data
       #
+      # Per libmspack lzxd.c: the decompressor always decodes full frames
+      # (32KB) into the window, but may output fewer bytes if the caller
+      # requests less. When multiple files share a folder, decompress is
+      # called per file, so partial-frame data must carry over between calls.
+      #
       # @param bytes [Integer] Number of bytes to decompress
       # @return [Integer] Number of bytes decompressed
       def decompress(bytes)
@@ -183,7 +194,28 @@ module Cabriolet
         read_intel_header unless @header_read
 
         total_written = 0
-        end_frame = ((@offset + bytes) / FRAME_SIZE) + 1
+
+        # Output any pending frame data from the previous partial-frame write.
+        # This handles multi-file extraction where the previous call ended
+        # mid-frame and the next file's data starts in the same frame.
+        if @pending_frame_data
+          avail = @pending_frame_data.bytesize - @pending_frame_offset
+          write_amount = [bytes, avail].min
+          io_system.write(output, @pending_frame_data[@pending_frame_offset, write_amount])
+          total_written += write_amount
+          @offset += write_amount
+          @pending_frame_offset += write_amount
+
+          if @pending_frame_offset >= @pending_frame_data.bytesize
+            @pending_frame_data = nil
+            @pending_frame_offset = 0
+          end
+        end
+
+        remaining = bytes - total_written
+        return total_written if remaining <= 0
+
+        end_frame = ((@offset + remaining) / FRAME_SIZE) + 1
 
         while @frame < end_frame
           # Check reset interval - reset offset registers at frame boundaries
@@ -230,20 +262,34 @@ module Cabriolet
                   "LZX: nil frame data at position #{@frame_posn}, frame_size=#{frame_size}"
           end
 
-          # Write frame
+          # Write frame - per libmspack: offset tracks actual output bytes,
+          # not full frame bytes. Save unwritten remainder for next call.
           write_amount = [bytes - total_written, frame_size].min
           io_system.write(output, frame_data[0, write_amount])
           total_written += write_amount
-          @offset += frame_size
+          @offset += write_amount
 
-          # Advance frame
+          # Store pending data if partial frame write
+          if write_amount < frame_size
+            @pending_frame_data = frame_data
+            @pending_frame_offset = write_amount
+          end
+
+          # Advance frame (always by full frame, matching decode position)
           @frame += 1
           @frame_posn += frame_size
           @frame_posn = 0 if @frame_posn >= @window_size
           @window_posn = 0 if @window_posn >= @window_size
 
-          # Re-align bitstream (byte_align is safe to call even if already aligned)
-          @bitstream.byte_align
+          # Re-align bitstream to 16-bit word boundary between frames.
+          # Per libmspack lzxd.c: LZX frames are padded to 16-bit word
+          # boundaries (not 8-bit byte boundaries) because the bitstream
+          # reads data in 16-bit little-endian words.
+          if @bitstream.bits_left.positive?
+            @bitstream.ensure_bits(16)
+          end
+          remove = @bitstream.bits_left & 15
+          @bitstream.skip_bits(remove) if remove.positive?
         end
 
         total_written
@@ -326,14 +372,27 @@ module Cabriolet
           # Read new block header if needed
           read_block_header if @block_remaining.zero?
 
-          # Decode as much as possible
+          # Decode as much as possible from the current block
           this_run = [@block_remaining, bytes_todo].min
           bytes_todo -= this_run
           @block_remaining -= this_run
 
           case @block_type
           when BLOCKTYPE_VERBATIM, BLOCKTYPE_ALIGNED
-            decode_huffman_block(this_run)
+            remaining = decode_huffman_block(this_run)
+
+            # Per libmspack lzxd.c: if a match caused overrun (this_run
+            # went negative in the inner loop), adjust block_remaining.
+            # This happens when a match crosses a block boundary within
+            # a frame (bytes_todo limited this_run, not block_remaining).
+            if remaining.negative?
+              overrun = -remaining
+              if overrun > @block_remaining
+                raise DecompressionError,
+                      "Match overrun (#{overrun}) exceeds block remaining (#{@block_remaining})"
+              end
+              @block_remaining -= overrun
+            end
           when BLOCKTYPE_UNCOMPRESSED
             decode_uncompressed_block(this_run)
           else
@@ -350,9 +409,11 @@ module Cabriolet
       #
       # @return [void]
       def read_block_header
-        # Align for uncompressed blocks - this ensures correct byte alignment
-        # when reading the R0, R1, R2 values from the block header
-        @bitstream.byte_align if @block_type == BLOCKTYPE_UNCOMPRESSED && @block_length.allbits?(1)
+        # Per libmspack lzxd.c: when transitioning FROM an uncompressed block
+        # with ODD length, skip 1 raw padding byte to maintain 16-bit alignment.
+        if @block_type == BLOCKTYPE_UNCOMPRESSED && @block_length.odd?
+          @bitstream.read_raw_byte
+        end
 
         # Read block type (3 bits)
         @block_type = @bitstream.read_bits(3)
@@ -562,15 +623,23 @@ module Cabriolet
 
       # Read uncompressed block header
       #
+      # Per libmspack lzxd.c: for uncompressed blocks, the bitstream is
+      # flushed (bit_buffer=0, bits_left=0) and R0/R1/R2 are read directly
+      # from the raw input stream (i_ptr), NOT through the MSB bitstream.
+      # Reading through the MSB bitstream would byte-swap each 16-bit word.
+      #
       # @return [void]
       def read_uncompressed_block_header
         @intel_started = true
 
-        # Align to byte boundary
-        @bitstream.byte_align
+        # Per libmspack: if bits_left == 0, ensure we have data available
+        @bitstream.ensure_bits(16) if @bitstream.bits_left.zero?
 
-        # Read R0, R1, R2
-        bytes = Array.new(12) { @bitstream.read_bits(8) }
+        # Flush bit buffer - discard any remaining bits (alignment padding)
+        @bitstream.flush_bit_buffer
+
+        # Read R0, R1, R2 directly from raw input (bypassing bitstream)
+        bytes = Array.new(12) { @bitstream.read_raw_byte }
         @r0 = bytes[0] | (bytes[1] << 8) | (bytes[2] << 16) | (bytes[3] << 24)
         @r1 = bytes[4] | (bytes[5] << 8) | (bytes[6] << 16) | (bytes[7] << 24)
         @r2 = bytes[8] | (bytes[9] << 8) | (bytes[10] << 16) | (bytes[11] << 24)
@@ -578,8 +647,13 @@ module Cabriolet
 
       # Decode Huffman-compressed block
       #
+      # Per libmspack lzxd.c: the inner decode loop uses this_run as its
+      # counter. A match can cause this_run to go negative (overrun past
+      # the planned run length). The caller must adjust block_remaining
+      # for any overrun.
+      #
       # @param run_length [Integer] Number of bytes to decode
-      # @return [void]
+      # @return [Integer] Final run_length (0 or negative if overrun)
       def decode_huffman_block(run_length)
         while run_length.positive?
           # Decode main symbol
@@ -599,6 +673,8 @@ module Cabriolet
             run_length -= match_length
           end
         end
+
+        run_length
       end
 
       # Decode and copy a match
@@ -612,7 +688,7 @@ module Cabriolet
         # Decode match length
         match_length = main_element & NUM_PRIMARY_LENGTHS
         if match_length == NUM_PRIMARY_LENGTHS
-          if @length_empty
+          if @length_empty || @length_tree.nil?
             raise DecompressionError,
                   "Length tree needed but empty"
           end
@@ -760,11 +836,15 @@ module Cabriolet
 
       # Decode uncompressed block
       #
+      # Per libmspack lzxd.c: uncompressed block data is read directly from
+      # the raw input stream (i_ptr), NOT through the MSB bitstream. The bit
+      # buffer was already flushed when the uncompressed block header was read.
+      #
       # @param run_length [Integer] Number of bytes to decode
       # @return [void]
       def decode_uncompressed_block(run_length)
         run_length.times do
-          byte = @bitstream.read_bits(8)
+          byte = @bitstream.read_raw_byte
           @window.setbyte(@window_posn, byte)
           @window_posn += 1
         end

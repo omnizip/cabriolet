@@ -4,7 +4,7 @@ module Cabriolet
   module Binary
     # Bitstream provides bit-level I/O operations for reading compressed data
     class Bitstream
-      attr_reader :io_system, :handle, :buffer_size, :bit_order
+      attr_reader :io_system, :handle, :buffer_size, :bit_order, :bits_left
 
       # Initialize a new bitstream
       #
@@ -172,13 +172,60 @@ buffer_size = Cabriolet.default_buffer_size, bit_order: :lsb, salvage: false)
         byte
       end
 
+      # Ensure at least num_bits are available in the bit buffer.
+      # Reads from input if needed. Used for alignment operations.
+      #
+      # @param num_bits [Integer] Minimum number of bits required
+      # @return [void]
+      def ensure_bits(num_bits)
+        if @bit_order == :msb
+          while @bits_left < num_bits
+            word = read_msb_word
+            @bit_buffer |= (word << (@bitbuf_width - 16 - @bits_left))
+            @bits_left += 16
+          end
+        else
+          while @bits_left < num_bits
+            byte = read_byte
+            byte = 0 if byte.nil?
+            @bit_buffer |= (byte << @bits_left)
+            @bits_left += 8
+          end
+        end
+      end
+
       # Align to the next byte boundary
       #
       # @return [void]
       def byte_align
         discard_bits = @bits_left % 8
-        @bit_buffer >>= discard_bits
+        if @bit_order == :msb
+          # MSB mode: valid bits are at the left (high) end, shift left to discard
+          @bit_buffer = (@bit_buffer << discard_bits) & ((1 << @bitbuf_width) - 1)
+        else
+          @bit_buffer >>= discard_bits
+        end
         @bits_left -= discard_bits
+      end
+
+      # Flush the bit buffer entirely (discard all remaining bits).
+      # Per libmspack lzxd.c: used when transitioning to raw byte reading
+      # for uncompressed blocks. Sets bits_left=0 and bit_buffer=0.
+      #
+      # @return [void]
+      def flush_bit_buffer
+        @bit_buffer = 0
+        @bits_left = 0
+      end
+
+      # Read a raw byte directly from the input, bypassing the bit buffer.
+      # Per libmspack lzxd.c: uncompressed block headers and data are read
+      # directly from the input pointer (i_ptr), not through the bitstream.
+      # Call flush_bit_buffer first to discard any residual bits.
+      #
+      # @return [Integer] Byte value (0 on EOF)
+      def read_raw_byte
+        read_byte || 0
       end
 
       # Peek at bits without consuming them
