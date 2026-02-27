@@ -259,11 +259,11 @@ module Cabriolet
         else
           @plugins.select { |_, entry| entry[:state] == state }
             .transform_values do |entry|
-              {
-                metadata: entry[:metadata],
-                state: entry[:state],
-                error: entry[:error],
-              }
+            {
+              metadata: entry[:metadata],
+              state: entry[:state],
+              error: entry[:error],
+            }
           end
         end
       end

@@ -98,7 +98,7 @@ module Cabriolet
                       raise ArgumentError, "Invalid mode: #{mode}"
                     end
 
-        ::File.open(@filename, file_mode)
+        ::File.open(@filename, file_mode) # rubocop:disable Style/FileOpen -- lifecycle managed by close/closed?
       rescue Errno::ENOENT, Errno::EACCES => e
         raise IOError, "Cannot open file #{@filename}: #{e.message}"
       end
