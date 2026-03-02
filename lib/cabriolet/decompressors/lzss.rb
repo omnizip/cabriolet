@@ -31,11 +31,12 @@ module Cabriolet
                      mode = MODE_EXPAND)
         super(io_system, input, output, buffer_size)
         @mode = mode
-        @window = Array.new(WINDOW_SIZE, WINDOW_FILL)
+        @window = (WINDOW_FILL.chr * WINDOW_SIZE).b
         @window_pos = initialize_window_position
         @input_buffer = ""
         @input_pos = 0
         @invert = mode == MODE_MSHELP ? 0xFF : 0x00
+        @output_buffer = String.new(encoding: Encoding::BINARY, capacity: 4096)
       end
 
       # Decompress LZSS data
@@ -69,8 +70,8 @@ module Cabriolet
               literal = read_input_byte
               break if literal.nil?
 
-              @window[@window_pos] = literal
-              write_output_byte(literal)
+              @window.setbyte(@window_pos, literal)
+              buffer_output_byte(literal)
               bytes_written += 1
 
               @window_pos = (@window_pos + 1) & (WINDOW_SIZE - 1)
@@ -91,9 +92,9 @@ module Cabriolet
                 # Check if we've reached the limit mid-match
                 break if enforce_limit && bytes_written >= bytes
 
-                byte = @window[match_pos]
-                @window[@window_pos] = byte
-                write_output_byte(byte)
+                byte = @window.getbyte(match_pos)
+                @window.setbyte(@window_pos, byte)
+                buffer_output_byte(byte)
                 bytes_written += 1
 
                 @window_pos = (@window_pos + 1) & (WINDOW_SIZE - 1)
@@ -103,6 +104,7 @@ module Cabriolet
           end
         end
 
+        flush_output_buffer
         bytes_written
       end
 
@@ -131,17 +133,23 @@ module Cabriolet
         byte
       end
 
-      # Write a single byte to the output
+      # Buffer an output byte and flush when buffer is full
       #
-      # @param byte [Integer] Byte to write
+      # @param byte [Integer] Byte to buffer
       # @return [void]
-      # @raise [Errors::DecompressionError] if write fails
-      def write_output_byte(byte)
-        data = [byte].pack("C")
-        written = @io_system.write(@output, data)
-        return if written == 1
+      def buffer_output_byte(byte)
+        @output_buffer << byte.chr
+        flush_output_buffer if @output_buffer.bytesize >= 4096
+      end
 
-        raise Errors::DecompressionError, "Failed to write output byte"
+      # Flush the output buffer to the output stream
+      #
+      # @return [void]
+      def flush_output_buffer
+        return if @output_buffer.empty?
+
+        @io_system.write(@output, @output_buffer)
+        @output_buffer.clear
       end
     end
   end

@@ -22,6 +22,9 @@ module Cabriolet
         @current_decomp = nil
         @current_input = nil
         @current_offset = 0
+
+        # Cache ENV lookups once at initialization
+        @debug_block = ENV.fetch("DEBUG_BLOCK", nil)
       end
 
       # Extract a single file from the cabinet
@@ -185,7 +188,7 @@ module Cabriolet
       # @param salvage [Boolean] Salvage mode flag
       # @param file_offset [Integer] File offset for reset condition check
       def setup_decompressor_for_folder(folder, salvage, file_offset)
-        if ENV["DEBUG_BLOCK"]
+        if @debug_block
           warn "DEBUG extract_file: Checking reset condition"
           warn "  @current_folder == folder: #{@current_folder == folder}"
           warn "  @current_offset (#{@current_offset}) > file_offset (#{file_offset})"
@@ -193,7 +196,7 @@ module Cabriolet
         end
 
         if @current_folder != folder || @current_offset > file_offset || !@current_decomp
-          if ENV["DEBUG_BLOCK"]
+          if @debug_block
             warn "DEBUG extract_file: RESETTING state (creating new BlockReader)"
           end
 
@@ -224,7 +227,7 @@ module Cabriolet
               @current_decomp.set_output_length(max_end) if max_end&.positive?
             end
           end
-        elsif ENV["DEBUG_BLOCK"]
+        elsif @debug_block
           warn "DEBUG extract_file: NOT resetting (reusing existing BlockReader)"
         end
       end
@@ -326,6 +329,9 @@ module Cabriolet
           @buffer_pos = 0
           @cab_handle = nil
 
+          # Cache ENV lookups once at initialization
+          @debug_block = ENV.fetch("DEBUG_BLOCK", nil)
+
           # Open first cabinet and seek to data offset
           open_current_cabinet
         end
@@ -333,7 +339,7 @@ module Cabriolet
         def read(bytes)
           # Early return if we've already exhausted all blocks and buffer
           if @current_block >= @num_blocks && @buffer_pos >= @buffer.bytesize
-            if ENV["DEBUG_BLOCK"]
+            if @debug_block
               warn "DEBUG BlockReader.read(#{bytes}): Already exhausted, returning empty"
             end
             return +""
@@ -341,14 +347,14 @@ module Cabriolet
 
           result = +""
 
-          if ENV["DEBUG_BLOCK"]
+          if @debug_block
             warn "DEBUG BlockReader.read(#{bytes}): buffer_size=#{@buffer.bytesize} buffer_pos=#{@buffer_pos} block=#{@current_block}/#{@num_blocks}"
           end
 
           while result.bytesize < bytes
             # Read more data if buffer is empty
             if (@buffer_pos >= @buffer.bytesize) && !read_next_block
-              if ENV["DEBUG_BLOCK"]
+              if @debug_block
                 warn "DEBUG BlockReader.read: EXHAUSTED at result.bytesize=#{result.bytesize} (wanted #{bytes})"
               end
               break
@@ -362,7 +368,7 @@ module Cabriolet
             @buffer_pos += to_copy
           end
 
-          if ENV["DEBUG_BLOCK"]
+          if @debug_block
             warn "DEBUG BlockReader.read: returning #{result.bytesize} bytes"
           end
 
@@ -386,12 +392,12 @@ module Cabriolet
         private
 
         def read_next_block
-          if ENV["DEBUG_BLOCK"]
+          if @debug_block
             warn "DEBUG read_next_block: current_block=#{@current_block} num_blocks=#{@num_blocks}"
           end
 
           if @current_block >= @num_blocks
-            if ENV["DEBUG_BLOCK"]
+            if @debug_block
               warn "DEBUG read_next_block: EXHAUSTED (current_block >= num_blocks)"
             end
             return false
@@ -402,19 +408,19 @@ module Cabriolet
 
           loop do
             # Read CFDATA header
-            if ENV["DEBUG_BLOCK"]
+            if @debug_block
               handle_pos = @cab_handle.tell
               warn "DEBUG read_next_block: About to read CFDATA header at position #{handle_pos}"
             end
 
             header_data = @cab_handle.read(Constants::CFDATA_SIZE)
 
-            if ENV["DEBUG_BLOCK"]
+            if @debug_block
               warn "DEBUG read_next_block: Read #{header_data.bytesize} bytes (expected #{Constants::CFDATA_SIZE})"
             end
 
             if header_data.bytesize != Constants::CFDATA_SIZE
-              if ENV["DEBUG_BLOCK"]
+              if @debug_block
                 warn "DEBUG read_next_block: FAILED - header read returned #{header_data.bytesize} bytes"
               end
               return false
@@ -442,18 +448,18 @@ module Cabriolet
             end
 
             # Read compressed data
-            if ENV["DEBUG_BLOCK"]
+            if @debug_block
               warn "DEBUG read_next_block: About to read #{cfdata.compressed_size} bytes of compressed data"
             end
 
             compressed_data = @cab_handle.read(cfdata.compressed_size)
 
-            if ENV["DEBUG_BLOCK"]
+            if @debug_block
               warn "DEBUG read_next_block: Read #{compressed_data.bytesize} bytes of compressed data (expected #{cfdata.compressed_size})"
             end
 
             if compressed_data.bytesize != cfdata.compressed_size
-              if ENV["DEBUG_BLOCK"]
+              if @debug_block
                 warn "DEBUG read_next_block: FAILED - compressed data read returned #{compressed_data.bytesize} bytes"
               end
               return false
@@ -497,7 +503,7 @@ module Cabriolet
         end
 
         def open_current_cabinet
-          if ENV["DEBUG_BLOCK"]
+          if @debug_block
             warn "DEBUG open_current_cabinet: filename=#{@current_data.cabinet.filename} offset=#{@current_data.offset}"
           end
 
@@ -505,7 +511,7 @@ module Cabriolet
           @cab_handle = @io_system.open(@current_data.cabinet.filename, Constants::MODE_READ)
           @cab_handle.seek(@current_data.offset, Constants::SEEK_START)
 
-          if ENV["DEBUG_BLOCK"]
+          if @debug_block
             actual_pos = @cab_handle.tell
             warn "DEBUG open_current_cabinet: seeked to position #{actual_pos} (expected #{@current_data.offset})"
           end
