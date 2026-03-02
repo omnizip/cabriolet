@@ -16,9 +16,9 @@ RSpec.describe Cabriolet::Decompressors::LZSS do
                                          buffer_size)
 
       expect(decompressor.mode).to eq(described_class::MODE_EXPAND)
-      expect(decompressor.window).to be_an(Array)
-      expect(decompressor.window.size).to eq(described_class::WINDOW_SIZE)
-      expect(decompressor.window.first).to eq(described_class::WINDOW_FILL)
+      expect(decompressor.window).to be_a(String)
+      expect(decompressor.window.bytesize).to eq(described_class::WINDOW_SIZE)
+      expect(decompressor.window.getbyte(0)).to eq(described_class::WINDOW_FILL)
     end
 
     it "initializes window position correctly for MODE_EXPAND" do

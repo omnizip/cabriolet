@@ -77,6 +77,10 @@ salvage: false, **_kwargs)
         @distance_lengths = Array.new(DISTANCE_MAXSYMBOLS, 0)
         @literal_tree = nil
         @distance_tree = nil
+
+        # Cache ENV lookups once at initialization
+        @debug_mszip = ENV.fetch("DEBUG_MSZIP", nil)
+        @debug_mszip_symbols = ENV.fetch("DEBUG_MSZIP_SYMBOLS", nil)
       end
 
       # Decompress MSZIP data
@@ -86,14 +90,14 @@ salvage: false, **_kwargs)
       def decompress(bytes)
         total_written = 0
 
-        if ENV["DEBUG_MSZIP"]
+        if @debug_mszip
           warn "DEBUG MSZIP.decompress(#{bytes}): ENTRY bytes_output=#{@bytes_output} window_offset=#{@window_offset} window_posn=#{@window_posn}"
         end
 
         while bytes.positive?
           # Check if we have buffered data from previous inflate
           if @bytes_output.positive?
-            if ENV["DEBUG_MSZIP"]
+            if @debug_mszip
               warn "DEBUG MSZIP: Using buffered data: bytes_output=#{@bytes_output} window_offset=#{@window_offset}"
             end
 
@@ -105,7 +109,7 @@ salvage: false, **_kwargs)
             @bytes_output -= write_amount
             @window_offset += write_amount
 
-            if ENV["DEBUG_MSZIP"]
+            if @debug_mszip
               warn "DEBUG MSZIP: After buffer write: total_written=#{total_written} bytes_remaining=#{bytes} bytes_output=#{@bytes_output}"
             end
 
@@ -120,13 +124,13 @@ salvage: false, **_kwargs)
 
           # Read 'CK' signature (marks start of MSZIP frame)
           # Every MSZIP frame starts with a CK signature
-          if ENV["DEBUG_MSZIP"]
+          if @debug_mszip
             warn "DEBUG MSZIP: Reading CK signature (new MSZIP frame)"
           end
           read_signature
 
           # Inflate the MSZIP frame (processes deflate blocks until last_block or window full)
-          if ENV["DEBUG_MSZIP"]
+          if @debug_mszip
             warn "DEBUG MSZIP: Calling inflate_block"
           end
 
@@ -142,14 +146,14 @@ salvage: false, **_kwargs)
             @bytes_output = FRAME_SIZE
           end
 
-          if ENV["DEBUG_MSZIP"]
+          if @debug_mszip
             warn "DEBUG MSZIP: After inflate_block: bytes_output=#{@bytes_output} window_posn=#{@window_posn}"
           end
 
           # Now we have data in the window buffer - loop back to write from it
         end
 
-        if ENV["DEBUG_MSZIP"]
+        if @debug_mszip
           warn "DEBUG MSZIP.decompress: EXIT total_written=#{total_written}"
         end
 
@@ -160,7 +164,7 @@ salvage: false, **_kwargs)
 
       # Read and verify 'CK' signature
       def read_signature
-        if ENV["DEBUG_MSZIP"]
+        if @debug_mszip
           warn "DEBUG read_signature: Before byte_align"
         end
 
@@ -171,7 +175,7 @@ salvage: false, **_kwargs)
         c = @bitstream.read_bits(8)
         k = @bitstream.read_bits(8)
 
-        if ENV["DEBUG_MSZIP"]
+        if @debug_mszip
           warn "DEBUG read_signature: Read 0x#{c.to_s(16)} 0x#{k.to_s(16)} (expected 'C'=0x43 'K'=0x4B)"
         end
 
@@ -188,7 +192,7 @@ salvage: false, **_kwargs)
 
             if c == SIGNATURE_BYTE_C && k == SIGNATURE_BYTE_K
               found = true
-              if ENV["DEBUG_MSZIP"]
+              if @debug_mszip
                 warn "DEBUG read_signature: Found CK signature after searching"
               end
               break
@@ -211,7 +215,7 @@ salvage: false, **_kwargs)
         last_block = @bitstream.read_bits(1)
         block_type = @bitstream.read_bits(2)
 
-        if ENV["DEBUG_MSZIP"]
+        if @debug_mszip
           warn "DEBUG inflate_block: First block: last_block=#{last_block} block_type=#{block_type}"
         end
 
@@ -230,7 +234,7 @@ salvage: false, **_kwargs)
             raise DecompressionError, "Invalid block type: #{block_type}"
           end
 
-          if ENV["DEBUG_MSZIP"]
+          if @debug_mszip
             warn "DEBUG inflate_block: After block: last_block=#{last_block} window_posn=#{@window_posn}"
           end
 
@@ -383,7 +387,7 @@ salvage: false, **_kwargs)
       def inflate_huffman_block
         symbol_count = 0
         loop do
-          if ENV["DEBUG_MSZIP_SYMBOLS"]
+          if @debug_mszip_symbols
             warn "DEBUG inflate_huffman_block: window_posn=#{@window_posn} bytes_output=#{@bytes_output}"
           end
 
@@ -394,7 +398,7 @@ salvage: false, **_kwargs)
           )
           symbol_count += 1
 
-          if ENV["DEBUG_MSZIP_SYMBOLS"] || ENV["DEBUG_MSZIP"]
+          if @debug_mszip || @debug_mszip_symbols
             warn "DEBUG inflate_huffman_block[#{symbol_count}]: decoded code=#{code} (#{'0x%02x' % code if code < 256})"
           end
 
@@ -405,7 +409,7 @@ salvage: false, **_kwargs)
             flush_window if @window_posn == FRAME_SIZE
           elsif code == 256
             # End of block
-            if ENV["DEBUG_MSZIP"] || ENV["DEBUG_MSZIP_SYMBOLS"]
+            if @debug_mszip || @debug_mszip_symbols
               warn "DEBUG inflate_huffman_block: END OF BLOCK (window_posn=#{@window_posn})"
             end
             break

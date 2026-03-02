@@ -29,6 +29,9 @@ buffer_size = Cabriolet.default_buffer_size, bit_order: :lsb, salvage: false)
         # For MSB mode, we need to know the bit width of the buffer
         # Ruby integers are arbitrary precision, so we use 32 bits as standard
         @bitbuf_width = 32
+
+        # Cache ENV lookups once at initialization
+        @debug_bitstream = ENV.fetch("DEBUG_BITSTREAM", nil)
       end
 
       # Read specified number of bits from the stream
@@ -83,7 +86,7 @@ buffer_size = Cabriolet.default_buffer_size, bit_order: :lsb, salvage: false)
           byte = 0 if byte.nil?
 
           # DEBUG
-          if ENV["DEBUG_BITSTREAM"]
+          if @debug_bitstream
             warn "DEBUG LSB read_byte: buffer_pos=#{@buffer_pos} byte=#{byte} (#{byte.to_s(2).rjust(
               8, '0'
             )}) bits_left=#{@bits_left}"
@@ -101,7 +104,7 @@ buffer_size = Cabriolet.default_buffer_size, bit_order: :lsb, salvage: false)
         @bits_left -= num_bits
 
         # DEBUG
-        warn "DEBUG LSB read_bits(#{num_bits}): result=#{result} buffer=#{@bit_buffer.to_s(16)} bits_left=#{@bits_left}" if ENV["DEBUG_BITSTREAM"]
+        warn "DEBUG LSB read_bits(#{num_bits}): result=#{result} buffer=#{@bit_buffer.to_s(16)} bits_left=#{@bits_left}" if @debug_bitstream
 
         result
       end
@@ -116,7 +119,7 @@ buffer_size = Cabriolet.default_buffer_size, bit_order: :lsb, salvage: false)
           word = read_msb_word
 
           # DEBUG
-          warn "DEBUG MSB read_bytes: word=0x#{word.to_s(16)} bits_left=#{@bits_left}" if ENV["DEBUG_BITSTREAM"]
+          warn "DEBUG MSB read_bytes: word=0x#{word.to_s(16)} bits_left=#{@bits_left}" if @debug_bitstream
 
           # INJECT_BITS (MSB): inject at the left side
           @bit_buffer |= (word << (@bitbuf_width - 16 - @bits_left))
@@ -131,7 +134,7 @@ buffer_size = Cabriolet.default_buffer_size, bit_order: :lsb, salvage: false)
         @bits_left -= num_bits
 
         # DEBUG
-        warn "DEBUG MSB read_bits(#{num_bits}) result=#{result} (0x#{result.to_s(16)}) buffer=0x#{@bit_buffer.to_s(16)} bits_left=#{@bits_left}" if ENV["DEBUG_BITSTREAM"]
+        warn "DEBUG MSB read_bits(#{num_bits}) result=#{result} (0x#{result.to_s(16)}) buffer=0x#{@bit_buffer.to_s(16)} bits_left=#{@bits_left}" if @debug_bitstream
 
         result
       end
