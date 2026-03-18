@@ -82,6 +82,21 @@ module Cabriolet
         initialize_models
       end
 
+      # Free resources used by the decompressor
+      #
+      # Releases memory buffers to prevent memory leaks when
+      # the decompressor is no longer needed.
+      #
+      # @return [void]
+      def free
+        @window = nil
+        @bitstream = nil
+        @m0sym = @m1sym = @m2sym = @m3sym = nil
+        @m4sym = @m5sym = @m6sym = @m6lsym = nil
+        @model0 = @model1 = @model2 = @model3 = nil
+        @model4 = @model5 = @model6 = @model6len = nil
+      end
+
       # Decompress Quantum data
       #
       # @param bytes [Integer] Number of bytes to decompress

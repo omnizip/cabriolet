@@ -178,6 +178,23 @@ module Cabriolet
         @output_length = length if length.positive?
       end
 
+      # Free resources used by the decompressor
+      #
+      # Releases large memory buffers to prevent memory leaks when
+      # the decompressor is no longer needed.
+      #
+      # @return [void]
+      def free
+        @window = nil
+        @e8_buf = nil
+        @pending_frame_data = nil
+        @bitstream = nil
+        @maintree_lengths = nil
+        @length_lengths = nil
+        @pretree_lengths = nil
+        @aligned_lengths = nil
+      end
+
       # Decompress LZX data
       #
       # Per libmspack lzxd.c: the decompressor always decodes full frames

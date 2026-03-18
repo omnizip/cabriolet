@@ -72,6 +72,7 @@ module Cabriolet
       def reset_state
         @current_input&.close
         @current_input = nil
+        @current_decomp&.free  # Free decompressor buffers to prevent memory leaks
         @current_decomp = nil
         @current_folder = nil
         @current_offset = 0
@@ -136,6 +137,9 @@ module Cabriolet
         warn "Salvage: #{failed_count} file(s) skipped due to extraction errors" if failed_count.positive?
 
         count
+      ensure
+        # Clean up resources to prevent memory leaks
+        reset_state
       end
 
       private
