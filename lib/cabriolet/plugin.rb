@@ -190,10 +190,10 @@ module Cabriolet
     # @example Register a format-specific decompressor
     #   register_algorithm(:special, SpecialDecompressor,
     #                     category: :decompressor, format: :cab)
-    def register_algorithm(type, klass, **options)
+    def register_algorithm(type, klass, **)
       raise PluginError, "Plugin manager not available" unless @manager
 
-      Cabriolet.algorithm_factory.register(type, klass, **options)
+      Cabriolet.algorithm_factory.register(type, klass, **)
     end
 
     # Register a format handler

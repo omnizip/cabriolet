@@ -57,8 +57,8 @@ module Cabriolet
     # @param options [Hash] Format-specific options
     # @return [FileEntry] Added entry
     # @raise [ArgumentError] if file doesn't exist
-    def add_file(source_path, archive_path = nil, **options)
-      @file_manager.add_file(source_path, archive_path, **options)
+    def add_file(source_path, archive_path = nil, **)
+      @file_manager.add_file(source_path, archive_path, **)
     end
 
     # Add file from memory to archive
@@ -67,8 +67,8 @@ module Cabriolet
     # @param archive_path [String] Path in archive
     # @param options [Hash] Format-specific options
     # @return [FileEntry] Added entry
-    def add_data(data, archive_path, **options)
-      @file_manager.add_data(data, archive_path, **options)
+    def add_data(data, archive_path, **)
+      @file_manager.add_data(data, archive_path, **)
     end
 
     # Generate archive (Template Method)
@@ -165,7 +165,7 @@ module Cabriolet
     # @option options [Integer] :window_bits Window size in bits
     # @option options [Integer] :mode Algorithm mode
     # @return [String] Compressed data
-    def compress_data(data, algorithm:, **options)
+    def compress_data(data, algorithm:, **)
       input = System::MemoryHandle.new(data)
       output = System::MemoryHandle.new("", Constants::MODE_WRITE)
 
@@ -176,7 +176,7 @@ module Cabriolet
         input,
         output,
         data.bytesize,
-        **options,
+        **,
       )
 
       compressor.compress

@@ -188,9 +188,9 @@ module Cabriolet
       # @param paths [Array<String>] Array of archive paths
       # @yield [file, archive_path] Yields each file with its archive path
       # @return [Hash] Processing statistics
-      def process_archives(paths, &block)
+      def process_archives(paths, &)
         paths.each do |path|
-          process_archive(path, &block)
+          process_archive(path, &)
         end
 
         @stats

@@ -422,11 +422,11 @@ module Cabriolet
     # @param command [Symbol] Command to execute
     # @param file [String] File path
     # @param args [Array] Additional arguments
-    def run_dispatcher(command, file, *args, **options)
+    def run_dispatcher(command, file, *, **options)
       setup_verbose(options[:verbose])
 
       dispatcher = Commands::CommandDispatcher.new(**options)
-      dispatcher.dispatch(command, file, *args, **options)
+      dispatcher.dispatch(command, file, *, **options)
     end
 
     # Run command with explicit format override
@@ -435,12 +435,12 @@ module Cabriolet
     # @param format [Symbol] Format to force
     # @param file [String] File path
     # @param args [Array] Additional arguments
-    def run_with_format(command, format, file, *args, **options)
+    def run_with_format(command, format, file, *, **options)
       setup_verbose(options[:verbose])
       options[:format] = format.to_s
 
       dispatcher = Commands::CommandDispatcher.new(**options)
-      dispatcher.dispatch(command, file, *args, **options)
+      dispatcher.dispatch(command, file, *, **options)
     end
 
     # Detect format from output file extension

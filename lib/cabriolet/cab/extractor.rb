@@ -60,7 +60,8 @@ module Cabriolet
         begin
           write_file_data(output_fh, filelen)
         rescue DecompressionError
-          handle_extraction_error(output_fh, output_path, file.filename, salvage, filelen)
+          handle_extraction_error(output_fh, output_path, file.filename,
+                                  salvage, filelen)
         ensure
           output_fh.close
         end
@@ -72,7 +73,7 @@ module Cabriolet
       def reset_state
         @current_input&.close
         @current_input = nil
-        @current_decomp&.free  # Free decompressor buffers to prevent memory leaks
+        @current_decomp&.free # Free decompressor buffers to prevent memory leaks
         @current_decomp = nil
         @current_folder = nil
         @current_offset = 0
@@ -268,7 +269,8 @@ module Cabriolet
       # @param filelen [Integer] Number of bytes to write
       def write_file_data(output_fh, filelen)
         unless @current_decomp
-          raise DecompressionError, "Decompressor not available (state was reset)"
+          raise DecompressionError,
+                "Decompressor not available (state was reset)"
         end
 
         @current_decomp.instance_variable_set(:@output, output_fh)
@@ -283,7 +285,8 @@ module Cabriolet
       # @param filename [String] Filename for error messages
       # @param salvage [Boolean] Salvage mode flag
       # @raise [DecompressionError] If not in salvage mode
-      def handle_extraction_error(output_fh, output_path, filename, salvage, _filelen)
+      def handle_extraction_error(output_fh, output_path, filename, salvage,
+_filelen)
         output_fh.close
         if salvage
           ::File.write(output_path, "", mode: "wb")

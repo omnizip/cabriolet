@@ -273,7 +273,8 @@ RSpec.describe Cabriolet::Huffman::Decoder do
 
       def create_msb_bitstream(bytes)
         handle = Cabriolet::System::MemoryHandle.new(bytes)
-        Cabriolet::Binary::Bitstream.new(io_system, handle, 1024, bit_order: :msb)
+        Cabriolet::Binary::Bitstream.new(io_system, handle, 1024,
+                                         bit_order: :msb)
       end
 
       it "decodes symbols correctly in MSB mode" do

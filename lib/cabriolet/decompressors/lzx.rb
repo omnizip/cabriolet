@@ -218,7 +218,9 @@ module Cabriolet
         if @pending_frame_data
           avail = @pending_frame_data.bytesize - @pending_frame_offset
           write_amount = [bytes, avail].min
-          io_system.write(output, @pending_frame_data[@pending_frame_offset, write_amount])
+          io_system.write(output,
+                          @pending_frame_data[@pending_frame_offset,
+                                              write_amount])
           total_written += write_amount
           @offset += write_amount
           @pending_frame_offset += write_amount

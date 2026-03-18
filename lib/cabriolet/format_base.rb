@@ -44,7 +44,7 @@ module Cabriolet
     # @param size [Integer] Data size
     # @param options [Hash] Additional options for the compressor
     # @return [Object] Compressor instance
-    def create_compressor(algorithm, input, output, size, **options)
+    def create_compressor(algorithm, input, output, size, **)
       @algorithm_factory.create(
         algorithm,
         :compressor,
@@ -52,7 +52,7 @@ module Cabriolet
         input,
         output,
         size,
-        **options,
+        **,
       )
     end
 
@@ -64,7 +64,7 @@ module Cabriolet
     # @param size [Integer] Data size
     # @param options [Hash] Additional options for the decompressor
     # @return [Object] Decompressor instance
-    def create_decompressor(algorithm, input, output, size, **options)
+    def create_decompressor(algorithm, input, output, size, **)
       @algorithm_factory.create(
         algorithm,
         :decompressor,
@@ -72,7 +72,7 @@ module Cabriolet
         input,
         output,
         size,
-        **options,
+        **,
       )
     end
   end

@@ -29,13 +29,13 @@ module Cabriolet
     # @param options [Hash] Format-specific options
     # @return [FileEntry] Added entry
     # @raise [ArgumentError] if file doesn't exist
-    def add_file(source_path, archive_path = nil, **options)
+    def add_file(source_path, archive_path = nil, **)
       archive_path ||= File.basename(source_path)
 
       entry = FileEntry.new(
         source: source_path,
         archive_path: archive_path,
-        **options,
+        **,
       )
 
       @entries << entry
@@ -48,11 +48,11 @@ module Cabriolet
     # @param archive_path [String] Path in archive
     # @param options [Hash] Format-specific options
     # @return [FileEntry] Added entry
-    def add_data(data, archive_path, **options)
+    def add_data(data, archive_path, **)
       entry = FileEntry.new(
         data: data,
         archive_path: archive_path,
-        **options,
+        **,
       )
 
       @entries << entry
