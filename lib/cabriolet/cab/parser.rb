@@ -23,6 +23,9 @@ module Cabriolet
         cabinet = parse_handle(handle, filename)
         @io_system.close(handle)
         cabinet
+      rescue StandardError
+        @io_system.close(handle) if handle
+        raise
       end
 
       # Parse a CAB from an already-open handle

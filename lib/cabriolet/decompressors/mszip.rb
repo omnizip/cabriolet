@@ -83,6 +83,21 @@ salvage: false, **_kwargs)
         @debug_mszip_symbols = ENV.fetch("DEBUG_MSZIP_SYMBOLS", nil)
       end
 
+      # Free resources used by the decompressor
+      #
+      # Releases memory buffers to prevent memory leaks when
+      # the decompressor is no longer needed.
+      #
+      # @return [void]
+      def free
+        @window = nil
+        @bitstream = nil
+        @literal_lengths = nil
+        @distance_lengths = nil
+        @literal_tree = nil
+        @distance_tree = nil
+      end
+
       # Decompress MSZIP data
       #
       # @param bytes [Integer] Number of bytes to decompress
