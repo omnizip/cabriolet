@@ -2,30 +2,16 @@
 
 require_relative "../quantum_shared"
 
-# Compatibility shim for String#bytesplice (added in Ruby 3.2)
-unless String.method_defined?(:bytesplice)
-  module StringBytespliceCompat
-    # Compatibility implementation of bytesplice for Ruby < 3.2
-    # Uses clear/append which is slower but works with mutable strings
-    def bytesplice(index, length, other_string, other_index = 0,
-other_length = nil)
-      other_length ||= other_string.bytesize
-
-      # Build new string content
-      prefix = byteslice(0, index)
-      middle = other_string.byteslice(other_index, other_length)
-      suffix = byteslice((index + length)..-1)
-      new_content = prefix + middle + suffix
-
-      # Modify receiver in place
-      clear
-      self << new_content
-
-      self
+# Helper for 5-argument bytesplice (added in Ruby 3.3)
+# Ruby 3.2 has bytesplice but only 2-3 argument forms
+unless String.method_defined?(:window_splice)
+  class String
+    # Copy bytes from source string into self at specified position
+    # Works on all Ruby versions including 3.2 which lacks 5-arg bytesplice
+    def window_splice(dest_idx, dest_len, src, src_idx, src_len)
+      self[dest_idx, dest_len] = src.byteslice(src_idx, src_len)
     end
   end
-
-  String.prepend(StringBytespliceCompat)
 end
 
 module Cabriolet
@@ -61,11 +47,7 @@ module Cabriolet
         @window_size = 1 << window_bits
 
         # Initialize window (must be binary to avoid UTF-8 character vs byte mismatch)
-        @window = if String.method_defined?(:bytesplice)
-                    ("\0" * @window_size).b
-                  else
-                    String.new("\0" * @window_size, encoding: Encoding::BINARY)
-                  end
+        @window = ("\0" * @window_size).b
         @window_posn = 0
         @frame_todo = FRAME_SIZE
 
@@ -417,7 +399,7 @@ module Cabriolet
         end
       end
 
-      # Bulk copy using bytesplice for better performance on longer matches
+      # Bulk copy using window_splice for better performance on longer matches
       def copy_match_bulk(offset, length)
         if offset > @window_posn
           # Match wraps around window
@@ -432,21 +414,23 @@ module Cabriolet
 
           if copy_len < length
             # Copy from end, then from beginning
-            @window.bytesplice(@window_posn, copy_len, @window, src_pos,
-                               copy_len)
+            @window.window_splice(@window_posn, copy_len, @window, src_pos,
+                                  copy_len)
             @window_posn += copy_len
             remaining = length - copy_len
-            @window.bytesplice(@window_posn, remaining, @window, 0, remaining)
+            @window.window_splice(@window_posn, remaining, @window, 0,
+                                  remaining)
             @window_posn += remaining
           else
             # Copy entirely from end
-            @window.bytesplice(@window_posn, length, @window, src_pos, length)
+            @window.window_splice(@window_posn, length, @window, src_pos,
+                                  length)
             @window_posn += length
           end
         else
-          # Normal copy - use bytesplice for bulk operation
+          # Normal copy - use window_splice for bulk operation
           src_pos = @window_posn - offset
-          @window.bytesplice(@window_posn, length, @window, src_pos, length)
+          @window.window_splice(@window_posn, length, @window, src_pos, length)
           @window_posn += length
         end
       end
