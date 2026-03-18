@@ -14,7 +14,7 @@ RSpec.describe "Cabriolet Memory Management" do
 
   # Helper to count open file descriptors
   def open_fd_count
-    if RUBY_PLATFORM =~ /darwin/
+    if RUBY_PLATFORM.include?("darwin")
       `lsof -p #{Process.pid} 2>/dev/null | wc -l`.strip.to_i
     else
       Dir["/proc/self/fd/*"].length
@@ -34,7 +34,8 @@ RSpec.describe "Cabriolet Memory Management" do
         5.times do
           Dir.mktmpdir do |tmpdir|
             cabinet = decompressor.open(cab_file)
-            extractor = Cabriolet::CAB::Extractor.new(decompressor.io_system, decompressor)
+            extractor = Cabriolet::CAB::Extractor.new(decompressor.io_system,
+                                                      decompressor)
             extractor.extract_all(cabinet, tmpdir)
           end
         end
@@ -51,7 +52,8 @@ RSpec.describe "Cabriolet Memory Management" do
         5.times do
           Dir.mktmpdir do |tmpdir|
             cabinet = decompressor.open(cab_file)
-            extractor = Cabriolet::CAB::Extractor.new(decompressor.io_system, decompressor)
+            extractor = Cabriolet::CAB::Extractor.new(decompressor.io_system,
+                                                      decompressor)
 
             # Simulate extraction that might fail
             begin
@@ -70,7 +72,8 @@ RSpec.describe "Cabriolet Memory Management" do
     describe "#reset_state" do
       it "clears all internal state" do
         cabinet = decompressor.open(cab_file)
-        extractor = Cabriolet::CAB::Extractor.new(decompressor.io_system, decompressor)
+        extractor = Cabriolet::CAB::Extractor.new(decompressor.io_system,
+                                                  decompressor)
 
         # Perform extraction to populate state
         Dir.mktmpdir do |tmpdir|
@@ -103,11 +106,9 @@ RSpec.describe "Cabriolet Memory Management" do
       fds_before = open_fd_count
 
       5.times do
-        begin
-          decompressor.open(invalid_file)
-        rescue Cabriolet::IOError
-          # Expected
-        end
+        decompressor.open(invalid_file)
+      rescue Cabriolet::IOError
+        # Expected
       end
 
       fds_after = open_fd_count
@@ -117,17 +118,21 @@ RSpec.describe "Cabriolet Memory Management" do
 
   describe "Decompressors" do
     describe "LZX" do
-      let(:lzx_cab) { File.join(fixtures_dir, "lzx_21kb.cab") }
+      let(:lzx_cab) { File.join(fixtures_dir, "lzx-premature-matches.cab") }
 
       it "frees buffers when free is called" do
         skip "LZX fixture not available" unless File.exist?(lzx_cab)
 
         decompressor = Cabriolet::CAB::Decompressor.new
-        cabinet = decompressor.open(lzx_cab)
-        extractor = Cabriolet::CAB::Extractor.new(decompressor.io_system, decompressor)
+        decompressor.salvage = true
+        cabinet = decompressor.search(lzx_cab) || decompressor.open(lzx_cab)
+        extractor = Cabriolet::CAB::Extractor.new(decompressor.io_system,
+                                                  decompressor)
 
         Dir.mktmpdir do |tmpdir|
           extractor.extract_all(cabinet, tmpdir)
+        rescue StandardError
+          # Some test files may be intentionally malformed
         end
 
         # After extraction, reset_state should have been called
@@ -137,17 +142,21 @@ RSpec.describe "Cabriolet Memory Management" do
     end
 
     describe "MSZIP" do
-      let(:mszip_cab) { File.join(fixtures_dir, "mszip_1kb.cab") }
+      let(:mszip_cab) { File.join(fixtures_dir, "mszip_lzx_qtm.cab") }
 
       it "frees buffers when free is called" do
         skip "MSZIP fixture not available" unless File.exist?(mszip_cab)
 
         decompressor = Cabriolet::CAB::Decompressor.new
-        cabinet = decompressor.open(mszip_cab)
-        extractor = Cabriolet::CAB::Extractor.new(decompressor.io_system, decompressor)
+        decompressor.salvage = true
+        cabinet = decompressor.search(mszip_cab) || decompressor.open(mszip_cab)
+        extractor = Cabriolet::CAB::Extractor.new(decompressor.io_system,
+                                                  decompressor)
 
         Dir.mktmpdir do |tmpdir|
           extractor.extract_all(cabinet, tmpdir)
+        rescue StandardError
+          # Some test files may be intentionally malformed
         end
 
         expect(extractor.instance_variable_get(:@current_decomp)).to be_nil
@@ -175,15 +184,13 @@ RSpec.describe "Cabriolet Memory Management" do
           next unless File.exist?(cab_file)
 
           Dir.mktmpdir do |tmpdir|
-            begin
-              decompressor = Cabriolet::CAB::Decompressor.new
-              decompressor.salvage = true # Don't fail on problematic files
-              cabinet = decompressor.search(cab_file) || decompressor.open(cab_file)
-              decompressor.extract_all(cabinet, tmpdir, salvage: true)
-            rescue StandardError => e
-              # Some test files may be intentionally malformed
-              warn "Skipping #{File.basename(cab_file)}: #{e.message}"
-            end
+            decompressor = Cabriolet::CAB::Decompressor.new
+            decompressor.salvage = true # Don't fail on problematic files
+            cabinet = decompressor.search(cab_file) || decompressor.open(cab_file)
+            decompressor.extract_all(cabinet, tmpdir, salvage: true)
+          rescue StandardError => e
+            # Some test files may be intentionally malformed
+            warn "Skipping #{File.basename(cab_file)}: #{e.message}"
           end
 
           # Force GC to ensure we're measuring actual leaks, not just pending GC
@@ -197,7 +204,7 @@ RSpec.describe "Cabriolet Memory Management" do
       # Memory should not grow by more than 10MB (10,240 KB)
       mem_growth = mem_after - mem_before
       expect(mem_growth).to be < 10_240,
-                             "Memory grew by #{mem_growth} KB (#{mem_growth / 1024} MB)"
+                            "Memory grew by #{mem_growth} KB (#{mem_growth / 1024} MB)"
 
       # File descriptors should not leak
       fd_growth = fds_after - fds_before

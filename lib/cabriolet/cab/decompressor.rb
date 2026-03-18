@@ -36,9 +36,9 @@ module Cabriolet
       # @param output_path [String] Where to write the file
       # @param options [Hash] Extraction options
       # @return [Integer] Number of bytes extracted
-      def extract_file(file, output_path, **options)
+      def extract_file(file, output_path, **)
         extractor = Extractor.new(@io_system, self)
-        extractor.extract_file(file, output_path, **options)
+        extractor.extract_file(file, output_path, **)
       end
 
       # Extract all files from the cabinet
@@ -47,9 +47,9 @@ module Cabriolet
       # @param output_dir [String] Directory to extract to
       # @param options [Hash] Extraction options
       # @return [Integer] Number of files extracted
-      def extract_all(cabinet, output_dir, **options)
+      def extract_all(cabinet, output_dir, **)
         extractor = Extractor.new(@io_system, self)
-        extractor.extract_all(cabinet, output_dir, **options)
+        extractor.extract_all(cabinet, output_dir, **)
       end
 
       # Create appropriate decompressor for a folder

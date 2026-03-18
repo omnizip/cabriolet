@@ -32,3 +32,6 @@ old-docs/
 
 # Documentation
 _site
+
+# This is an extracted file from spec/fixtures
+spec/fixtures/MUANGL20/MAUNINST.EXE

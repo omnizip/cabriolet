@@ -313,7 +313,8 @@ RSpec.describe Cabriolet::CAB::Decompressor, "#search" do
 
       # Use a fixture with exactly ONE MSCF signature so we know the
       # overlap is the only way to find it when the header is split.
-      cab_data = File.binread(File.join(fixtures_dir, "normal_2files_1folder.cab"))
+      cab_data = File.binread(File.join(fixtures_dir,
+                                        "normal_2files_1folder.cab"))
 
       # Build a file: 30 bytes of non-MSCF padding + the single CAB.
       # MSCF lands at absolute offset 30. The 20-byte header spans bytes 30-49.

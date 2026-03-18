@@ -169,7 +169,7 @@ module Cabriolet
     # @example
     #   archive = Cabriolet.open('unknown.archive')
     #   archive.files.each { |f| puts f.name }
-    def open(path, **options)
+    def open(path, **)
       parser_class = FormatDetector.parser_for(path)
 
       unless parser_class
@@ -178,7 +178,7 @@ module Cabriolet
               "Unable to detect format or no parser available for: #{path} (detected: #{format || 'unknown'})"
       end
 
-      parser_class.new(**options).parse(path)
+      parser_class.new(**).parse(path)
     end
 
     # Detect format of an archive file
@@ -209,9 +209,9 @@ module Cabriolet
     # @example Parallel extraction with 8 workers
     #   stats = Cabriolet.extract('file.chm', 'docs/', workers: 8)
     #   puts "Extracted #{stats[:extracted]} files"
-    def extract(archive_path, output_dir, **options)
+    def extract(archive_path, output_dir, **)
       archive = open(archive_path)
-      extractor = Extraction::Extractor.new(archive, output_dir, **options)
+      extractor = Extraction::Extractor.new(archive, output_dir, **)
       extractor.extract_all
     end
 

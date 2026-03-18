@@ -91,7 +91,7 @@ module Cabriolet
     #   compressor = factory.create(3, :compressor,
     #                               io, input, output, 8192)
     def create(type, category, io_system, input, output, buffer_size,
-               **kwargs)
+               **)
       validate_category!(category)
 
       normalized_type = normalize_type(type)
@@ -103,7 +103,7 @@ module Cabriolet
       end
 
       algorithm_info[:class].new(io_system, input, output, buffer_size,
-                                 **kwargs)
+                                 **)
     end
 
     # Check if an algorithm is registered

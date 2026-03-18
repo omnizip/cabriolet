@@ -45,8 +45,8 @@ module Cabriolet
       # @param output_file [String] Output file path
       # @param options [Hash] Format options
       # @return [Integer] Bytes written
-      def generate(output_file, **options)
-        @quickhelp.generate(output_file, **options)
+      def generate(output_file, **)
+        @quickhelp.generate(output_file, **)
       end
 
       # Create a Windows Help format HLP file

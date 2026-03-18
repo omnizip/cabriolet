@@ -354,7 +354,9 @@ RSpec.describe Cabriolet::Binary::Bitstream do
     context "in MSB mode" do
       let(:msb_data) { "\xAB\xCD\xEF\x01".b }
       let(:msb_handle) { Cabriolet::System::MemoryHandle.new(msb_data) }
-      let(:msb_bitstream) { described_class.new(io_system, msb_handle, 8, bit_order: :msb) }
+      let(:msb_bitstream) do
+        described_class.new(io_system, msb_handle, 8, bit_order: :msb)
+      end
 
       it "loads at least the requested number of bits" do
         msb_bitstream.ensure_bits(16)
@@ -433,7 +435,9 @@ RSpec.describe Cabriolet::Binary::Bitstream do
   describe "#byte_align MSB mode" do
     let(:msb_data) { "\xAB\xCD\xEF\x01".b }
     let(:msb_handle) { Cabriolet::System::MemoryHandle.new(msb_data) }
-    let(:msb_bitstream) { described_class.new(io_system, msb_handle, 8, bit_order: :msb) }
+    let(:msb_bitstream) do
+      described_class.new(io_system, msb_handle, 8, bit_order: :msb)
+    end
 
     it "aligns to byte boundary by discarding partial bits" do
       # Read 3 bits → 13 remaining from the 16-bit word
