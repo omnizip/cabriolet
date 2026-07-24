@@ -14,6 +14,9 @@ module Cabriolet
       # Topics and context data
       attr_accessor :topics, :contexts, :context_map
 
+      def files; end
+      def length; end
+
       # Initialize QuickHelp database header
       #
       # @param magic [String] Magic number (should be 0x4C 0x4E)

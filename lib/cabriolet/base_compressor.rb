@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "file_manager"
-require_relative "system/io_system"
 
 module Cabriolet
   # Abstract base class for all format compressors
@@ -97,8 +95,6 @@ module Cabriolet
 
       bytes_written
     end
-
-    protected
 
     # Hook: Build format-specific structure
     #

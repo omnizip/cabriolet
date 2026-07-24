@@ -243,17 +243,17 @@ RSpec.describe Cabriolet::CLI do
     describe "#setup_verbose" do
       it "sets Cabriolet.verbose to true when verbose is true" do
         expect(Cabriolet).to receive(:verbose=).with(true)
-        cli.send(:setup_verbose, true)
+        cli.public_send(:setup_verbose, true)
       end
 
       it "sets Cabriolet.verbose to false when verbose is false" do
         expect(Cabriolet).to receive(:verbose=).with(false)
-        cli.send(:setup_verbose, false)
+        cli.public_send(:setup_verbose, false)
       end
 
       it "sets Cabriolet.verbose to nil when verbose is nil" do
         expect(Cabriolet).to receive(:verbose=).with(nil)
-        cli.send(:setup_verbose, nil)
+        cli.public_send(:setup_verbose, nil)
       end
     end
   end

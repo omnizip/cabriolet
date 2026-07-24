@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../quantum_shared"
 
 # Helper for 5-argument bytesplice (added in Ruby 3.3)
 # Ruby 3.2 has bytesplice but only 2-3 argument forms
@@ -22,6 +21,10 @@ module Cabriolet
     # The Quantum method was created by David Stafford, adapted by Microsoft
     # Corporation.
     class Quantum < Base
+      attr_reader :bitstream, :header_read, :window, :window_posn,
+                   :frame_todo, :h, :l, :c, :model0, :model1, :model2,
+                   :model3, :model4, :model5, :model6, :model6len, :model7
+      attr_writer :header_read
       include QuantumShared
 
       attr_reader :window_bits, :window_size
@@ -160,7 +163,7 @@ module Cabriolet
         bytes
       end
 
-      private
+
 
       # MSB-first bitstream for Quantum (reads 16-bit words MSB first)
       class MSBBitstream

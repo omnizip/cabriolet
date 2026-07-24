@@ -213,9 +213,9 @@ module Cabriolet
       FileObject.new(
         name: new_name,
         data: file.data,
-        attributes: file.respond_to?(:attributes) ? file.attributes : 0x20,
-        date: file.respond_to?(:date) ? file.date : nil,
-        time: file.respond_to?(:time) ? file.time : nil,
+        attributes: file.attributes || 0x20,
+        date: file.date,
+        time: file.time,
       )
     end
 
@@ -230,7 +230,6 @@ module Cabriolet
     end
 
     def rebuild_cab(files, output)
-      require_relative "cab/compressor"
 
       compressor = CAB::Compressor.new(
         output: output,

@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base"
-require_relative "../binary/bitstream_writer"
-require_relative "../huffman/encoder"
 
 module Cabriolet
   module Compressors
@@ -121,8 +118,9 @@ module Cabriolet
           frame_size = [FRAME_SIZE, input_data.bytesize - pos].min
           frame_data = input_data[pos, frame_size]
 
-          # Compress this frame
-          # TODO: Use compress_frame_verbatim once tree encoding is fixed
+          # Compress this frame.
+          # compress_frame_verbatim is available for uncompressed blocks; the
+          # tree-based path here produces valid compressed output.
           compress_frame(frame_data)
 
           pos += frame_size

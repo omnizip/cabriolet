@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../cli/base_command_handler"
-require_relative "decompressor"
-require_relative "compressor"
 
 module Cabriolet
   module KWAJ
@@ -148,7 +145,7 @@ module Cabriolet
         header = decompressor.open(file)
 
         puts "Testing #{file}..."
-        # TODO: Implement full integrity testing
+        validate_integrity(file)
         puts "OK: KWAJ file structure is valid"
         puts "Compression: #{header.compression_name}"
         puts "Data offset: #{header.data_offset} bytes"

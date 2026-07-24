@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "directory_builder"
 
 module Cabriolet
   module LIT

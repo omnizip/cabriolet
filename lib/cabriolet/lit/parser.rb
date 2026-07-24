@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../binary/lit_structures"
-require_relative "../models/lit_header"
-require_relative "../errors"
 
 module Cabriolet
   module LIT
@@ -222,7 +219,7 @@ module Cabriolet
           directory.entries << entry
 
           # Update position using instance variable
-          entry_size = entry.instance_variable_get(:@_bytes_read)
+          entry_size = entry.bytes_read
           pos += entry_size
           remaining -= entry_size
         end
@@ -277,7 +274,7 @@ module Cabriolet
         entry.size = size
 
         # Attach metadata for position tracking
-        entry.instance_variable_set(:@_bytes_read, pos - start_pos)
+        entry.bytes_read = pos - start_pos
         entry
       end
 
@@ -605,7 +602,7 @@ module Cabriolet
               break unless mapping
 
               manifest.mappings << mapping
-              pos += mapping.instance_variable_get(:@_bytes_read)
+              pos += mapping.bytes_read
             end
           end
         end
@@ -662,7 +659,7 @@ module Cabriolet
         mapping.group = group
 
         # Attach metadata for position tracking
-        mapping.instance_variable_set(:@_bytes_read, pos - start_pos)
+        mapping.bytes_read = pos - start_pos
         mapping
       end
     end

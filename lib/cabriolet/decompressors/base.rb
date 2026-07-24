@@ -6,12 +6,6 @@ module Cabriolet
     class Base
       attr_reader :io_system, :input, :output, :buffer_size
 
-      # Initialize a new decompressor
-      #
-      # @param io_system [System::IOSystem] I/O system for reading/writing
-      # @param input [System::FileHandle, System::MemoryHandle] Input handle
-      # @param output [System::FileHandle, System::MemoryHandle] Output handle
-      # @param buffer_size [Integer] Buffer size for I/O operations
       def initialize(io_system, input, output, buffer_size, **_kwargs)
         @io_system = io_system
         @input = input
@@ -19,18 +13,35 @@ module Cabriolet
         @buffer_size = buffer_size
       end
 
-      # Decompress the specified number of bytes
-      #
-      # @param bytes [Integer] Number of bytes to decompress
-      # @return [Integer] Number of bytes decompressed
-      # @raise [NotImplementedError] Must be implemented by subclasses
       def decompress(bytes)
         raise NotImplementedError, "#{self.class} must implement #decompress"
       end
 
-      # Free any resources used by the decompressor
+      # Decompress with a specific output handle, then restore the previous output.
+      # Used by callers that need to redirect decompression output temporarily.
       #
-      # @return [void]
+      # @param temporary_output [System::FileHandle, System::MemoryHandle] Output to decompress into
+      # @return [Integer] Bytes decompressed
+      def decompress_to(temporary_output, bytes)
+        original_output = @output
+        @output = temporary_output
+        decompress(bytes)
+      ensure
+        @output = original_output
+      end
+
+      # Yield with a temporarily swapped output handle, restoring the original on exit.
+      #
+      # @param temporary_output [System::FileHandle, System::MemoryHandle] Temporary output
+      # @yield Block to execute with the temporary output active
+      def with_output(temporary_output)
+        original_output = @output
+        @output = temporary_output
+        yield
+      ensure
+        @output = original_output
+      end
+
       def free
         # Override in subclasses if cleanup needed
       end

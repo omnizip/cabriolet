@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../cli/base_command_handler"
-require_relative "decompressor"
-require_relative "compressor"
 
 module Cabriolet
   module OAB

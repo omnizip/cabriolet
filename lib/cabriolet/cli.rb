@@ -2,17 +2,8 @@
 
 require "thor"
 
-require_relative "cli/command_registry"
-require_relative "cli/command_dispatcher"
 
 # Register all format handlers with the command registry
-require_relative "cab/command_handler"
-require_relative "chm/command_handler"
-require_relative "szdd/command_handler"
-require_relative "kwaj/command_handler"
-require_relative "hlp/command_handler"
-require_relative "lit/command_handler"
-require_relative "oab/command_handler"
 
 Cabriolet::Commands::CommandRegistry.register_format(:cab, Cabriolet::CAB::CommandHandler)
 Cabriolet::Commands::CommandRegistry.register_format(:chm, Cabriolet::CHM::CommandHandler)
@@ -415,7 +406,7 @@ module Cabriolet
       puts "Cabriolet version #{Cabriolet::VERSION}"
     end
 
-    private
+    no_commands do
 
     # Run command with unified dispatcher
     #
@@ -521,5 +512,6 @@ module Cabriolet
     def setup_verbose(verbose)
       Cabriolet.verbose = verbose
     end
+    end # no_commands
   end
 end

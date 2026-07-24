@@ -270,7 +270,7 @@ RSpec.describe Cabriolet::Decompressors::LZX do
                                 window_bits: 15)
 
       # Window size = 2^15 = 32KB
-      expect(lzx.instance_variable_get(:@window_size)).to eq(32_768)
+      expect(lzx.window_size).to eq(32_768)
     end
 
     it "calculates correct window size for window_bits 21" do
@@ -281,7 +281,7 @@ RSpec.describe Cabriolet::Decompressors::LZX do
                                 window_bits: 21)
 
       # Window size = 2^21 = 2MB
-      expect(lzx.instance_variable_get(:@window_size)).to eq(2_097_152)
+      expect(lzx.window_size).to eq(2_097_152)
     end
 
     it "calculates correct number of offsets for window_bits 15" do
@@ -292,7 +292,7 @@ RSpec.describe Cabriolet::Decompressors::LZX do
                                 window_bits: 15)
 
       # POSITION_SLOTS[0] = 30, so num_offsets = 30 << 3 = 240
-      expect(lzx.instance_variable_get(:@num_offsets)).to eq(240)
+      expect(lzx.num_offsets).to eq(240)
     end
   end
 
@@ -304,9 +304,9 @@ RSpec.describe Cabriolet::Decompressors::LZX do
       lzx = described_class.new(io_system, input, output, 4096,
                                 window_bits: 15)
 
-      expect(lzx.instance_variable_get(:@r0)).to eq(1)
-      expect(lzx.instance_variable_get(:@r1)).to eq(1)
-      expect(lzx.instance_variable_get(:@r2)).to eq(1)
+      expect(lzx.r0).to eq(1)
+      expect(lzx.r1).to eq(1)
+      expect(lzx.r2).to eq(1)
     end
 
     it "initializes block state" do
@@ -316,10 +316,10 @@ RSpec.describe Cabriolet::Decompressors::LZX do
       lzx = described_class.new(io_system, input, output, 4096,
                                 window_bits: 15)
 
-      expect(lzx.instance_variable_get(:@block_type)).to eq(0)
-      expect(lzx.instance_variable_get(:@block_length)).to eq(0)
-      expect(lzx.instance_variable_get(:@block_remaining)).to eq(0)
-      expect(lzx.instance_variable_get(:@header_read)).to be false
+      expect(lzx.block_type).to eq(0)
+      expect(lzx.block_length).to eq(0)
+      expect(lzx.block_remaining).to eq(0)
+      expect(lzx.header_read).to be false
     end
 
     it "initializes Intel E8 state" do
@@ -329,8 +329,8 @@ RSpec.describe Cabriolet::Decompressors::LZX do
       lzx = described_class.new(io_system, input, output, 4096,
                                 window_bits: 15)
 
-      expect(lzx.instance_variable_get(:@intel_filesize)).to eq(0)
-      expect(lzx.instance_variable_get(:@intel_started)).to be false
+      expect(lzx.intel_filesize).to eq(0)
+      expect(lzx.intel_started).to be false
     end
 
     it "initializes frame tracking" do
@@ -340,10 +340,10 @@ RSpec.describe Cabriolet::Decompressors::LZX do
       lzx = described_class.new(io_system, input, output, 4096,
                                 window_bits: 15)
 
-      expect(lzx.instance_variable_get(:@window_posn)).to eq(0)
-      expect(lzx.instance_variable_get(:@frame_posn)).to eq(0)
-      expect(lzx.instance_variable_get(:@frame)).to eq(0)
-      expect(lzx.instance_variable_get(:@offset)).to eq(0)
+      expect(lzx.window_posn).to eq(0)
+      expect(lzx.frame_posn).to eq(0)
+      expect(lzx.frame).to eq(0)
+      expect(lzx.offset).to eq(0)
     end
   end
 
@@ -355,20 +355,20 @@ RSpec.describe Cabriolet::Decompressors::LZX do
       lzx = described_class.new(io_system, input, output, 4096,
                                 window_bits: 15)
 
-      pretree_lengths = lzx.instance_variable_get(:@pretree_lengths)
+      pretree_lengths = lzx.pretree_lengths
       expect(pretree_lengths).to be_an(Array)
       expect(pretree_lengths.size).to eq(20)
       expect(pretree_lengths).to all(eq(0))
 
-      maintree_lengths = lzx.instance_variable_get(:@maintree_lengths)
+      maintree_lengths = lzx.maintree_lengths
       expect(maintree_lengths).to be_an(Array)
       expect(maintree_lengths.size).to eq(256 + 240) # NUM_CHARS + num_offsets
 
-      length_lengths = lzx.instance_variable_get(:@length_lengths)
+      length_lengths = lzx.length_lengths
       expect(length_lengths).to be_an(Array)
       expect(length_lengths.size).to eq(250)
 
-      aligned_lengths = lzx.instance_variable_get(:@aligned_lengths)
+      aligned_lengths = lzx.aligned_lengths
       expect(aligned_lengths).to be_an(Array)
       expect(aligned_lengths.size).to eq(8)
     end
@@ -380,10 +380,10 @@ RSpec.describe Cabriolet::Decompressors::LZX do
       lzx = described_class.new(io_system, input, output, 4096,
                                 window_bits: 15)
 
-      expect(lzx.instance_variable_get(:@pretree)).to be_nil
-      expect(lzx.instance_variable_get(:@maintree)).to be_nil
-      expect(lzx.instance_variable_get(:@length_tree)).to be_nil
-      expect(lzx.instance_variable_get(:@aligned_tree)).to be_nil
+      expect(lzx.pretree).to be_nil
+      expect(lzx.maintree).to be_nil
+      expect(lzx.length_tree).to be_nil
+      expect(lzx.aligned_tree).to be_nil
     end
   end
 
@@ -413,32 +413,32 @@ RSpec.describe Cabriolet::Decompressors::LZX do
                                 window_bits: 15, output_length: 33_000)
 
       # Simulate state after a short frame left frame_posn at 232
-      lzx.instance_variable_set(:@header_read, true)
-      lzx.instance_variable_set(:@intel_filesize, 0)
-      lzx.instance_variable_set(:@frame_posn, 232)
-      lzx.instance_variable_set(:@window_posn, 232)
-      lzx.instance_variable_set(:@frame, 1)
-      lzx.instance_variable_set(:@offset, 232)
+      lzx.header_read = true
+      lzx.intel_filesize = 0
+      lzx.frame_posn = 232
+      lzx.window_posn = 232
+      lzx.frame = 1
+      lzx.offset = 232
 
       # Fill window with data so @window[232, 32768] doesn't return nil
-      lzx.instance_variable_set(:@window, "A".b * 32_768)
+      lzx.window = "A".b * 32_768
 
       # Stub decode_frame so we don't need valid LZX bitstream data
       allow(lzx).to receive(:decode_frame) do |frame_size|
-        wp = lzx.instance_variable_get(:@window_posn)
+        wp = lzx.window_posn
         new_wp = wp + frame_size
         new_wp = 0 if new_wp >= 32_768
-        lzx.instance_variable_set(:@window_posn, new_wp)
+        lzx.window_posn = new_wp
       end
 
-      bs = lzx.instance_variable_get(:@bitstream)
+      bs = lzx.bitstream
       allow(bs).to receive(:byte_align)
 
       lzx.decompress(32_768)
 
       # frame_posn went from 232 + 32768 = 33000, which overshoots window_size (32768).
       # The >= check must reset it to 0. If == were used, it would stay at 33000.
-      frame_posn = lzx.instance_variable_get(:@frame_posn)
+      frame_posn = lzx.frame_posn
       expect(frame_posn).to eq(0),
                             "frame_posn should wrap to 0 when it overshoots window_size " \
                             "(got #{frame_posn}). The boundary check must use >= not =="
@@ -451,27 +451,27 @@ RSpec.describe Cabriolet::Decompressors::LZX do
       lzx = described_class.new(io_system, input, output, 4096,
                                 window_bits: 15, output_length: 32_768)
 
-      lzx.instance_variable_set(:@header_read, true)
-      lzx.instance_variable_set(:@intel_filesize, 0)
-      lzx.instance_variable_set(:@frame_posn, 0)
-      lzx.instance_variable_set(:@window_posn, 0)
-      lzx.instance_variable_set(:@frame, 0)
-      lzx.instance_variable_set(:@offset, 0)
-      lzx.instance_variable_set(:@window, "A".b * 32_768)
+      lzx.header_read = true
+      lzx.intel_filesize = 0
+      lzx.frame_posn = 0
+      lzx.window_posn = 0
+      lzx.frame = 0
+      lzx.offset = 0
+      lzx.window = "A".b * 32_768
 
       allow(lzx).to receive(:decode_frame) do |frame_size|
-        lzx.instance_variable_set(:@window_posn, frame_size)
+        lzx.window_posn = frame_size
       end
 
-      bs = lzx.instance_variable_get(:@bitstream)
+      bs = lzx.bitstream
       allow(bs).to receive(:byte_align)
 
       lzx.decompress(32_768)
 
       # frame_posn = 0 + 32768 = 32768 == window_size → reset to 0
       # This is the exact-match case that == also handles.
-      expect(lzx.instance_variable_get(:@frame_posn)).to eq(0)
-      expect(lzx.instance_variable_get(:@window_posn)).to eq(0)
+      expect(lzx.frame_posn).to eq(0)
+      expect(lzx.window_posn).to eq(0)
     end
 
     it "does not reset frame_posn when it is within window_size" do
@@ -482,25 +482,25 @@ RSpec.describe Cabriolet::Decompressors::LZX do
       lzx = described_class.new(io_system, input, output, 4096,
                                 window_bits: 16, output_length: 32_768)
 
-      lzx.instance_variable_set(:@header_read, true)
-      lzx.instance_variable_set(:@intel_filesize, 0)
-      lzx.instance_variable_set(:@frame_posn, 0)
-      lzx.instance_variable_set(:@window_posn, 0)
-      lzx.instance_variable_set(:@frame, 0)
-      lzx.instance_variable_set(:@offset, 0)
-      lzx.instance_variable_set(:@window, "A".b * 65_536)
+      lzx.header_read = true
+      lzx.intel_filesize = 0
+      lzx.frame_posn = 0
+      lzx.window_posn = 0
+      lzx.frame = 0
+      lzx.offset = 0
+      lzx.window = "A".b * 65_536
 
       allow(lzx).to receive(:decode_frame) do |frame_size|
-        lzx.instance_variable_set(:@window_posn, frame_size)
+        lzx.window_posn = frame_size
       end
 
-      bs = lzx.instance_variable_get(:@bitstream)
+      bs = lzx.bitstream
       allow(bs).to receive(:byte_align)
 
       lzx.decompress(32_768)
 
       # frame_posn = 0 + 32768 = 32768 < 65536 → no reset
-      expect(lzx.instance_variable_get(:@frame_posn)).to eq(32_768)
+      expect(lzx.frame_posn).to eq(32_768)
     end
   end
 
@@ -516,17 +516,17 @@ RSpec.describe Cabriolet::Decompressors::LZX do
       lzx = described_class.new(io_system, input, output, 4096,
                                 window_bits: 15, output_length: 32_768)
 
-      lzx.instance_variable_set(:@header_read, true)
-      lzx.instance_variable_set(:@intel_filesize, 0)
+      lzx.header_read = true
+      lzx.intel_filesize = 0
       # Place frame_posn beyond window — forces @window[@frame_posn, n] → nil
-      lzx.instance_variable_set(:@frame_posn, 40_000)
-      lzx.instance_variable_set(:@window_posn, 0)
-      lzx.instance_variable_set(:@frame, 0)
-      lzx.instance_variable_set(:@offset, 0)
-      lzx.instance_variable_set(:@window, "A".b * 32_768)
+      lzx.frame_posn = 40_000
+      lzx.window_posn = 0
+      lzx.frame = 0
+      lzx.offset = 0
+      lzx.window = "A".b * 32_768
 
       allow(lzx).to receive(:decode_frame)
-      bs = lzx.instance_variable_get(:@bitstream)
+      bs = lzx.bitstream
       allow(bs).to receive(:byte_align)
 
       expect { lzx.decompress(32_768) }.to raise_error(
@@ -541,16 +541,16 @@ RSpec.describe Cabriolet::Decompressors::LZX do
       lzx = described_class.new(io_system, input, output, 4096,
                                 window_bits: 15, output_length: 32_768, salvage: true)
 
-      lzx.instance_variable_set(:@header_read, true)
-      lzx.instance_variable_set(:@intel_filesize, 0)
-      lzx.instance_variable_set(:@frame_posn, 40_000)
-      lzx.instance_variable_set(:@window_posn, 0)
-      lzx.instance_variable_set(:@frame, 0)
-      lzx.instance_variable_set(:@offset, 0)
-      lzx.instance_variable_set(:@window, "A".b * 32_768)
+      lzx.header_read = true
+      lzx.intel_filesize = 0
+      lzx.frame_posn = 40_000
+      lzx.window_posn = 0
+      lzx.frame = 0
+      lzx.offset = 0
+      lzx.window = "A".b * 32_768
 
       allow(lzx).to receive(:decode_frame)
-      bs = lzx.instance_variable_get(:@bitstream)
+      bs = lzx.bitstream
       allow(bs).to receive(:byte_align)
 
       # Should not raise — returns 0 bytes written and prints a warning
@@ -580,7 +580,7 @@ RSpec.describe Cabriolet::Decompressors::LZX do
       expect(output.data).to eq(original[0, 10])
 
       # Pending data should be stored for the next call
-      expect(lzx.instance_variable_get(:@pending_frame_data)).not_to be_nil
+      expect(lzx.pending_frame_data).not_to be_nil
     end
 
     it "outputs pending data on subsequent decompress call" do
@@ -597,7 +597,7 @@ RSpec.describe Cabriolet::Decompressors::LZX do
 
       # Second call: read the rest, with a new output handle
       output2 = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
-      lzx.instance_variable_set(:@output, output2)
+      lzx.output = output2
       remaining = original.bytesize - 10
       result = lzx.decompress(remaining)
 
@@ -616,7 +616,7 @@ RSpec.describe Cabriolet::Decompressors::LZX do
                                 window_bits: 15, output_length: original.bytesize)
 
       lzx.decompress(32_768)
-      expect(lzx.instance_variable_get(:@pending_frame_data)).to be_nil
+      expect(lzx.pending_frame_data).to be_nil
     end
   end
 
@@ -636,7 +636,7 @@ RSpec.describe Cabriolet::Decompressors::LZX do
 
       lzx.decompress(50)
       # @offset should be 50 (bytes actually output), not 32768 (full frame)
-      expect(lzx.instance_variable_get(:@offset)).to eq(50)
+      expect(lzx.offset).to eq(50)
     end
   end
 
@@ -718,19 +718,19 @@ RSpec.describe Cabriolet::Decompressors::LZX do
       lzx = described_class.new(io_system, input, output, 4096,
                                 window_bits: 15, output_length: 32_768)
 
-      lzx.instance_variable_set(:@header_read, true)
-      lzx.instance_variable_set(:@intel_filesize, 0)
-      lzx.instance_variable_set(:@frame_posn, 0)
-      lzx.instance_variable_set(:@window_posn, 0)
-      lzx.instance_variable_set(:@frame, 0)
-      lzx.instance_variable_set(:@offset, 0)
-      lzx.instance_variable_set(:@window, "A".b * 32_768)
+      lzx.header_read = true
+      lzx.intel_filesize = 0
+      lzx.frame_posn = 0
+      lzx.window_posn = 0
+      lzx.frame = 0
+      lzx.offset = 0
+      lzx.window = "A".b * 32_768
 
       # Stub decode_huffman_block to simulate a huge overrun
       allow(lzx).to receive(:read_block_header) do
-        lzx.instance_variable_set(:@block_type, 1) # VERBATIM
-        lzx.instance_variable_set(:@block_remaining, 100)
-        lzx.instance_variable_set(:@block_length, 100)
+        lzx.block_type = 1 # VERBATIM
+        lzx.block_remaining = 100
+        lzx.block_length = 100
       end
 
       allow(lzx).to receive(:decode_huffman_block).and_return(-200)

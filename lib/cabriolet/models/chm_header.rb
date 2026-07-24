@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "chm_section"
 
 module Cabriolet
   module Models

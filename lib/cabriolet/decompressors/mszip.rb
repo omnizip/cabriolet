@@ -5,6 +5,7 @@ module Cabriolet
     # MSZIP handles MSZIP (deflate) compressed data
     # Based on RFC 1951 and libmspack implementation
     class MSZIP < Base
+      attr_reader :window, :fix_mszip
       # MSZIP frame size (32KB sliding window)
       FRAME_SIZE = 32_768
 

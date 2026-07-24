@@ -36,7 +36,7 @@ RSpec.describe Cabriolet::CAB::Decompressor do
       end
 
       it "parser uses the same io_system" do
-        parser_io = decompressor.parser.instance_variable_get(:@io_system)
+        parser_io = decompressor.parser.io_system
         expect(parser_io).to eq(decompressor.io_system)
       end
     end
@@ -183,7 +183,7 @@ RSpec.describe Cabriolet::CAB::Decompressor do
 
         result = decompressor.create_decompressor(folder, input_handle,
                                                   output_handle)
-        expect(result.instance_variable_get(:@fix_mszip)).to be(true)
+        expect(result.fix_mszip).to be(true)
       end
     end
 
@@ -203,7 +203,7 @@ RSpec.describe Cabriolet::CAB::Decompressor do
 
         result = decompressor.create_decompressor(folder, input_handle,
                                                   output_handle)
-        expect(result.instance_variable_get(:@window_bits)).to eq(17)
+        expect(result.window_bits).to eq(17)
       end
     end
 
@@ -223,7 +223,7 @@ RSpec.describe Cabriolet::CAB::Decompressor do
 
         result = decompressor.create_decompressor(folder, input_handle,
                                                   output_handle)
-        expect(result.instance_variable_get(:@window_bits)).to eq(13)
+        expect(result.window_bits).to eq(13)
       end
     end
 

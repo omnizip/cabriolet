@@ -14,7 +14,7 @@ module Cabriolet
         class Node
           attr_accessor :symbol, :left_child, :right_child
 
-          def initialize
+          def initialize(root: nil, symbol_count: 0)
             @symbol = nil
             @left_child = nil
             @right_child = nil
@@ -26,9 +26,9 @@ module Cabriolet
         end
 
         # Initialize empty tree
-        def initialize
-          @root = nil
-          @symbol_count = 0
+        def initialize(root: nil, symbol_count: 0)
+          @root = root
+          @symbol_count = symbol_count
         end
 
         # Check if tree is empty
@@ -51,7 +51,9 @@ module Cabriolet
         # @return [HuffmanTree] Deserialized tree
         # @raise [Cabriolet::ParseError] if tree is invalid
         def self.deserialize(node_values)
-          tree = new
+          return new if node_values.empty?
+
+          n = node_values.length
           return tree if node_values.empty?
 
           n = node_values.length
@@ -97,9 +99,7 @@ module Cabriolet
             end
           end
 
-          tree.instance_variable_set(:@root, nodes[0])
-          tree.instance_variable_set(:@symbol_count, (n / 2) + 1)
-          tree
+          new(root: nodes[0], symbol_count: (n / 2) + 1)
         end
 
         # Create a decoder for this tree

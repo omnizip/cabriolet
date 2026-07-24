@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../../binary/hlp_structures"
-require_relative "../../models/winhelp_header"
-require_relative "../../errors"
-require_relative "../../system/io_system"
-require_relative "../../constants"
 
 module Cabriolet
   module HLP
@@ -148,7 +143,7 @@ module Cabriolet
           binary_header = Binary::HLPStructures::WinHelp4Header.read(header_data)
 
           # Validate magic (lower 16 bits should be 0x5F3F or 0x3F5F)
-          magic_val = binary_header.magic.respond_to?(:to_i) ? binary_header.magic.to_i : binary_header.magic
+          magic_val = binary_header.magic.to_i
           unless (magic_val & 0xFFFF) == 0x5F3F || (magic_val & 0xFFFF) == 0x3F5F
             raise Cabriolet::ParseError,
                   "Invalid WinHelp 4.x magic: 0x#{magic_val.to_s(16)}"

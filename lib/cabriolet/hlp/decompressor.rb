@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "quickhelp/decompressor"
-require_relative "winhelp/decompressor"
 
 module Cabriolet
   module HLP
@@ -47,7 +45,7 @@ module Cabriolet
       # @param header [Models::HLPHeader, Models::WinHelpHeader] Header to close
       # @return [nil]
       def close(header)
-        @delegate&.close(header) if @delegate.respond_to?(:close)
+        @delegate&.close(header)
         nil
       end
 

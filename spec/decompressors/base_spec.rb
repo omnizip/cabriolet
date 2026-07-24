@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "tmpdir"
 require "spec_helper"
 
 RSpec.describe Cabriolet::Decompressors::Base do

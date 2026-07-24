@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "folder_data"
 
 module Cabriolet
   module Models

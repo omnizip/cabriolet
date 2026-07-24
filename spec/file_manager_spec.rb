@@ -150,7 +150,7 @@ RSpec.describe Cabriolet::FileManager do
       entries = manager.all
 
       expect(entries).to eq([entry1, entry2])
-      expect(entries).not_to be(manager.instance_variable_get(:@entries))
+      expect(entries).not_to be(manager.entries)
     end
   end
 

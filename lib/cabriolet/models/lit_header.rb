@@ -11,7 +11,7 @@ module Cabriolet
     # - DataSpace sections with transformation layers (compression/encryption)
     # - Manifest mapping internal to original filenames
     class LITFile
-      attr_accessor :version, :header_guid, :piece3_guid, :piece4_guid,
+      attr_accessor :version, :filename, :header_guid, :piece3_guid, :piece4_guid,
                     :content_offset, :timestamp, :language_id, :creator_id,
                     :entry_chunklen, :count_chunklen, :entry_unknown,
                     :count_unknown, :drm_level, :sections, :directory, :manifest
@@ -120,7 +120,7 @@ module Cabriolet
     #
     # Entries use variable-length encoded integers to save space
     class LITDirectoryEntry
-      attr_accessor :name, :section, :offset, :size
+      attr_accessor :name, :section, :offset, :size, :bytes_read
 
       def initialize
         @name = ""
@@ -206,7 +206,7 @@ module Cabriolet
 
     # Represents a single manifest mapping
     class LITManifestMapping
-      attr_accessor :offset, :internal_name, :original_name, :content_type,
+      attr_accessor :offset, :internal_name, :original_name, :content_type, :bytes_read,
                     :group
 
       def initialize

@@ -138,7 +138,7 @@ RSpec.describe Cabriolet::Models::Folder do
 
     context "when merge_prev is set" do
       it "returns true" do
-        folder.merge_prev = double("previous_folder")
+        folder.merge_prev = Cabriolet::Models::Folder.new
         expect(folder.needs_prev_merge?).to be(true)
       end
     end
@@ -154,7 +154,7 @@ RSpec.describe Cabriolet::Models::Folder do
 
     context "when merge_next is set" do
       it "returns true" do
-        folder.merge_next = double("next_folder")
+        folder.merge_next = Cabriolet::Models::Folder.new
         expect(folder.needs_next_merge?).to be(true)
       end
     end
@@ -177,7 +177,7 @@ RSpec.describe Cabriolet::Models::Folder do
     end
 
     it "allows setting and getting data_cab" do
-      cabinet = double("cabinet")
+      cabinet = Cabriolet::Models::Cabinet.new
       folder.data_cab = cabinet
       expect(folder.data_cab).to eq(cabinet)
     end

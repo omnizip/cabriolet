@@ -35,11 +35,8 @@ module Cabriolet
                 "No parser for format: #{@format}"
         end
 
-        archive = parser_class.new(
-          salvage_mode: salvage_mode,
-          skip_checksum: true,
-          continue_on_error: true,
-        ).parse(@path)
+        io_system = System::IOSystem.new
+        archive = parser_class.new(io_system).parse(@path)
 
         # Extract recoverable files
         recovered_files = extract_recoverable_files(archive, skip_corrupted)
@@ -77,11 +74,8 @@ module Cabriolet
       FileUtils.mkdir_p(output_dir)
 
       parser_class = FormatDetector.format_to_parser(@format)
-      archive = parser_class.new(
-        salvage_mode: true,
-        skip_checksum: true,
-        continue_on_error: true,
-      ).parse(@path)
+      io_system = System::IOSystem.new
+      archive = parser_class.new(io_system).parse(@path)
 
       salvaged_files = []
 
@@ -115,7 +109,7 @@ module Cabriolet
         data = file.data
 
         # Verify data integrity if possible
-        if file.respond_to?(:size) && data.bytesize == file.size
+        if data && data.bytesize == file.size
           recovered << RecoveredFile.new(file, data, :complete)
           @recovery_stats[:recovered] += 1
         elsif skip_corrupted
@@ -145,7 +139,6 @@ module Cabriolet
     end
 
     def rebuild_cab(files, output_path)
-      require_relative "cab/compressor"
 
       compressor = CAB::Compressor.new(
         output: output_path,
@@ -178,9 +171,9 @@ module Cabriolet
         @name = original_file.name
         @data = data
         @status = status # :complete or :partial
-        @attributes = original_file.attributes if original_file.respond_to?(:attributes)
-        @date = original_file.date if original_file.respond_to?(:date)
-        @time = original_file.time if original_file.respond_to?(:time)
+        @attributes = original_file.attributes
+        @date = original_file.date
+        @time = original_file.time
       end
 
       def complete?

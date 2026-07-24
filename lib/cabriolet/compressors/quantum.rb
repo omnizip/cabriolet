@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../quantum_shared"
 
 module Cabriolet
   module Compressors

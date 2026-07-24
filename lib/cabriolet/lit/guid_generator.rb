@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "securerandom"
+
 module Cabriolet
   module LIT
     # Generates GUIDs for LIT files

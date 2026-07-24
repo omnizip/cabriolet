@@ -308,7 +308,7 @@ RSpec.describe Cabriolet::Models::File do
     end
 
     it "allows setting and getting folder" do
-      folder = double("folder")
+      folder = Cabriolet::Models::Folder.new
       file.folder = folder
       expect(file.folder).to eq(folder)
     end

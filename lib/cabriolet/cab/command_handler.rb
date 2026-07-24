@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../cli/base_command_handler"
-require_relative "decompressor"
-require_relative "compressor"
 
 module Cabriolet
   module CAB
@@ -114,7 +111,7 @@ module Cabriolet
         cabinet = decompressor.open(file)
 
         puts "Testing #{cabinet.filename}..."
-        # TODO: Implement full integrity testing
+        validate_integrity(file)
         puts "OK: All #{cabinet.file_count} files passed integrity check"
       end
 

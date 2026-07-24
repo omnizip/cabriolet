@@ -171,8 +171,8 @@ RSpec.describe Cabriolet::AlgorithmFactory do
   describe "#create" do
     let(:factory) { described_class.new }
     let(:io_system) { Cabriolet::System::IOSystem.new }
-    let(:input) { instance_double(Cabriolet::System::MemoryHandle) }
-    let(:output) { instance_double(Cabriolet::System::MemoryHandle) }
+    let(:input) { Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE) }
+    let(:output) { Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE) }
 
     context "with symbol type" do
       it "creates a decompressor from symbol" do
@@ -425,8 +425,8 @@ RSpec.describe Cabriolet::AlgorithmFactory do
     it "can create instances of custom compressor" do
       factory.register(:custom, CustomCompressor, category: :compressor)
       io_system = Cabriolet::System::IOSystem.new
-      input = instance_double(Cabriolet::System::MemoryHandle)
-      output = instance_double(Cabriolet::System::MemoryHandle)
+      input = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
+      output = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
 
       algorithm = factory.create(:custom, :compressor,
                                  io_system, input, output, 4096)
@@ -437,8 +437,8 @@ RSpec.describe Cabriolet::AlgorithmFactory do
       factory.register(:custom, CustomDecompressor,
                        category: :decompressor)
       io_system = Cabriolet::System::IOSystem.new
-      input = instance_double(Cabriolet::System::MemoryHandle)
-      output = instance_double(Cabriolet::System::MemoryHandle)
+      input = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
+      output = Cabriolet::System::MemoryHandle.new("", Cabriolet::Constants::MODE_WRITE)
 
       algorithm = factory.create(:custom, :decompressor,
                                  io_system, input, output, 4096)

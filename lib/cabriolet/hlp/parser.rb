@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "quickhelp/parser"
-require_relative "winhelp/parser"
 
 module Cabriolet
   module HLP

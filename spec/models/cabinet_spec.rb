@@ -132,7 +132,7 @@ RSpec.describe Cabriolet::Models::Cabinet do
     end
 
     it "returns number of files in array" do
-      cabinet.files = [double("file1"), double("file2"), double("file3")]
+      cabinet.files = [Cabriolet::Models::File.new, Cabriolet::Models::File.new, Cabriolet::Models::File.new]
       expect(cabinet.file_count).to eq(3)
     end
   end
@@ -143,7 +143,7 @@ RSpec.describe Cabriolet::Models::Cabinet do
     end
 
     it "returns number of folders in array" do
-      cabinet.folders = [double("folder1"), double("folder2")]
+      cabinet.folders = [Cabriolet::Models::Folder.new, Cabriolet::Models::Folder.new]
       expect(cabinet.folder_count).to eq(2)
     end
   end
