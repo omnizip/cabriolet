@@ -35,3 +35,7 @@ _site
 
 # This is an extracted file from spec/fixtures
 spec/fixtures/MUANGL20/MAUNINST.EXE
+
+# Test data source files (match filenames in libmspack CAB test archives)
+/hello.c
+/welcome.c
