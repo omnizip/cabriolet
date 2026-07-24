@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "parser"
-require_relative "../decompressors/lzx"
-require_relative "../binary/lit_structures"
-require_relative "../errors"
 
 module Cabriolet
   module LIT
@@ -44,7 +40,7 @@ module Cabriolet
         lit_file = @parser.parse(filename)
 
         # Store filename for later extraction
-        lit_file.instance_variable_set(:@filename, filename)
+        lit_file.filename = filename
 
         # Check for DRM
         if lit_file.encrypted?
@@ -89,7 +85,7 @@ module Cabriolet
         end
 
         # Use extract_file with file name
-        internal_name = file.respond_to?(:name) ? file.name : file.to_s
+        internal_name = file.is_a?(String) ? file : file.name
         extract_file(lit_file, internal_name, output_path)
       end
 
@@ -301,7 +297,7 @@ module Cabriolet
 
       # Read uncompressed content from section 0
       def read_uncompressed_content(lit_file)
-        filename = lit_file.instance_variable_get(:@filename)
+        filename = lit_file.filename
         handle = @io_system.open(filename, Constants::MODE_READ)
 
         begin
@@ -318,7 +314,7 @@ module Cabriolet
 
       # Decompress a section with transforms
       def decompress_section(lit_file, section)
-        lit_file.instance_variable_get(:@filename)
+        lit_file.filename
 
         # Read transform list
         transform_path = Binary::LITStructures::Paths::STORAGE +
@@ -420,7 +416,7 @@ module Cabriolet
 
       # Read entry data from file
       def read_entry_data(lit_file, entry)
-        filename = lit_file.instance_variable_get(:@filename)
+        filename = lit_file.filename
         handle = @io_system.open(filename, Constants::MODE_READ)
 
         begin
@@ -438,7 +434,7 @@ module Cabriolet
       # Read section data directly from file (for when Content entry is empty)
       # This calculates where the section data actually starts and reads it
       def read_section_data_from_file(lit_file, section)
-        filename = lit_file.instance_variable_get(:@filename)
+        filename = lit_file.filename
 
         # Find the section ID for this section
         section_id = lit_file.sections.index(section)

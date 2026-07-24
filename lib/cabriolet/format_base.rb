@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+# DEAD CODE: FormatBase is currently unused — no class inherits from it.
+# It was intended as a base class for format-specific compressors but was never
+# connected. Kept for potential future use; do not rely on it.
+
 module Cabriolet
   # FormatBase provides common functionality for all format-specific compressors
   # and decompressors, reducing code duplication and establishing consistent patterns.

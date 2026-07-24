@@ -1,14 +1,11 @@
 # frozen_string_literal: true
 
-require_relative "parser"
-require_relative "../decompressors/lzx"
-require_relative "../system/file_handle"
-require_relative "../system/memory_handle"
 
 module Cabriolet
   module CHM
     # Decompressor for CHM (Compiled HTML Help) files
     class Decompressor
+      attr_reader :chm
       LZX_FRAME_SIZE = 32_768
 
       attr_reader :io_system, :chm
@@ -141,17 +138,15 @@ module Cabriolet
         if skip_amount.positive?
           # Decompress and discard to a dummy memory handle
           dummy_output = System::MemoryHandle.new("", Constants::MODE_WRITE)
-          saved_output = @lzx_state.instance_variable_get(:@output)
-          @lzx_state.instance_variable_set(:@output, dummy_output)
-          @lzx_state.decompress(skip_amount)
-          @lzx_state.instance_variable_set(:@output, saved_output)
+          @lzx_state.with_output(dummy_output) do
+            @lzx_state.decompress(skip_amount)
+          end
           @lzx_offset += skip_amount
         end
 
         # Decompress to memory buffer
         memory_output = System::MemoryHandle.new("", Constants::MODE_WRITE)
-        @lzx_state.instance_variable_set(:@output, memory_output)
-        @lzx_state.decompress(file.length)
+        @lzx_state.decompress_to(memory_output, file.length)
         @lzx_offset += file.length
 
         # Save input position for next extraction
@@ -377,14 +372,117 @@ module Cabriolet
         @input_handle.read(file.length)
       end
 
-      # Fast search using PMGI index
+      # Fast search using PMGI index chunks with binary search.
+      #
+      # PMGI chunks contain sorted (name, chunk_number) entries that enable
+      # O(log n) lookup. If no PMGI chunks exist, falls back to PMGL linear scan.
       def fast_search_pmgi(filename)
-        # TODO: Implement PMGI-based binary search
-        # For now, fall back to PMGL linear search
-        fast_search_pmgl(filename)
+        entries = read_pmgi_index
+        return fast_search_pmgl(filename) if entries.empty?
+
+        chunk_num = binary_search_pmgi(entries, filename)
+        return fast_search_pmgl(filename) unless chunk_num
+
+        search_specific_pmgl_chunk(chunk_num, filename) || fast_search_pmgl(filename)
       end
 
-      # Fast search using PMGL chunks
+      # Read all PMGI index entries from the directory.
+      #
+      # @return [Array<Hash>] Sorted entries with :name and :chunk keys
+      def read_pmgi_index
+        entries = []
+        original_pos = @input_handle.tell
+
+        (@chm.first_pmgl..@chm.last_pmgl).each do |chunk_num|
+          offset = @chm.dir_offset + (chunk_num * @chm.chunk_size)
+          @input_handle.seek(offset, Constants::SEEK_START)
+          chunk = @input_handle.read(@chm.chunk_size)
+
+          next unless chunk && chunk.length == @chm.chunk_size
+          next unless chunk[0, 4] == "PMGI"
+
+          entries.concat(parse_pmgi_entries(chunk))
+        end
+
+        @input_handle.seek(original_pos, Constants::SEEK_START)
+        entries
+      end
+
+      # Parse entries from a PMGI chunk.
+      #
+      # PMGI entries: ENCINT(name_len) + name + ENCINT(chunk_num)
+      #
+      # @param chunk [String] Raw PMGI chunk data
+      # @return [Array<Hash>] Entries with :name and :chunk
+      def parse_pmgi_entries(chunk)
+        entries = []
+        pos = 8  # Skip signature (4) + quickref_size (4)
+        chunk_end = chunk.length
+
+        while pos < chunk_end
+          begin
+            name_len, pos = Binary::ENCINTReader.read_from_string(chunk, pos)
+            break if pos + name_len > chunk_end
+
+            name = chunk[pos, name_len].force_encoding("UTF-8")
+            pos += name_len
+
+            chunk_num, pos = Binary::ENCINTReader.read_from_string(chunk, pos)
+            entries << { name: name, chunk: chunk_num }
+          rescue Cabriolet::FormatError
+            break
+          end
+        end
+
+        entries
+      end
+
+      # Binary search PMGI entries for the chunk containing filename.
+      #
+      # Returns the chunk number of the last entry whose name is <= filename
+      # (since PMGI entries mark the start of each PMGL chunk's range).
+      #
+      # @param entries [Array<Hash>] Sorted PMGI entries
+      # @param filename [String] Target filename
+      # @return [Integer, nil] Chunk number or nil
+      def binary_search_pmgi(entries, filename)
+        target = filename.downcase
+        low = 0
+        high = entries.length - 1
+        result = nil
+
+        while low <= high
+          mid = (low + high) / 2
+          entry_name = entries[mid][:name].downcase
+
+          if entry_name <= target
+            result = entries[mid][:chunk]
+            low = mid + 1
+          else
+            high = mid - 1
+          end
+        end
+
+        result
+      end
+
+      # Search a specific PMGL chunk for a filename.
+      #
+      # @param chunk_num [Integer] PMGL chunk number
+      # @param filename [String] Target filename
+      # @return [Models::CHMFile, nil]
+      def search_specific_pmgl_chunk(chunk_num, filename)
+        offset = @chm.dir_offset + (chunk_num * @chm.chunk_size)
+        @input_handle.seek(offset, Constants::SEEK_START)
+        chunk = @input_handle.read(@chm.chunk_size)
+
+        return nil unless chunk && chunk.length == @chm.chunk_size
+        return nil unless chunk[0, 4] == "PMGL"
+
+        search_chunk(chunk, filename)
+      end
+
+      # Fast search using PMGL chunks (linear scan).
       def fast_search_pmgl(filename)
         original_pos = @input_handle.tell
 

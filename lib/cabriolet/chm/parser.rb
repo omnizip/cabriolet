@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../binary/chm_structures"
-require_relative "../models/chm_header"
-require_relative "../models/chm_file"
-require_relative "../errors"
 
 module Cabriolet
   module CHM

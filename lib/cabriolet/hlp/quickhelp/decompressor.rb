@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../../system/io_system"
-require_relative "../../constants"
-require_relative "huffman_tree"
-require_relative "huffman_stream"
-require_relative "compression_stream"
 
 module Cabriolet
   module HLP
@@ -76,8 +71,8 @@ module Cabriolet
           raise ArgumentError, "Output path must not be nil" unless output_path
 
           # Find topic by file index
-          topic = header.topics[hlp_file.index] if hlp_file.respond_to?(:index)
-          if hlp_file.respond_to?(:offset)
+          topic = header.topics[hlp_file.index] if hlp_file.index
+          if hlp_file.offset
             topic ||= header.topics.find do |t|
               t.offset == hlp_file.offset
             end
@@ -109,8 +104,8 @@ module Cabriolet
           raise ArgumentError, "HLP file must not be nil" unless hlp_file
 
           # Find topic by file index
-          topic = header.topics[hlp_file.index] if hlp_file.respond_to?(:index)
-          if hlp_file.respond_to?(:offset)
+          topic = header.topics[hlp_file.index] if hlp_file.index
+          if hlp_file.offset
             topic ||= header.topics.find do |t|
               t.offset == hlp_file.offset
             end

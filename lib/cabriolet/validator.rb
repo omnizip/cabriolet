@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "json"
+
 module Cabriolet
   # Archive validation and integrity checking
   class Validator
@@ -133,28 +135,18 @@ module Cabriolet
     end
 
     def validate_cab_structure(cabinet)
-      # Validate CAB header
-      unless cabinet.respond_to?(:header)
-        @errors << "Missing CAB header"
+      unless cabinet.is_a?(Models::Cabinet)
+        @errors << "Invalid cabinet structure"
         return
       end
 
-      header = cabinet.header
-
-      # Check version
-      unless header.version_major == 1 && header.version_minor >= 1
-        @warnings << "Unusual CAB version: #{header.version_major}.#{header.version_minor}"
-      end
-
-      # Check folder count
       @errors << "CAB has no folders" if cabinet.folders.empty?
-
-      # Check file count
       @warnings << "CAB has no files" if cabinet.files.empty?
 
-      # Validate folder indices
       cabinet.files.each do |file|
-        @errors << "File #{file.name} references invalid folder index" if file.folder_index >= cabinet.folders.count
+        if file.folder_index >= cabinet.folder_count
+          @errors << "File #{file.name} references invalid folder index"
+        end
       end
     end
 
@@ -194,7 +186,7 @@ module Cabriolet
         file_count += 1
         begin
           data = file.data
-          if data.nil? || (file.respond_to?(:size) && data.bytesize != file.size)
+          if data.nil? || data.bytesize != file.size
             @warnings << "File size mismatch: #{file.name}"
           end
         rescue StandardError => e
@@ -324,9 +316,8 @@ module Cabriolet
       }
     end
 
-    def to_json(*)
-      require "json"
-      to_h.to_json(*)
+    def to_json(*args)
+      to_h.to_json(*args)
     end
   end
 end

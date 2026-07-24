@@ -6,6 +6,13 @@ module Cabriolet
     class CHMFile
       attr_accessor :next_file, :section, :offset, :length, :filename
 
+      alias_method :size, :length
+      alias_method :size=, :length=
+      alias_method :name, :filename
+      alias_method :name=, :filename=
+
+      def datetime; end
+
       def initialize
         @next_file = nil
         @section = nil

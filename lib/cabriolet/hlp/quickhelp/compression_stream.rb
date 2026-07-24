@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../../binary/bitstream"
 
 module Cabriolet
   module HLP

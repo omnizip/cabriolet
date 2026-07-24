@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../binary/chm_structures"
-require_relative "../compressors/lzx"
-require_relative "../system/io_system"
-require_relative "../system/memory_handle"
-require_relative "../errors"
 
 module Cabriolet
   module CHM

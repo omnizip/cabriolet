@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "guid_generator"
-require_relative "content_type_detector"
-require_relative "directory_builder"
 
 module Cabriolet
   module LIT

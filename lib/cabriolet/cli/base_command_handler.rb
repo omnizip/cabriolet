@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "fileutils"
+
 module Cabriolet
   module Commands
     # Abstract base class for format-specific command handlers
@@ -99,7 +101,6 @@ module Cabriolet
       # @param file [String] Path to the file
       # @return [Symbol, nil] Detected format symbol
       def detect_format(file)
-        require_relative "../format_detector"
         FormatDetector.detect(file)
       end
 
@@ -118,9 +119,25 @@ module Cabriolet
       # @param output_dir [String] Output directory path
       # @return [String] The output directory path
       def ensure_output_dir(output_dir)
-        require "fileutils"
         FileUtils.mkdir_p(output_dir)
         output_dir
+      end
+
+      # Run the Validator on a file and raise on failure.
+      #
+      # @param file [String] Path to the archive file
+      # @param level [Symbol] Validation level (:quick, :standard, :thorough)
+      # @return [Cabriolet::ValidationReport] The validation report
+      # @raise [Cabriolet::Error] if validation fails
+      def validate_integrity(file, level: Cabriolet::Validator::LEVEL_QUICK)
+        report = Cabriolet::Validator.new(file, level: level).validate
+
+        unless report.valid?
+          report.errors.each { |e| puts "ERROR: #{e}" }
+          raise Cabriolet::Error, "Integrity check failed"
+        end
+
+        report
       end
     end
   end

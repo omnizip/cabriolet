@@ -17,6 +17,12 @@ module Cabriolet
       # Parsed |SYSTEM file data (if extracted)
       attr_accessor :system_data
 
+      def files; end
+
+      def length
+        file_size
+      end
+
       # Initialize WinHelp header
       #
       # @param version [Symbol] :winhelp3 or :winhelp4
@@ -119,7 +125,7 @@ module Cabriolet
       #
       # @return [String] Hex representation of magic
       def magic_hex
-        magic_int = @magic.respond_to?(:to_i) ? @magic.to_i : @magic.to_int
+        magic_int = @magic.to_i
         "0x#{magic_int.to_s(16).upcase}"
       end
     end

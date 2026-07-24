@@ -36,6 +36,14 @@ module Cabriolet
       @config = load_config
     end
 
+    # Clear all registered plugins and formats. Useful for testing.
+    def reset
+      @mutex.synchronize do
+        @plugins.clear
+        @formats.clear
+      end
+    end
+
     # Discover available plugins
     #
     # Searches for plugins in gem paths using the pattern
@@ -136,12 +144,10 @@ module Cabriolet
 
           # Call setup
           plugin.setup
-          plugin.send(:update_state, :loaded)
           entry[:state] = :loaded
 
           true
         rescue StandardError => e
-          plugin.send(:update_state, :failed)
           entry[:state] = :failed
           entry[:error] = e.message
           raise PluginError, "Failed to load plugin '#{name}': #{e.message}"
@@ -179,12 +185,10 @@ module Cabriolet
         begin
           plugin = entry[:instance]
           plugin.activate
-          plugin.send(:update_state, :active)
           entry[:state] = :active
 
           true
         rescue StandardError => e
-          plugin.send(:update_state, :failed)
           entry[:state] = :failed
           entry[:error] = e.message
           raise PluginError,
@@ -218,7 +222,6 @@ module Cabriolet
         begin
           plugin = entry[:instance]
           plugin.deactivate
-          plugin.send(:update_state, :loaded)
           entry[:state] = :loaded
 
           true

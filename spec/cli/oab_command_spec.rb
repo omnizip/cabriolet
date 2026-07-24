@@ -16,11 +16,11 @@ RSpec.describe Cabriolet::CLI, "OAB commands" do
     # For unified commands, use run_dispatcher with options
     if command.to_s.start_with?("oab_")
       # Call legacy Thor methods directly
-      cli.send(command, *args)
+      cli.public_send(command, *args)
     else
       first_arg = args.first
       remaining_args = args[1..] || []
-      cli.send(:run_dispatcher, command, first_arg, *remaining_args, **options)
+      cli.public_send(:run_dispatcher, command, first_arg, *remaining_args, **options)
     end
   end
 

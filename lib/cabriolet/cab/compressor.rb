@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../checksum"
-require_relative "../errors"
 
 module Cabriolet
   module CAB
@@ -145,8 +143,6 @@ module Cabriolet
 
       # Compress files using parallel workers via Fractor
       def compress_files_parallel(file_infos)
-        require_relative "file_compression_work"
-        require_relative "file_compression_worker"
 
         compression_method = @compression_method || compression_type_value
 

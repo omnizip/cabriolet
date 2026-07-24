@@ -28,18 +28,12 @@ module Cabriolet
   #     end
   #   end
   class Plugin
-    # Plugin states
-    STATES = %i[discovered loaded active failed disabled].freeze
-
-    # @return [Symbol] Current plugin state
-    attr_reader :state
-
+    attr_reader :manager
     # Initialize a new plugin
     #
     # @param manager [PluginManager] The plugin manager instance
     def initialize(manager = nil)
       @manager = manager
-      @state = :discovered
     end
 
     # Get plugin metadata
@@ -167,7 +161,7 @@ module Cabriolet
       # Default implementation does nothing
     end
 
-    protected
+
 
     # Register a compression or decompression algorithm
     #
@@ -213,21 +207,6 @@ module Cabriolet
       # Format registration will be implemented when format registry exists
       # For now, store in manager's format registry
       @manager.register_format(format, handler)
-    end
-
-    # Update plugin state
-    #
-    # @param new_state [Symbol] New state (must be in STATES)
-    #
-    # @return [void]
-    #
-    # @raise [ArgumentError] If state is invalid
-    def update_state(new_state)
-      unless STATES.include?(new_state)
-        raise ArgumentError, "Invalid state: #{new_state}"
-      end
-
-      @state = new_state
     end
   end
 end

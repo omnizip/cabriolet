@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../cli/base_command_handler"
-require_relative "decompressor"
-require_relative "compressor"
 
 module Cabriolet
   module LIT
@@ -129,6 +126,7 @@ module Cabriolet
         lit_file = decompressor.open(file)
 
         puts "Testing #{file}..."
+        validate_integrity(file)
         # Check for DRM
         if lit_file.encrypted?
           puts "WARNING: LIT file is DRM-encrypted (level: #{lit_file.drm_level})"
@@ -147,7 +145,7 @@ module Cabriolet
       # @param lit_file [Models::LITFile] The LIT file object
       # @return [void]
       def display_header(lit_file)
-        puts "LIT File: #{File.basename(lit_file.instance_variable_get(:@filename) || 'unknown')}"
+        puts "LIT File: #{File.basename(lit_file.filename || 'unknown')}"
         puts "Version: #{lit_file.version}"
         puts "Language ID: 0x#{Integer(lit_file.language_id).to_s(16).upcase}"
         puts "DRM Protected: #{lit_file.encrypted? ? 'Yes' : 'No'}"
@@ -183,12 +181,14 @@ module Cabriolet
         puts "LIT File Information"
         puts "=" * 50
 
-        filename = lit_file.instance_variable_get(:@filename)
+        filename = lit_file.filename
         puts "Filename: #{filename || 'unknown'}"
         puts "Version: #{lit_file.version}"
         puts "Language ID: 0x#{Integer(lit_file.language_id).to_s(16).upcase}"
         puts "Creator ID: #{lit_file.creator_id}"
-        puts "Timestamp: #{Time.at(lit_file.timestamp)}" if lit_file.respond_to?(:timestamp)
+        if lit_file.timestamp&.positive?
+          puts "Timestamp: #{Time.at(lit_file.timestamp)}"
+        end
 
         puts ""
         if lit_file.encrypted?

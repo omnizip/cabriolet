@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+# DEAD CODE: Collections::FileCollection is currently unused — no code references it.
+# It was intended for managing file collections during compression but was never
+# connected. Kept for potential future use; do not rely on it.
+
 module Cabriolet
   module Collections
     # FileCollection manages a collection of files for compression

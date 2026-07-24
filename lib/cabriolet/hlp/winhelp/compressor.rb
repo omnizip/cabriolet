@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "zeck_lz77"
-require_relative "btree_builder"
 
 module Cabriolet
   module HLP

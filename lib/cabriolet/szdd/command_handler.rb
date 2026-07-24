@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../cli/base_command_handler"
-require_relative "decompressor"
-require_relative "compressor"
 
 module Cabriolet
   module SZDD
@@ -135,7 +132,7 @@ module Cabriolet
         header = decompressor.open(file)
 
         puts "Testing #{file}..."
-        # TODO: Implement full integrity testing
+        validate_integrity(file)
         puts "OK: SZDD file structure is valid"
         puts "Format: #{header.format.to_s.upcase}"
         puts "Uncompressed size: #{header.length} bytes"

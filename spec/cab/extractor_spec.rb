@@ -259,26 +259,26 @@ RSpec.describe Cabriolet::CAB::Extractor do
     after { block_reader.close }
 
     it "calculates correct checksum for empty data" do
-      checksum = block_reader.send(:calculate_checksum, "")
+      checksum = block_reader.calculate_checksum( "")
       expect(checksum).to eq(0)
     end
 
     it "calculates correct checksum for 4-byte data" do
       data = [0x12, 0x34, 0x56, 0x78].pack("C*")
-      checksum = block_reader.send(:calculate_checksum, data)
+      checksum = block_reader.calculate_checksum( data)
       expect(checksum).to eq(0x78563412)
     end
 
     it "calculates correct checksum with initial value" do
       data = [0x12, 0x34, 0x56, 0x78].pack("C*")
-      checksum = block_reader.send(:calculate_checksum, data, 0xFFFFFFFF)
+      checksum = block_reader.calculate_checksum( data, 0xFFFFFFFF)
       expect(checksum).to eq(0x78563412 ^ 0xFFFFFFFF)
     end
 
     it "handles data not aligned to 4 bytes" do
       # 5 bytes: 4 + 1
       data = [0x12, 0x34, 0x56, 0x78, 0xAB].pack("C*")
-      checksum = block_reader.send(:calculate_checksum, data)
+      checksum = block_reader.calculate_checksum( data)
 
       expected = 0x78563412 ^ 0xAB
       expect(checksum).to eq(expected)
@@ -286,7 +286,7 @@ RSpec.describe Cabriolet::CAB::Extractor do
 
     it "handles 2-byte remainder" do
       data = [0x12, 0x34, 0x56, 0x78, 0xAB, 0xCD].pack("C*")
-      checksum = block_reader.send(:calculate_checksum, data)
+      checksum = block_reader.calculate_checksum( data)
 
       # Per libmspack cabd_checksum: first remaining byte gets highest shift
       expected = 0x78563412 ^ 0xABCD
@@ -295,7 +295,7 @@ RSpec.describe Cabriolet::CAB::Extractor do
 
     it "handles 3-byte remainder" do
       data = [0x12, 0x34, 0x56, 0x78, 0xAB, 0xCD, 0xEF].pack("C*")
-      checksum = block_reader.send(:calculate_checksum, data)
+      checksum = block_reader.calculate_checksum( data)
 
       # Per libmspack cabd_checksum: first remaining byte gets highest shift
       expected = 0x78563412 ^ 0xABCDEF

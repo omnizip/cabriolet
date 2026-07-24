@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "topic_builder"
-require_relative "topic_compressor"
-require_relative "structure_builder"
-require_relative "file_writer"
 
 module Cabriolet
   module HLP

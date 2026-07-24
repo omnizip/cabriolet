@@ -56,7 +56,7 @@ RSpec.describe Cabriolet::Commands::CommandDispatcher do
 
   after do
     # Clean up
-    Cabriolet::Commands::CommandRegistry.instance_variable_set(:@handlers, {})
+    Cabriolet::Commands::CommandRegistry.clear
     # Re-register real handlers
     require_relative "../../lib/cabriolet/cli"
   end
@@ -64,22 +64,22 @@ RSpec.describe Cabriolet::Commands::CommandDispatcher do
   describe "#initialize" do
     it "accepts format override option" do
       dispatcher = described_class.new(format: :cab)
-      expect(dispatcher.instance_variable_get(:@format_override)).to eq(:cab)
+      expect(dispatcher.format_override).to eq(:cab)
     end
 
     it "accepts verbose option" do
       dispatcher = described_class.new(verbose: true)
-      expect(dispatcher.instance_variable_get(:@verbose)).to be(true)
+      expect(dispatcher.verbose).to be(true)
     end
 
     it "defaults verbose to false" do
       dispatcher = described_class.new
-      expect(dispatcher.instance_variable_get(:@verbose)).to be(false)
+      expect(dispatcher.verbose).to be(false)
     end
 
     it "converts format string to symbol" do
       dispatcher = described_class.new(format: "cab")
-      expect(dispatcher.instance_variable_get(:@format_override)).to eq(:cab)
+      expect(dispatcher.format_override).to eq(:cab)
     end
   end
 

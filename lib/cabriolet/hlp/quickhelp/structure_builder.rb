@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "topic_compressor"
-require_relative "offset_calculator"
 
 module Cabriolet
   module HLP

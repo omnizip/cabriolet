@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../binary/bitstream_writer"
-require_relative "../huffman/encoder"
 
 module Cabriolet
   module Compressors

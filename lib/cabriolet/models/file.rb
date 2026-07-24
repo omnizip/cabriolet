@@ -9,6 +9,23 @@ module Cabriolet
       attr_accessor :filename, :length, :offset, :folder, :folder_index, :attribs, :time_h, :time_m, :time_s, :date_d,
                     :date_m, :date_y, :next_file
 
+      alias_method :size, :length
+      alias_method :size=, :length=
+      alias_method :name, :filename
+      alias_method :name=, :filename=
+      alias_method :attributes, :attribs
+      alias_method :attributes=, :attribs=
+
+      def datetime
+        Time.new(date_y, date_m, date_d, time_h, time_m, time_s)
+      rescue StandardError
+        nil
+      end
+
+      def date; end
+
+      def time; end
+
       # Initialize a new file
       def initialize
         @filename = nil

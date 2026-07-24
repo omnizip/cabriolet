@@ -20,11 +20,11 @@ RSpec.describe Cabriolet::CLI, "KWAJ commands" do
       files = args[1..]
       # For create/compress command, we need to call the Thor method directly
       # because it has special pre-processing logic
-      cli.send(:kwaj_compress, output, *files)
+      cli.public_send(:kwaj_compress, output, *files)
     else
       first_arg = args.first
       remaining_args = args[1..] || []
-      cli.send(:run_dispatcher, command, first_arg, *remaining_args, **options)
+      cli.public_send(:run_dispatcher, command, first_arg, *remaining_args, **options)
     end
   end
 

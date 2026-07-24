@@ -137,7 +137,7 @@ RSpec.describe Cabriolet::Decompressors::Quantum do
       quantum = quantum_class.new(io_system, input, output, 4096)
 
       # Access the bitstream through private methods
-      bitstream = quantum.instance_variable_get(:@bitstream)
+      bitstream = quantum.bitstream
       expect(bitstream).to be_a(quantum_class::MSBBitstream)
     end
 
@@ -146,7 +146,7 @@ RSpec.describe Cabriolet::Decompressors::Quantum do
       output = Cabriolet::System::MemoryHandle.new("")
       quantum = quantum_class.new(io_system, input, output, 4096)
 
-      bitstream = quantum.instance_variable_get(:@bitstream)
+      bitstream = quantum.bitstream
       bitstream.read_bits(5)
       expect(bitstream.bits_left).to be > 0
 
@@ -163,15 +163,15 @@ RSpec.describe Cabriolet::Decompressors::Quantum do
                                     window_bits: 15)
 
       # Check that models are initialized
-      expect(quantum.instance_variable_get(:@model0)).to be_a(described_class::Model)
-      expect(quantum.instance_variable_get(:@model1)).to be_a(described_class::Model)
-      expect(quantum.instance_variable_get(:@model2)).to be_a(described_class::Model)
-      expect(quantum.instance_variable_get(:@model3)).to be_a(described_class::Model)
-      expect(quantum.instance_variable_get(:@model4)).to be_a(described_class::Model)
-      expect(quantum.instance_variable_get(:@model5)).to be_a(described_class::Model)
-      expect(quantum.instance_variable_get(:@model6)).to be_a(described_class::Model)
-      expect(quantum.instance_variable_get(:@model6len)).to be_a(described_class::Model)
-      expect(quantum.instance_variable_get(:@model7)).to be_a(described_class::Model)
+      expect(quantum.model0).to be_a(described_class::Model)
+      expect(quantum.model1).to be_a(described_class::Model)
+      expect(quantum.model2).to be_a(described_class::Model)
+      expect(quantum.model3).to be_a(described_class::Model)
+      expect(quantum.model4).to be_a(described_class::Model)
+      expect(quantum.model5).to be_a(described_class::Model)
+      expect(quantum.model6).to be_a(described_class::Model)
+      expect(quantum.model6len).to be_a(described_class::Model)
+      expect(quantum.model7).to be_a(described_class::Model)
     end
 
     it "initializes literal models with 64 entries each" do
@@ -179,7 +179,7 @@ RSpec.describe Cabriolet::Decompressors::Quantum do
       output = Cabriolet::System::MemoryHandle.new("")
       quantum = described_class.new(io_system, input, output, 4096)
 
-      model0 = quantum.instance_variable_get(:@model0)
+      model0 = quantum.model0
       expect(model0.entries).to eq(64)
       expect(model0.syms.size).to eq(65) # +1 for sentinel
     end
@@ -191,13 +191,13 @@ RSpec.describe Cabriolet::Decompressors::Quantum do
                                     window_bits: 15)
 
       # window_bits * 2 = 30
-      model4 = quantum.instance_variable_get(:@model4)
+      model4 = quantum.model4
       expect(model4.entries).to eq(24) # min(30, 24)
 
-      model5 = quantum.instance_variable_get(:@model5)
+      model5 = quantum.model5
       expect(model5.entries).to eq(30) # min(30, 36)
 
-      model6 = quantum.instance_variable_get(:@model6)
+      model6 = quantum.model6
       expect(model6.entries).to eq(30)
     end
 
@@ -206,7 +206,7 @@ RSpec.describe Cabriolet::Decompressors::Quantum do
       output = Cabriolet::System::MemoryHandle.new("")
       quantum = described_class.new(io_system, input, output, 4096)
 
-      model7 = quantum.instance_variable_get(:@model7)
+      model7 = quantum.model7
       expect(model7.entries).to eq(7)
     end
   end
@@ -218,7 +218,7 @@ RSpec.describe Cabriolet::Decompressors::Quantum do
       quantum = described_class.new(io_system, input, output, 4096,
                                     window_bits: 12)
 
-      window = quantum.instance_variable_get(:@window)
+      window = quantum.window
       expect(window.bytesize).to eq(1 << 12)
     end
 
@@ -227,7 +227,7 @@ RSpec.describe Cabriolet::Decompressors::Quantum do
       output = Cabriolet::System::MemoryHandle.new("")
       quantum = described_class.new(io_system, input, output, 4096)
 
-      window_posn = quantum.instance_variable_get(:@window_posn)
+      window_posn = quantum.window_posn
       expect(window_posn).to eq(0)
     end
 
@@ -236,7 +236,7 @@ RSpec.describe Cabriolet::Decompressors::Quantum do
       output = Cabriolet::System::MemoryHandle.new("")
       quantum = described_class.new(io_system, input, output, 4096)
 
-      frame_todo = quantum.instance_variable_get(:@frame_todo)
+      frame_todo = quantum.frame_todo
       expect(frame_todo).to eq(described_class::FRAME_SIZE)
     end
   end
@@ -247,9 +247,9 @@ RSpec.describe Cabriolet::Decompressors::Quantum do
       output = Cabriolet::System::MemoryHandle.new("")
       quantum = described_class.new(io_system, input, output, 4096)
 
-      h = quantum.instance_variable_get(:@h)
-      l = quantum.instance_variable_get(:@l)
-      c = quantum.instance_variable_get(:@c)
+      h = quantum.h
+      l = quantum.l
+      c = quantum.c
 
       expect(h).to eq(0xFFFF)
       expect(l).to eq(0)
@@ -261,7 +261,7 @@ RSpec.describe Cabriolet::Decompressors::Quantum do
       output = Cabriolet::System::MemoryHandle.new("")
       quantum = described_class.new(io_system, input, output, 4096)
 
-      header_read = quantum.instance_variable_get(:@header_read)
+      header_read = quantum.header_read
       expect(header_read).to be(false)
     end
   end
@@ -283,7 +283,7 @@ RSpec.describe Cabriolet::Decompressors::Quantum do
 
       # Access private method to test error condition
       expect do
-        quantum.send(:copy_match, 10_000, 100)
+        quantum.copy_match( 10_000, 100)
       end.to raise_error(Cabriolet::DecompressionError, /beyond window/)
     end
   end

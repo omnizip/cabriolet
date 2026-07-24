@@ -209,7 +209,7 @@ RSpec.describe Cabriolet::Decompressors::MSZIP do
       decompressor = described_class.new(io_system, input, output, buffer_size)
 
       # Access private instance variables for testing
-      window = decompressor.instance_variable_get(:@window)
+      window = decompressor.window
       expect(window.bytesize).to eq(described_class::FRAME_SIZE)
     end
   end

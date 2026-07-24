@@ -43,15 +43,10 @@ RSpec.describe Cabriolet::Plugin do
   end
 
   describe "#initialize" do
-    it "creates a plugin with discovered state" do
-      plugin = TestPlugin.new
-      expect(plugin.state).to eq(:discovered)
-    end
-
     it "accepts a manager parameter" do
-      manager = double("manager")
+      manager = Cabriolet::PluginManager.instance
       plugin = TestPlugin.new(manager)
-      expect(plugin.instance_variable_get(:@manager)).to eq(manager)
+      expect(plugin.manager).to eq(manager)
     end
   end
 
@@ -108,6 +103,8 @@ RSpec.describe Cabriolet::Plugin do
 
       it "can be overridden by subclass" do
         custom_plugin_class = Class.new(Cabriolet::Plugin) do
+          attr_reader :activated
+
           def metadata
             {
               name: "custom",
@@ -127,7 +124,7 @@ RSpec.describe Cabriolet::Plugin do
 
         plugin = custom_plugin_class.new
         plugin.activate
-        expect(plugin.instance_variable_get(:@activated)).to be true
+        expect(plugin.activated).to be true
       end
     end
 
@@ -144,49 +141,20 @@ RSpec.describe Cabriolet::Plugin do
     end
   end
 
-  describe "state management" do
-    let(:plugin) { TestPlugin.new }
-
-    describe "#state" do
-      it "returns current state" do
-        expect(plugin.state).to eq(:discovered)
-      end
-    end
-
-    describe "#update_state" do
-      it "updates plugin state" do
-        plugin.send(:update_state, :loaded)
-        expect(plugin.state).to eq(:loaded)
-      end
-
-      it "accepts valid states" do
-        Cabriolet::Plugin::STATES.each do |state|
-          expect { plugin.send(:update_state, state) }.not_to raise_error
-        end
-      end
-
-      it "raises error for invalid state" do
-        expect do
-          plugin.send(:update_state, :invalid)
-        end.to raise_error(ArgumentError, /Invalid state/)
-      end
-    end
-  end
-
   describe "helper methods" do
     let(:manager) { Cabriolet::PluginManager.instance }
     let(:plugin) { TestPlugin.new(manager) }
 
     before do
       # Clear manager state
-      manager.instance_variable_set(:@plugins, {})
+      manager.reset
     end
 
     describe "#register_algorithm" do
       it "raises error without manager" do
         plugin_no_manager = TestPlugin.new(nil)
         expect do
-          plugin_no_manager.send(:register_algorithm, :test, Object,
+          plugin_no_manager.register_algorithm(:test, Object,
                                  category: :compressor)
         end.to raise_error(Cabriolet::PluginError,
                            /Plugin manager not available/)
@@ -199,7 +167,7 @@ RSpec.describe Cabriolet::Plugin do
         expect(Cabriolet.algorithm_factory).to receive(:register)
           .with(:test, algo_class, category: :compressor)
 
-        plugin.send(:register_algorithm, :test, algo_class,
+        plugin.register_algorithm(:test, algo_class,
                     category: :compressor)
       end
 
@@ -209,7 +177,7 @@ RSpec.describe Cabriolet::Plugin do
         expect(Cabriolet.algorithm_factory).to receive(:register)
           .with(:test, algo_class, category: :compressor, priority: 10)
 
-        plugin.send(:register_algorithm, :test, algo_class,
+        plugin.register_algorithm(:test, algo_class,
                     category: :compressor, priority: 10)
       end
     end
@@ -218,7 +186,7 @@ RSpec.describe Cabriolet::Plugin do
       it "raises error without manager" do
         plugin_no_manager = TestPlugin.new(nil)
         expect do
-          plugin_no_manager.send(:register_format, :test, Object)
+          plugin_no_manager.register_format(:test, Object)
         end.to raise_error(Cabriolet::PluginError,
                            /Plugin manager not available/)
       end
@@ -229,16 +197,9 @@ RSpec.describe Cabriolet::Plugin do
         expect(manager).to receive(:register_format)
           .with(:test, handler_class)
 
-        plugin.send(:register_format, :test, handler_class)
+        plugin.register_format(:test, handler_class)
       end
     end
   end
 
-  describe "constants" do
-    it "defines valid plugin states" do
-      expect(Cabriolet::Plugin::STATES).to eq(
-        %i[discovered loaded active failed disabled],
-      )
-    end
-  end
 end

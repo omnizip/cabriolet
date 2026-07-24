@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../cli/base_command_handler"
-require_relative "decompressor"
-require_relative "compressor"
 
 module Cabriolet
   module CHM
@@ -131,8 +128,8 @@ module Cabriolet
         chm = decompressor.open(file)
 
         puts "Testing #{chm.filename}..."
+        validate_integrity(file)
         puts "OK: CHM file structure is valid (#{chm.all_files.size} files)"
-        puts "Note: Full integrity validation not yet implemented"
 
         decompressor.close
       end

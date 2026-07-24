@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 require "fractor"
-require_relative "file_extraction_work"
-require_relative "file_extraction_worker"
 
 module Cabriolet
   module Extraction

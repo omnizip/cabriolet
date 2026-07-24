@@ -93,7 +93,7 @@ RSpec.describe Cabriolet::CHM::Decompressor do
       after { decompressor.close }
 
       it "can list all files for extraction" do
-        chm = decompressor.instance_variable_get(:@chm)
+        chm = decompressor.chm
         expect(chm.all_files.length).to be > 0
       end
     end

@@ -20,11 +20,11 @@ RSpec.describe Cabriolet::CLI, "LIT commands" do
       files = args[1..]
       # For create command, we need to call the Thor method directly
       # because it has special pre-processing logic (normalize_create_options, detect_format_from_output)
-      cli.send(:lit_create, output, *files)
+      cli.public_send(:lit_create, output, *files)
     else
       first_arg = args.first
       remaining_args = args[1..] || []
-      cli.send(:run_dispatcher, command, first_arg, *remaining_args, **options)
+      cli.public_send(:run_dispatcher, command, first_arg, *remaining_args, **options)
     end
   end
 

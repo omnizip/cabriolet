@@ -18,11 +18,11 @@ RSpec.describe Cabriolet::CLI, "HLP commands" do
     if legacy_commands.include?(command) || command.to_s.start_with?("hlp_")
       # Call legacy Thor methods directly
       method_name = command.to_s.sub(/^hlp_/, "")
-      cli.send("hlp_#{method_name}", *args)
+      cli.public_send("hlp_#{method_name}", *args)
     else
       first_arg = args.first
       remaining_args = args[1..] || []
-      cli.send(:run_dispatcher, command, first_arg, *remaining_args, **options)
+      cli.public_send(:run_dispatcher, command, first_arg, *remaining_args, **options)
     end
   end
 

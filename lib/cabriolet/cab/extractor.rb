@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "fileutils"
-require_relative "../checksum"
 
 module Cabriolet
   module CAB
@@ -224,7 +223,7 @@ module Cabriolet
           # uncompressed size (max file.offset + file.length across all files
           # in the folder). This allows the LZX decompressor to reduce the
           # last frame's size so it doesn't read past the end of the stream.
-          if @current_decomp.respond_to?(:set_output_length)
+          if @current_decomp.is_a?(Decompressors::LZX)
             cab = folder.data&.cabinet
             if cab&.files
               folder_files = cab.files.select { |f| f.folder == folder }
@@ -248,10 +247,9 @@ module Cabriolet
         skip_bytes = file_offset - @current_offset
         null_output = System::MemoryHandle.new("", Constants::MODE_WRITE)
 
-        @current_decomp.instance_variable_set(:@output, null_output)
 
         begin
-          @current_decomp.decompress(skip_bytes)
+          @current_decomp.decompress_to(null_output, skip_bytes)
         rescue DecompressionError
           if salvage
             warn "Salvage: unable to skip to file #{filename}, resetting state"
@@ -273,8 +271,7 @@ module Cabriolet
                 "Decompressor not available (state was reset)"
         end
 
-        @current_decomp.instance_variable_set(:@output, output_fh)
-        @current_decomp.decompress(filelen)
+        @current_decomp.decompress_to(output_fh, filelen)
         @current_offset += filelen
       end
 
@@ -534,7 +531,8 @@ _filelen)
           true
         end
 
-        def calculate_checksum(data, initial = 0)
+        public
+      def calculate_checksum(data, initial = 0)
           Checksum.calculate(data, initial)
         end
       end

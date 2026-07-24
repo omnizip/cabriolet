@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "command_registry"
-require_relative "base_command_handler"
-require_relative "../format_detector"
 
 module Cabriolet
   module Commands
@@ -21,6 +18,7 @@ module Cabriolet
     #   dispatcher.dispatch(:list, "archive.cab")
     #
     class CommandDispatcher
+      attr_reader :format_override, :verbose
       # Initialize the command dispatcher
       #
       # @param options [Hash] Configuration options

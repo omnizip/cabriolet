@@ -7,6 +7,30 @@ module Cabriolet
     class StreamParser
       DEFAULT_CHUNK_SIZE = 65_536 # 64KB chunks
 
+      # Registry of format → streaming method. New formats register here
+      # instead of adding case/when branches (Open/Closed Principle).
+      STREAM_METHODS = {
+        cab: :stream_cab_files,
+        chm: :stream_chm_files,
+      }.freeze
+
+      @registered_methods = {}
+
+      class << self
+        # Register a streaming method for a format at runtime.
+        #
+        # @param format [Symbol] Format identifier
+        # @param method_name [Symbol] Method name on StreamParser instances
+        def register_stream_method(format, method_name)
+          @registered_methods[format] = method_name
+        end
+
+        # Get the streaming method for a format (runtime registry first, then built-in).
+        def stream_method_for(format)
+          @registered_methods[format] || STREAM_METHODS[format]
+        end
+      end
+
       def initialize(path, chunk_size: DEFAULT_CHUNK_SIZE)
         @path = path
         @chunk_size = chunk_size
@@ -14,32 +38,28 @@ module Cabriolet
         raise UnsupportedFormatError, "Unable to detect format" unless @format
       end
 
-      # Iterate over files without loading entire archive into memory
+      # Iterate over files without loading entire archive into memory.
+      # Dispatches to the format-specific streaming method via a registry.
       #
       # @yield [file] Yields each file object
-      # @yieldparam file [Object] File object from the archive
       # @return [Enumerator] if no block given
-      #
-      # @example
-      #   parser = Cabriolet::Streaming::StreamParser.new('huge.cab')
-      #   parser.each_file do |file|
-      #     # Process one file at a time
-      #     puts "#{file.name}: #{file.size} bytes"
-      #     # File data loaded on-demand via file.data
-      #   end
       def each_file(&)
         return enum_for(:each_file) unless block_given?
 
-        case @format
-        when :cab
-          stream_cab_files(&)
-        when :chm
-          stream_chm_files(&)
+        method_name = stream_method_for(@format)
+        if method_name
+          method(method_name).call(&)
         else
-          # Fallback to standard parsing for unsupported streaming formats
-          archive = Cabriolet::Auto.open(@path)
+          archive = Cabriolet.open(@path)
           archive.files.each(&)
         end
+      end
+
+      private
+
+      # Look up the streaming method for a format.
+      def stream_method_for(format)
+        self.class.stream_method_for(format)
       end
 
       # Stream file data in chunks
@@ -56,7 +76,7 @@ module Cabriolet
       def stream_file_data(file, &)
         return enum_for(:stream_file_data, file) unless block_given?
 
-        if file.respond_to?(:stream_data)
+        if file.is_a?(LazyFile)
           file.stream_data(chunk_size: @chunk_size, &)
         else
           # Fallback: load entire file and yield in chunks
@@ -90,7 +110,7 @@ module Cabriolet
           end
 
           stats[:extracted] += 1
-          stats[:bytes] += file.size if file.respond_to?(:size)
+          stats[:bytes] += file.size
         rescue StandardError => e
           stats[:failed] += 1
           warn "Failed to extract #{file.name}: #{e.message}"
@@ -99,11 +119,10 @@ module Cabriolet
         stats
       end
 
-      private
-
+      # Stream files from a CAB archive.
       def stream_cab_files
         # Use lazy enumeration for CAB files
-        parser = Cabriolet::CAB::Parser.new
+        parser = Cabriolet::CAB::Parser.new(Cabriolet::System::IOSystem.new)
         cabinet = parser.parse(@path)
 
         # Wrap files in lazy enumerator
@@ -112,22 +131,27 @@ module Cabriolet
         end
       end
 
+      # Stream files from a CHM archive.
       def stream_chm_files
-        parser = Cabriolet::CHM::Parser.new
+        parser = Cabriolet::CHM::Parser.new(Cabriolet::System::IOSystem.new)
         chm = parser.parse(@path)
 
         chm.files.lazy.each do |file|
           yield LazyFile.new(file, @chunk_size)
         end
       end
+
+      private
     end
 
     # Wrapper for lazy file data loading
+    #
+    # Delegates the file interface explicitly — no method_missing, so
+    # callers get clear NoMethodError feedback for unsupported operations.
     class LazyFile
       def initialize(file, chunk_size)
         @file = file
         @chunk_size = chunk_size
-        @data_loaded = false
       end
 
       def name
@@ -139,23 +163,21 @@ module Cabriolet
       end
 
       def attributes
-        @file.attributes if @file.respond_to?(:attributes)
+        @file.attributes
       end
 
       def date
-        @file.date if @file.respond_to?(:date)
+        @file.date
       end
 
       def time
-        @file.time if @file.respond_to?(:time)
+        @file.time
       end
 
-      # Load data only when accessed
       def data
         @data ||= @file.data
       end
 
-      # Stream data in chunks
       def stream_data(chunk_size: @chunk_size)
         full_data = data
         offset = 0
@@ -165,14 +187,6 @@ module Cabriolet
           yield chunk
           offset += chunk_size
         end
-      end
-
-      def method_missing(method, ...)
-        @file.send(method, ...)
-      end
-
-      def respond_to_missing?(method, include_private = false)
-        @file.respond_to?(method, include_private)
       end
     end
 
@@ -206,7 +220,7 @@ module Cabriolet
         parser.each_file do |file|
           yield file, path
           @stats[:processed] += 1
-          @stats[:bytes] += file.size if file.respond_to?(:size)
+          @stats[:bytes] += file.size
         rescue StandardError => e
           @stats[:failed] += 1
           warn "Error processing #{file.name} from #{path}: #{e.message}"

@@ -1,5 +1,10 @@
 # frozen_string_literal: true
 
+# DEAD CODE: Cabriolet::OffsetCalculator and CABOffsetCalculator are currently unused.
+# (Note: Cabriolet::HLP::QuickHelp::OffsetCalculator is a DIFFERENT class that IS used.)
+# These were intended for CAB offset calculations but were never connected.
+# Kept for potential future use; do not rely on them.
+
 module Cabriolet
   # Abstract base class for offset calculators
   #

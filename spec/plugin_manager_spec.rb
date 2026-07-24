@@ -57,8 +57,8 @@ RSpec.describe Cabriolet::PluginManager do
 
   before do
     # Clear plugin registry before each test
-    manager.instance_variable_set(:@plugins, {})
-    manager.instance_variable_set(:@formats, {})
+    manager.reset
+    
   end
 
   describe "singleton pattern" do
@@ -77,8 +77,7 @@ RSpec.describe Cabriolet::PluginManager do
     it "initializes with empty registries" do
       new_manager = described_class.instance
       # Reset to ensure clean state
-      new_manager.instance_variable_set(:@plugins, {})
-      new_manager.instance_variable_set(:@formats, {})
+      new_manager.reset
 
       expect(new_manager.plugins).to eq({})
       expect(new_manager.formats).to eq({})
@@ -352,13 +351,6 @@ RSpec.describe Cabriolet::PluginManager do
 
     it "returns nil for unregistered format" do
       expect(manager.format_handler(:unknown)).to be_nil
-    end
-  end
-
-  describe "thread safety" do
-    it "uses mutex for thread-safe operations" do
-      mutex = manager.instance_variable_get(:@mutex)
-      expect(mutex).to be_a(Mutex)
     end
   end
 

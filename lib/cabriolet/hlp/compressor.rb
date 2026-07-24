@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "quickhelp/compressor"
-require_relative "winhelp/compressor"
 
 module Cabriolet
   module HLP

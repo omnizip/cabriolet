@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "parser"
-require_relative "zeck_lz77"
-require_relative "../../system/io_system"
-require_relative "../../constants"
 
 module Cabriolet
   module HLP
@@ -186,7 +182,11 @@ module Cabriolet
           parse unless @header
           @header.has_topic_file?
         end
+
+        # Close the WinHelp file (no-op for compatibility)
+        def close(_header); end
       end
     end
+
   end
 end

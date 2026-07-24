@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../cli/base_command_handler"
-require_relative "decompressor"
-require_relative "compressor"
 
 module Cabriolet
   module HLP
@@ -116,11 +113,11 @@ module Cabriolet
         header = decompressor.open(file)
 
         puts "Testing #{file}..."
-        # TODO: Implement full integrity testing
-        format_name = if header.respond_to?(:version)
+        validate_integrity(file)
+        format_name = begin
                         version_value = header.version
                         # Convert BinData objects to integer for comparison
-                        version_int = version_value.to_i if version_value.respond_to?(:to_i)
+                        version_int = Integer(version_value, exception: false)
 
                         if version_value.is_a?(Integer) || version_int&.positive?
                           "QUICKHELP v#{version_value}"
@@ -143,10 +140,10 @@ module Cabriolet
       # @param file [String] Original file path
       # @return [void]
       def display_header(header, file)
-        format_name = if header.respond_to?(:version)
+        format_name = begin
                         version_value = header.version
                         # Convert BinData objects to integer for comparison
-                        version_int = version_value.to_i if version_value.respond_to?(:to_i)
+                        version_int = Integer(version_value, exception: false)
 
                         if version_value.is_a?(Integer) || version_int&.positive?
                           "QUICKHELP v#{version_value}"
@@ -167,7 +164,7 @@ module Cabriolet
       # @param header [Object] The HLP header object
       # @return [void]
       def display_files(_decompressor, header)
-        if header.respond_to?(:files)
+        if header.files
           header.files.each do |f|
             puts "  #{f.filename} (#{f.length} bytes)"
           end
@@ -186,10 +183,10 @@ module Cabriolet
         puts "=" * 50
         puts "Filename: #{file}"
 
-        if header.respond_to?(:version)
+        if header.version
           version_value = header.version
           # Convert BinData objects to integer for comparison
-          version_int = version_value.to_i if version_value.respond_to?(:to_i)
+          version_int = Integer(version_value, exception: false)
 
           format_name = if version_value.is_a?(Integer) || version_int&.positive?
                           "QUICKHELP v#{version_value}"
@@ -201,11 +198,11 @@ module Cabriolet
           puts "Format: #{format_name}"
         end
 
-        if header.respond_to?(:length)
+        if header.length
           puts "Size: #{header.length} bytes"
         end
 
-        if header.respond_to?(:files)
+        if header.files
           puts "Files: #{header.files.size}"
           puts ""
           puts "Files:"

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../../binary/hlp_structures"
 require "stringio"
 
 module Cabriolet

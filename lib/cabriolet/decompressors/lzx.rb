@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base"
 
 module Cabriolet
   module Decompressors
@@ -90,6 +89,16 @@ module Cabriolet
       ].freeze
 
       attr_reader :window_bits, :reset_interval, :output_length, :is_delta
+      attr_reader :window_size, :num_offsets, :r0, :r1, :r2,
+                   :block_type, :block_length, :block_remaining,
+                   :header_read, :intel_filesize, :intel_started,
+                   :window_posn, :frame_posn, :frame, :offset,
+                   :pretree_lengths, :maintree_lengths, :length_lengths, :aligned_lengths,
+                   :pretree, :maintree, :length_tree, :aligned_tree,
+                   :window, :bitstream, :pending_frame_data
+      attr_writer :header_read, :intel_filesize, :frame_posn, :window_posn,
+                   :frame, :offset, :window, :block_type, :block_remaining,
+                   :block_length, :output
 
       # Initialize LZX decompressor
       #
