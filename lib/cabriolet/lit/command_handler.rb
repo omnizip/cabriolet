@@ -90,12 +90,12 @@ module Cabriolet
 
       # DEAD CODE — unreachable through the command path, both branches.
       #
-      # #test calls validate_integrity before this hook, and the Validator reads
-      # 4 magic bytes and compares them against the 8-byte "ITOLITLS" signature
-      # (validator.rb:104, validator.rb:237), so every LIT file fails and this
-      # never runs. The encrypted? branch is doubly unreachable: LIT::Decompressor
-      # raises NotImplementedError for DRM files while opening them
-      # (lit/decompressor.rb:39). Preserved verbatim pending a Validator fix.
+      # #test calls validate_integrity before this hook, and
+      # Validator#validate_magic_bytes reads 4 magic bytes and compares them
+      # against the 8-byte "ITOLITLS" signature it expects for :lit, so every
+      # LIT file fails and this never runs. The encrypted? branch is doubly
+      # unreachable: LIT::Decompressor#open raises NotImplementedError for DRM
+      # files before returning. Preserved verbatim pending a Validator fix.
       def render_test_result(session)
         lit_file = session.archive
         if lit_file.encrypted?
