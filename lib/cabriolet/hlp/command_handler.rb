@@ -9,26 +9,6 @@ module Cabriolet
     # Supports both QuickHelp and Windows Help formats.
     #
     class CommandHandler < Commands::BaseCommandHandler
-      # List HLP file contents
-      #
-      # Displays information about the HLP file including format type,
-      # and lists all contained files with their sizes.
-      #
-      # @param file [String] Path to the HLP file
-      # @param options [Hash] Additional options (unused)
-      # @return [void]
-      def list(file, _options = {})
-        validate_file_exists(file)
-
-        decompressor = Decompressor.new
-        header = decompressor.open(file)
-
-        display_header(header, file)
-        display_files(decompressor, header)
-
-        decompressor.close(header)
-      end
-
       # Extract files from HLP archive
       #
       # Extracts all files from the HLP file to the specified output directory.
@@ -79,40 +59,26 @@ module Cabriolet
         end
       end
 
-      # Display detailed HLP file information
-      #
-      # Shows comprehensive information about the HLP structure,
-      # including format type, file count, and metadata.
-      #
-      # @param file [String] Path to the HLP file
-      # @param options [Hash] Additional options (unused)
-      # @return [void]
-      def info(file, _options = {})
-        validate_file_exists(file)
+      private
 
-        decompressor = Decompressor.new
-        header = decompressor.open(file)
-
-        display_hlp_info(header, file)
-
-        decompressor.close(header)
+      def decompressor_class
+        Decompressor
       end
 
-      # Test HLP file integrity
-      #
-      # Verifies the HLP file structure.
-      #
-      # @param file [String] Path to the HLP file
-      # @param options [Hash] Additional options (unused)
-      # @return [void]
-      def test(file, _options = {})
-        validate_file_exists(file)
+      # Show the HLP header followed by its files
+      def render_listing(session, file, _options)
+        header = session.archive
+        display_header(header, file)
+        display_files(header)
+      end
 
-        decompressor = Decompressor.new
-        header = decompressor.open(file)
+      # Show comprehensive information about the HLP structure
+      def render_info(session, file)
+        display_hlp_info(session.archive, file)
+      end
 
-        puts "Testing #{file}..."
-        validate_integrity(file)
+      def render_test_result(session)
+        header = session.archive
         format_name = begin
           version_value = header.version
           # Convert BinData objects to integer for comparison
@@ -127,11 +93,7 @@ module Cabriolet
           end
         end
         puts "OK: HLP file structure is valid (#{format_name} format)"
-
-        decompressor.close(header)
       end
-
-      private
 
       # Display HLP header information
       #
@@ -159,10 +121,9 @@ module Cabriolet
 
       # Display list of files in HLP
       #
-      # @param decompressor [Decompressor] The decompressor instance
       # @param header [Object] The HLP header object
       # @return [void]
-      def display_files(_decompressor, header)
+      def display_files(header)
         if header.files
           header.files.each do |f|
             puts "  #{f.filename} (#{f.length} bytes)"

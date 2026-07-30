@@ -41,7 +41,13 @@ module Cabriolet
       end
 
       # Close the CHM file
-      def close
+      #
+      # The decompressor tracks the open handle itself, so the argument is
+      # accepted and ignored. It is optional so existing no-arg callers keep
+      # working.
+      #
+      # @param _chm [Models::CHMHeader, nil] Header to close
+      def close(_chm = nil)
         cleanup_lzx
         @input_handle&.close
         @input_handle = nil

@@ -185,6 +185,21 @@ module Cabriolet
 
       private
 
+      # OAB opts out of the BaseCommandHandler template
+      #
+      # #list, #info and #test above override the template, so the inherited
+      # open/close flow never runs and this is never called. It exists so that
+      # removing one of those overrides fails with the real reason rather than
+      # the base class's "must implement #decompressor_class", which would be
+      # misleading advice here: OAB has no archive to open.
+      #
+      # @raise [NotImplementedError] always
+      def decompressor_class
+        raise NotImplementedError,
+              "#{self.class} does not open an archive; " \
+              "it overrides #list, #info and #test instead"
+      end
+
       # Display OAB file information
       #
       # @param file [String] Path to the OAB file

@@ -9,27 +9,6 @@ module Cabriolet
     # LIT files use LZX compression and may include DRM protection.
     #
     class CommandHandler < Commands::BaseCommandHandler
-      # List LIT file contents
-      #
-      # Displays information about the LIT file including version,
-      # language, and lists all contained files with their sizes.
-      #
-      # @param file [String] Path to the LIT file
-      # @param options [Hash] Additional options
-      # @option options [Boolean] :use_manifest Use manifest for original filenames
-      # @return [void]
-      def list(file, options = {})
-        validate_file_exists(file)
-
-        decompressor = Decompressor.new
-        lit_file = decompressor.open(file)
-
-        display_header(lit_file)
-        display_files(lit_file, decompressor, options)
-
-        decompressor.close(lit_file)
-      end
-
       # Extract files from LIT archive
       #
       # Extracts all files from the LIT file to the specified output directory.
@@ -92,52 +71,40 @@ module Cabriolet
         puts "Created #{output} (#{bytes} bytes, #{files.size} files)"
       end
 
-      # Display detailed LIT file information
-      #
-      # Shows comprehensive information about the LIT structure,
-      # including sections, manifest, and files.
-      #
-      # @param file [String] Path to the LIT file
-      # @param options [Hash] Additional options (unused)
-      # @return [void]
-      def info(file, _options = {})
-        validate_file_exists(file)
+      private
 
-        decompressor = Decompressor.new
-        lit_file = decompressor.open(file)
-
-        display_lit_info(lit_file)
-
-        decompressor.close(lit_file)
+      def decompressor_class
+        Decompressor
       end
 
-      # Test LIT file integrity
-      #
-      # Verifies the LIT file structure.
-      #
-      # @param file [String] Path to the LIT file
-      # @param options [Hash] Additional options (unused)
-      # @return [void]
-      def test(file, _options = {})
-        validate_file_exists(file)
+      # Show the LIT header followed by its files
+      def render_listing(session, _file, options)
+        display_header(session.archive)
+        display_files(session.archive, session.decompressor, options)
+      end
 
-        decompressor = Decompressor.new
-        lit_file = decompressor.open(file)
+      # Show comprehensive information about the LIT structure
+      def render_info(session, _file)
+        display_lit_info(session.archive)
+      end
 
-        puts "Testing #{file}..."
-        validate_integrity(file)
-        # Check for DRM
+      # DEAD CODE — unreachable through the command path, both branches.
+      #
+      # #test calls validate_integrity before this hook, and the Validator reads
+      # 4 magic bytes and compares them against the 8-byte "ITOLITLS" signature
+      # (validator.rb:104, validator.rb:237), so every LIT file fails and this
+      # never runs. The encrypted? branch is doubly unreachable: LIT::Decompressor
+      # raises NotImplementedError for DRM files while opening them
+      # (lit/decompressor.rb:39). Preserved verbatim pending a Validator fix.
+      def render_test_result(session)
+        lit_file = session.archive
         if lit_file.encrypted?
           puts "WARNING: LIT file is DRM-encrypted (level: #{lit_file.drm_level})"
           puts "Encryption is not supported by this implementation"
         else
           puts "OK: LIT file structure is valid (#{lit_file.directory.entries.size} files)"
         end
-
-        decompressor.close(lit_file)
       end
-
-      private
 
       # Display LIT header information
       #
