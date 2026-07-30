@@ -114,6 +114,10 @@ RSpec.describe Cabriolet::CAB::Extractor do
   end
 
   describe "#idle?" do
+    # The middle example deliberately leaves a folder open, so release the
+    # handle here rather than waiting on GC.
+    after { extractor.reset_state }
+
     it "is true for a newly created extractor" do
       expect(extractor).to be_idle
     end

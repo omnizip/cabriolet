@@ -101,7 +101,7 @@ RSpec.describe "Cabriolet Memory Management" do
         end
 
         expect(created).not_to be_nil
-        expect(created).to receive(:free)
+        expect(created).to receive(:free).and_call_original
 
         extractor.reset_state
       end
