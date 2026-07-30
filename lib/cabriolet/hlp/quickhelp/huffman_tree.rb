@@ -14,7 +14,7 @@ module Cabriolet
         class Node
           attr_accessor :symbol, :left_child, :right_child
 
-          def initialize(root: nil, symbol_count: 0)
+          def initialize
             @symbol = nil
             @left_child = nil
             @right_child = nil
@@ -52,9 +52,6 @@ module Cabriolet
         # @raise [Cabriolet::ParseError] if tree is invalid
         def self.deserialize(node_values)
           return new if node_values.empty?
-
-          n = node_values.length
-          return tree if node_values.empty?
 
           n = node_values.length
           if n.even?
