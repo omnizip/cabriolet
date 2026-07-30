@@ -21,7 +21,9 @@ module Cabriolet
     # Corporation.
     class Quantum < Base
       attr_accessor :header_read
-      attr_reader :bitstream, :window, :window_posn, :frame_todo, :h, :l, :c, :model0, :model1, :model2, :model3, :model4, :model5, :model6, :model6len, :model7, :window_bits, :window_size
+      attr_reader :bitstream, :window, :window_posn, :frame_todo, :h, :l, :c,
+                  :model0, :model1, :model2, :model3, :model4, :model5,
+                  :model6, :model6len, :model7, :window_bits, :window_size
 
       include QuantumShared
 
