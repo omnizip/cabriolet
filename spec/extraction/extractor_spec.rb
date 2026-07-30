@@ -3,17 +3,36 @@
 require "spec_helper"
 require "tmpdir"
 
-RSpec.describe Cabriolet::Extraction::Extractor do
-  TestFile = Struct.new(:name, :size, :data, :datetime, keyword_init: true)
-  TestArchive = Struct.new(:files, keyword_init: true)
+# Named rather than anonymous so Fractor can marshal work items holding them.
+class ExtractorSpecFile
+  attr_reader :name, :size, :data, :datetime
 
+  def initialize(name:, size:, data:, datetime: nil)
+    @name = name
+    @size = size
+    @data = data
+    @datetime = datetime
+  end
+end
+
+class ExtractorSpecArchive
+  attr_reader :files
+
+  def initialize(files:)
+    @files = files
+  end
+end
+
+RSpec.describe Cabriolet::Extraction::Extractor do
   let(:test_files) do
     [
-      TestFile.new(name: "file1.txt", size: 5, data: "hello", datetime: nil),
-      TestFile.new(name: "file2.txt", size: 5, data: "world", datetime: nil),
+      ExtractorSpecFile.new(name: "file1.txt", size: 5, data: "hello",
+                            datetime: nil),
+      ExtractorSpecFile.new(name: "file2.txt", size: 5, data: "world",
+                            datetime: nil),
     ]
   end
-  let(:archive) { TestArchive.new(files: test_files) }
+  let(:archive) { ExtractorSpecArchive.new(files: test_files) }
 
   describe "#initialize" do
     it "accepts archive, output_dir, and options" do

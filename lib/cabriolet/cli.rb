@@ -510,6 +510,6 @@ module Cabriolet
       def setup_verbose(verbose)
         Cabriolet.verbose = verbose
       end
-    end # no_commands
+    end
   end
 end
