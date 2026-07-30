@@ -113,6 +113,35 @@ RSpec.describe Cabriolet::CAB::Extractor do
     end
   end
 
+  describe "#idle?" do
+    it "is true for a newly created extractor" do
+      expect(extractor).to be_idle
+    end
+
+    it "is false while a folder is still open" do
+      cabinet = decompressor.open(normal_2files_1folder)
+
+      Dir.mktmpdir do |tmpdir|
+        extractor.extract_file(cabinet.files.first,
+                               File.join(tmpdir, "out.txt"))
+      end
+
+      expect(extractor).not_to be_idle
+    end
+
+    it "is true again after reset_state" do
+      cabinet = decompressor.open(normal_2files_1folder)
+
+      Dir.mktmpdir do |tmpdir|
+        extractor.extract_file(cabinet.files.first,
+                               File.join(tmpdir, "out.txt"))
+      end
+      extractor.reset_state
+
+      expect(extractor).to be_idle
+    end
+  end
+
   describe "#extract_all" do
     context "with default options" do
       it "extracts all files preserving paths" do

@@ -81,9 +81,44 @@ RSpec.describe "Cabriolet Memory Management" do
         end
 
         # reset_state is called automatically in ensure block
-        expect(extractor.instance_variable_get(:@current_input)).to be_nil
-        expect(extractor.instance_variable_get(:@current_decomp)).to be_nil
-        expect(extractor.instance_variable_get(:@current_folder)).to be_nil
+        expect(extractor).to be_idle
+      end
+
+      it "frees the decompressor it releases" do
+        cabinet = decompressor.open(cab_file)
+        extractor = Cabriolet::CAB::Extractor.new(decompressor.io_system,
+                                                  decompressor)
+        created = nil
+        allow(decompressor).to(
+          receive(:create_decompressor).and_wrap_original do |original, *args|
+            created = original.call(*args)
+          end,
+        )
+
+        Dir.mktmpdir do |tmpdir|
+          extractor.extract_file(cabinet.files.first,
+                                 File.join(tmpdir, "out.txt"))
+        end
+
+        expect(created).not_to be_nil
+        expect(created).to receive(:free)
+
+        extractor.reset_state
+      end
+
+      it "clears internal state when the progress callback raises" do
+        cabinet = decompressor.open(cab_file)
+        extractor = Cabriolet::CAB::Extractor.new(decompressor.io_system,
+                                                  decompressor)
+
+        expect do
+          Dir.mktmpdir do |tmpdir|
+            extractor.extract_all(cabinet, tmpdir,
+                                  progress: ->(*) { raise "progress boom" })
+          end
+        end.to raise_error(RuntimeError, "progress boom")
+
+        expect(extractor).to be_idle
       end
     end
   end
@@ -120,7 +155,7 @@ RSpec.describe "Cabriolet Memory Management" do
     describe "LZX" do
       let(:lzx_cab) { File.join(fixtures_dir, "lzx-premature-matches.cab") }
 
-      it "frees buffers when free is called" do
+      it "releases extractor state after extraction" do
         skip "LZX fixture not available" unless File.exist?(lzx_cab)
 
         decompressor = Cabriolet::CAB::Decompressor.new
@@ -135,21 +170,20 @@ RSpec.describe "Cabriolet Memory Management" do
           # Some test files may be intentionally malformed
         end
 
-        # After extraction, reset_state should have been called
-        # which calls free on the decompressor
-        expect(extractor.instance_variable_get(:@current_decomp)).to be_nil
+        # After extraction, reset_state should have released all extraction state
+        expect(extractor).to be_idle
       end
     end
 
-    describe "MSZIP" do
-      let(:mszip_cab) { File.join(fixtures_dir, "mszip_lzx_qtm.cab") }
+    describe "MSZIP/LZX/Quantum" do
+      let(:mixed_cab) { File.join(fixtures_dir, "mszip_lzx_qtm.cab") }
 
-      it "frees buffers when free is called" do
-        skip "MSZIP fixture not available" unless File.exist?(mszip_cab)
+      it "releases extractor state after extraction" do
+        skip "Mixed-format fixture not available" unless File.exist?(mixed_cab)
 
         decompressor = Cabriolet::CAB::Decompressor.new
         decompressor.salvage = true
-        cabinet = decompressor.search(mszip_cab) || decompressor.open(mszip_cab)
+        cabinet = decompressor.search(mixed_cab) || decompressor.open(mixed_cab)
         extractor = Cabriolet::CAB::Extractor.new(decompressor.io_system,
                                                   decompressor)
 
@@ -159,7 +193,7 @@ RSpec.describe "Cabriolet Memory Management" do
           # Some test files may be intentionally malformed
         end
 
-        expect(extractor.instance_variable_get(:@current_decomp)).to be_nil
+        expect(extractor).to be_idle
       end
     end
   end
