@@ -30,6 +30,18 @@ module Cabriolet
         @parser.parse(filename)
       end
 
+      # Close a cabinet (no-op for compatibility)
+      #
+      # Parser#parse opens and closes its own handle, so an opened cabinet holds
+      # no resources. This exists so every archive decompressor answers
+      # close(archive).
+      #
+      # @param _cabinet [Models::Cabinet] Cabinet to close
+      # @return [void]
+      def close(_cabinet = nil)
+        nil
+      end
+
       # Extract a single file from the cabinet
       #
       # @param file [Models::File] File to extract

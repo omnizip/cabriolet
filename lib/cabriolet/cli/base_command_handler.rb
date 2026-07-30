@@ -13,18 +13,47 @@ module Cabriolet
     # The base class provides common functionality and enforces a consistent
     # interface across all format handlers, following the Template Method pattern.
     #
+    # #list, #info and #test are implemented here as the shared
+    # validate -> open -> render -> close flow. A subclass supplies its
+    # decompressor and the three render hooks. #test inserts two more steps
+    # between open and render: it prints the "Testing <file>..." banner and
+    # runs validate_integrity, so a failed check aborts before the format's
+    # own report is written.
+    #
+    # A format whose read commands do not open an archive opts out by
+    # overriding #list, #info and #test outright. OAB does exactly that: it is
+    # a compressed stream rather than an archive, so it never reaches this
+    # template.
+    #
     # @example Creating a format handler
     #   module Cabriolet
     #     module CAB
-    #       class CommandHandler < CLI::BaseCommandHandler
-    #         def list(file, options = {})
-    #           # Implementation for listing CAB files
+    #       class CommandHandler < Commands::BaseCommandHandler
+    #         private
+    #
+    #         def decompressor_class
+    #           Decompressor
+    #         end
+    #
+    #         def render_listing(session, file, options)
+    #           # What #list prints
+    #         end
+    #
+    #         def render_info(session, file)
+    #           # What #info prints
+    #         end
+    #
+    #         def render_test_result(session)
+    #           # What #test prints once the integrity check passes
     #         end
     #       end
     #     end
     #   end
     #
     class BaseCommandHandler
+      # An opened archive together with the decompressor that opened it.
+      ArchiveSession = Struct.new(:decompressor, :archive)
+
       # Initialize the command handler
       #
       # @param verbose [Boolean] Enable verbose output
@@ -36,10 +65,12 @@ module Cabriolet
       #
       # @param file [String] Path to the archive file
       # @param options [Hash] Additional options
-      # @raise [NotImplementedError] Subclass must implement
+      # @return [void]
       def list(file, options = {})
-        raise NotImplementedError,
-              "#{self.class} must implement #list"
+        validate_file_exists(file)
+        session = open_archive(file)
+        render_listing(session, file, options)
+        close_archive(session)
       end
 
       # Extract files from archive
@@ -68,20 +99,28 @@ module Cabriolet
       #
       # @param file [String] Path to the archive file
       # @param options [Hash] Additional options
-      # @raise [NotImplementedError] Subclass must implement
-      def info(file, options = {})
-        raise NotImplementedError,
-              "#{self.class} must implement #info"
+      # @return [void]
+      def info(file, _options = {})
+        validate_file_exists(file)
+        session = open_archive(file)
+        render_info(session, file)
+        close_archive(session)
       end
 
       # Test archive integrity
       #
       # @param file [String] Path to the archive file
       # @param options [Hash] Additional options
-      # @raise [NotImplementedError] Subclass must implement
-      def test(file, options = {})
-        raise NotImplementedError,
-              "#{self.class} must implement #test"
+      # @return [void]
+      # @raise [Cabriolet::Error] if the integrity check fails
+      def test(file, _options = {})
+        validate_file_exists(file)
+        session = open_archive(file)
+
+        puts "Testing #{file}..."
+        validate_integrity(file)
+        render_test_result(session)
+        close_archive(session)
       end
 
       protected
@@ -138,6 +177,71 @@ module Cabriolet
         end
 
         report
+      end
+
+      private
+
+      # The decompressor class this format opens archives with
+      #
+      # @return [Class] A class answering #open(file) and #close(archive)
+      # @raise [NotImplementedError] Subclass must implement
+      def decompressor_class
+        raise NotImplementedError,
+              "#{self.class} must implement #decompressor_class"
+      end
+
+      # Open an archive and pair it with its decompressor
+      #
+      # @param file [String] Path to the archive file
+      # @return [ArchiveSession] The opened session
+      def open_archive(file)
+        decompressor = decompressor_class.new
+        ArchiveSession.new(decompressor, decompressor.open(file))
+      end
+
+      # Release an opened archive
+      #
+      # Deliberately not wrapped in an ensure. Anything that raises after the
+      # archive is opened skips this call and leaves it unclosed: a failing
+      # render, and in #test a failing validate_integrity too. That second path
+      # is not hypothetical — LIT takes it on every successfully opened file,
+      # because the Validator rejects the format outright. Preserving the
+      # existing semantics; adding cleanup is a separate concern.
+      #
+      # @param session [ArchiveSession] The session to close
+      # @return [void]
+      def close_archive(session)
+        session.decompressor.close(session.archive)
+      end
+
+      # Print the archive listing
+      #
+      # @param session [ArchiveSession] The opened session
+      # @param file [String] Path to the archive file
+      # @param options [Hash] Additional options
+      # @raise [NotImplementedError] Subclass must implement
+      def render_listing(session, file, options)
+        raise NotImplementedError,
+              "#{self.class} must implement #render_listing"
+      end
+
+      # Print detailed archive information
+      #
+      # @param session [ArchiveSession] The opened session
+      # @param file [String] Path to the archive file
+      # @raise [NotImplementedError] Subclass must implement
+      def render_info(session, file)
+        raise NotImplementedError,
+              "#{self.class} must implement #render_info"
+      end
+
+      # Print the outcome of a successful integrity check
+      #
+      # @param session [ArchiveSession] The opened session
+      # @raise [NotImplementedError] Subclass must implement
+      def render_test_result(session)
+        raise NotImplementedError,
+              "#{self.class} must implement #render_test_result"
       end
     end
   end
