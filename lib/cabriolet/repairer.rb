@@ -23,7 +23,6 @@ module Cabriolet
     #   repairer = Cabriolet::Repairer.new('corrupted.cab')
     #   report = repairer.repair(output: 'repaired.cab')
     def repair(output:, **options)
-      salvage_mode = options.fetch(:salvage_mode, true)
       skip_corrupted = options.fetch(:skip_corrupted, true)
       rebuild_index = options.fetch(:rebuild_index, true)
 
@@ -139,7 +138,6 @@ module Cabriolet
     end
 
     def rebuild_cab(files, output_path)
-
       compressor = CAB::Compressor.new(
         output: output_path,
         compression: :mszip, # Use safe compression

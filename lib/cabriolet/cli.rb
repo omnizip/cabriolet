@@ -2,7 +2,6 @@
 
 require "thor"
 
-
 # Register all format handlers with the command registry
 
 Cabriolet::Commands::CommandRegistry.register_format(:cab, Cabriolet::CAB::CommandHandler)
@@ -407,111 +406,110 @@ module Cabriolet
     end
 
     no_commands do
+      # Run command with unified dispatcher
+      #
+      # @param command [Symbol] Command to execute
+      # @param file [String] File path
+      # @param args [Array] Additional arguments
+      def run_dispatcher(command, file, *, **options)
+        setup_verbose(options[:verbose])
 
-    # Run command with unified dispatcher
-    #
-    # @param command [Symbol] Command to execute
-    # @param file [String] File path
-    # @param args [Array] Additional arguments
-    def run_dispatcher(command, file, *, **options)
-      setup_verbose(options[:verbose])
-
-      dispatcher = Commands::CommandDispatcher.new(**options)
-      dispatcher.dispatch(command, file, *, **options)
-    end
-
-    # Run command with explicit format override
-    #
-    # @param command [Symbol] Command to execute
-    # @param format [Symbol] Format to force
-    # @param file [String] File path
-    # @param args [Array] Additional arguments
-    def run_with_format(command, format, file, *, **options)
-      setup_verbose(options[:verbose])
-      options[:format] = format.to_s
-
-      dispatcher = Commands::CommandDispatcher.new(**options)
-      dispatcher.dispatch(command, file, *, **options)
-    end
-
-    # Detect format from output file extension
-    #
-    # @param output [String] Output file path
-    # @param manual_format [String, nil] Manually specified format
-    # @return [Symbol] Detected format symbol
-    def detect_format_from_output(output, manual_format)
-      return manual_format.to_sym if manual_format
-
-      ext = File.extname(output).downcase
-      format_map = {
-        ".cab" => :cab,
-        ".chm" => :chm,
-        ".hlp" => :hlp,
-        ".lit" => :lit,
-        ".oab" => :oab,
-        "._" => :szdd, # SZDD ends with underscore
-        ".kwj" => :kwaj,
-      }
-
-      # Handle SZDD specially (ends with _)
-      if output.end_with?("_")
-        return :szdd
+        dispatcher = Commands::CommandDispatcher.new(**options)
+        dispatcher.dispatch(command, file, *, **options)
       end
 
-      format_map[ext] || :cab # Default to CAB
-    end
+      # Run command with explicit format override
+      #
+      # @param command [Symbol] Command to execute
+      # @param format [Symbol] Format to force
+      # @param file [String] File path
+      # @param args [Array] Additional arguments
+      def run_with_format(command, format, file, *, **options)
+        setup_verbose(options[:verbose])
+        options[:format] = format.to_s
 
-    # Normalize create options for different formats
-    #
-    # @param options [Hash] Raw options from Thor
-    # @return [Hash] Normalized options
-    def normalize_create_options(options)
-      normalized = {}
-      options.each do |key, value|
-        next if value.nil?
+        dispatcher = Commands::CommandDispatcher.new(**options)
+        dispatcher.dispatch(command, file, *, **options)
+      end
 
-        case key.to_s
-        when "szdd_format"
-          normalized[:szdd_format] = value.to_sym
-        when "kwaj_compression"
-          normalized[:compression] = value
-        when "kwaj_filename"
-          normalized[:filename] = value
-        when "hlp_format"
-          normalized[:hlp_format] = value.to_sym
-        when "language_id"
-          normalized[:language_id] = parse_language_id(value)
-        when "lit_version"
-          normalized[:version] = value
-        when "compress"
-          # Keep as-is for HLP/LIT
-          normalized[:compress] = value
+      # Detect format from output file extension
+      #
+      # @param output [String] Output file path
+      # @param manual_format [String, nil] Manually specified format
+      # @return [Symbol] Detected format symbol
+      def detect_format_from_output(output, manual_format)
+        return manual_format.to_sym if manual_format
+
+        ext = File.extname(output).downcase
+        format_map = {
+          ".cab" => :cab,
+          ".chm" => :chm,
+          ".hlp" => :hlp,
+          ".lit" => :lit,
+          ".oab" => :oab,
+          "._" => :szdd, # SZDD ends with underscore
+          ".kwj" => :kwaj,
+        }
+
+        # Handle SZDD specially (ends with _)
+        if output.end_with?("_")
+          return :szdd
+        end
+
+        format_map[ext] || :cab # Default to CAB
+      end
+
+      # Normalize create options for different formats
+      #
+      # @param options [Hash] Raw options from Thor
+      # @return [Hash] Normalized options
+      def normalize_create_options(options)
+        normalized = {}
+        options.each do |key, value|
+          next if value.nil?
+
+          case key.to_s
+          when "szdd_format"
+            normalized[:szdd_format] = value.to_sym
+          when "kwaj_compression"
+            normalized[:compression] = value
+          when "kwaj_filename"
+            normalized[:filename] = value
+          when "hlp_format"
+            normalized[:hlp_format] = value.to_sym
+          when "language_id"
+            normalized[:language_id] = parse_language_id(value)
+          when "lit_version"
+            normalized[:version] = value
+          when "compress"
+            # Keep as-is for HLP/LIT
+            normalized[:compress] = value
+          else
+            normalized[key.to_sym] = value
+          end
+        end
+        normalized
+      end
+
+      # Parse language ID from string
+      #
+      # @param value [String, Integer, nil] Language ID value
+      # @return [Integer] Parsed language ID
+      def parse_language_id(value)
+        return 0x409 if value.nil? # Default to English
+
+        if value.is_a?(Integer)
+          value
+        elsif value.start_with?("0x")
+          value.to_i(16)
         else
-          normalized[key.to_sym] = value
+          value.to_i
         end
       end
-      normalized
-    end
 
-    # Parse language ID from string
-    #
-    # @param value [String, Integer, nil] Language ID value
-    # @return [Integer] Parsed language ID
-    def parse_language_id(value)
-      return 0x409 if value.nil? # Default to English
-
-      if value.is_a?(Integer)
-        value
-      elsif value.start_with?("0x")
-        value.to_i(16)
-      else
-        value.to_i
+      def setup_verbose(verbose)
+        Cabriolet.verbose = verbose
       end
     end
-
-    def setup_verbose(verbose)
-      Cabriolet.verbose = verbose
-    end
-    end # no_commands
   end
 end

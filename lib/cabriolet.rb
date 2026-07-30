@@ -69,8 +69,7 @@ module Cabriolet
   autoload :CLI, "cabriolet/cli"
 
   class << self
-    attr_accessor :verbose
-    attr_accessor :default_buffer_size
+    attr_accessor :verbose, :default_buffer_size
 
     def algorithm_factory
       @algorithm_factory ||= AlgorithmFactory.new

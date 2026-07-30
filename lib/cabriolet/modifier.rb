@@ -230,7 +230,6 @@ module Cabriolet
     end
 
     def rebuild_cab(files, output)
-
       compressor = CAB::Compressor.new(
         output: output,
         compression: :mszip,

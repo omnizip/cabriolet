@@ -3,6 +3,20 @@
 require "spec_helper"
 require "tmpdir"
 
+# Stands in for an archive file entry; mirrors what LazyFile delegates.
+class StreamingSpecFile
+  attr_reader :name, :size, :attributes, :date, :time, :data
+
+  def initialize(name:, size:, attributes:, date:, time:, data:)
+    @name = name
+    @size = size
+    @attributes = attributes
+    @date = date
+    @time = time
+    @data = data
+  end
+end
+
 RSpec.describe Cabriolet::Streaming do
   let(:cab_fixture) { fixture_path("libmspack", "cabd", "normal_2files_1folder.cab") }
   let(:chunk_size) { 1024 }
@@ -43,10 +57,11 @@ RSpec.describe Cabriolet::Streaming do
   end
 
   describe Cabriolet::Streaming::LazyFile do
-    TestStreamFile = Struct.new(:name, :size, :attributes, :date, :time, :data, keyword_init: true)
-
     let(:test_data) { "A" * 200 }
-    let(:inner_file) { TestStreamFile.new(name: "test.txt", size: 200, attributes: 0x20, date: nil, time: nil, data: test_data) }
+    let(:inner_file) do
+      StreamingSpecFile.new(name: "test.txt", size: 200, attributes: 0x20,
+                            date: nil, time: nil, data: test_data)
+    end
     let(:lazy) { described_class.new(inner_file, 64) }
 
     it "delegates name" do
@@ -70,7 +85,7 @@ RSpec.describe Cabriolet::Streaming do
       lazy.stream_data(chunk_size: 64) { |chunk| chunks << chunk }
 
       expect(chunks.length).to eq(4)
-      expect(chunks.map(&:bytesize).sum).to eq(200)
+      expect(chunks.sum(&:bytesize)).to eq(200)
     end
 
     it "does not use method_missing for unknown methods" do

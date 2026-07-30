@@ -155,7 +155,7 @@ RSpec.describe Cabriolet::Plugin do
         plugin_no_manager = TestPlugin.new(nil)
         expect do
           plugin_no_manager.register_algorithm(:test, Object,
-                                 category: :compressor)
+                                               category: :compressor)
         end.to raise_error(Cabriolet::PluginError,
                            /Plugin manager not available/)
       end
@@ -168,7 +168,7 @@ RSpec.describe Cabriolet::Plugin do
           .with(:test, algo_class, category: :compressor)
 
         plugin.register_algorithm(:test, algo_class,
-                    category: :compressor)
+                                  category: :compressor)
       end
 
       it "supports priority option" do
@@ -178,7 +178,7 @@ RSpec.describe Cabriolet::Plugin do
           .with(:test, algo_class, category: :compressor, priority: 10)
 
         plugin.register_algorithm(:test, algo_class,
-                    category: :compressor, priority: 10)
+                                  category: :compressor, priority: 10)
       end
     end
 
@@ -201,5 +201,4 @@ RSpec.describe Cabriolet::Plugin do
       end
     end
   end
-
 end

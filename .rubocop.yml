@@ -15,6 +15,12 @@ AllCops:
 Layout/EndOfLine:
   Enabled: false
 
+# The CLI's `no_commands` block length tracks how many Thor helpers it wraps,
+# not complexity. See TODO.fixup/21-cli-create-options-extraction.md.
+Metrics/BlockLength:
+  Exclude:
+    - "lib/cabriolet/cli.rb"
+
 plugins:
   - rubocop-rake
   - rubocop-rspec

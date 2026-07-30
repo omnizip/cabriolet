@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 module Cabriolet
   module Compressors
     # Quantum compresses data using arithmetic coding and LZ77-based matching

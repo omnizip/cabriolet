@@ -225,13 +225,13 @@ RSpec.describe Cabriolet::BaseCompressor do
 
     it "raises NotImplementedError for build_structure" do
       expect do
-        incomplete.build_structure( {})
+        incomplete.build_structure({})
       end.to raise_error(NotImplementedError, /must implement build_structure/)
     end
 
     it "raises NotImplementedError for write_format" do
       expect do
-        incomplete.write_format( nil, {})
+        incomplete.write_format(nil, {})
       end.to raise_error(NotImplementedError, /must implement write_format/)
     end
   end

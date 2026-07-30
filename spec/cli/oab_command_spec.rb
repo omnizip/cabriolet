@@ -20,7 +20,7 @@ RSpec.describe Cabriolet::CLI, "OAB commands" do
     else
       first_arg = args.first
       remaining_args = args[1..] || []
-      cli.public_send(:run_dispatcher, command, first_arg, *remaining_args, **options)
+      cli.run_dispatcher(command, first_arg, *remaining_args, **options)
     end
   end
 

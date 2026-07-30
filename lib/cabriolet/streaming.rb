@@ -140,8 +140,6 @@ module Cabriolet
           yield LazyFile.new(file, @chunk_size)
         end
       end
-
-      private
     end
 
     # Wrapper for lazy file data loading

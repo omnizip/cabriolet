@@ -58,7 +58,6 @@ RSpec.describe Cabriolet::PluginManager do
   before do
     # Clear plugin registry before each test
     manager.reset
-    
   end
 
   describe "singleton pattern" do

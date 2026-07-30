@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 module Cabriolet
   module HLP
     # Command handler for HLP (Help) format
@@ -115,18 +114,18 @@ module Cabriolet
         puts "Testing #{file}..."
         validate_integrity(file)
         format_name = begin
-                        version_value = header.version
-                        # Convert BinData objects to integer for comparison
-                        version_int = Integer(version_value, exception: false)
+          version_value = header.version
+          # Convert BinData objects to integer for comparison
+          version_int = Integer(version_value, exception: false)
 
-                        if version_value.is_a?(Integer) || version_int&.positive?
-                          "QUICKHELP v#{version_value}"
-                        elsif version_value.is_a?(Symbol)
-                          version_value.to_s.upcase.sub("WINHELP", "WinHelp ")
-                        else
-                          "unknown"
-                        end
-                      end
+          if version_value.is_a?(Integer) || version_int&.positive?
+            "QUICKHELP v#{version_value}"
+          elsif version_value.is_a?(Symbol)
+            version_value.to_s.upcase.sub("WINHELP", "WinHelp ")
+          else
+            "unknown"
+          end
+        end
         puts "OK: HLP file structure is valid (#{format_name} format)"
 
         decompressor.close(header)
@@ -141,18 +140,18 @@ module Cabriolet
       # @return [void]
       def display_header(header, file)
         format_name = begin
-                        version_value = header.version
-                        # Convert BinData objects to integer for comparison
-                        version_int = Integer(version_value, exception: false)
+          version_value = header.version
+          # Convert BinData objects to integer for comparison
+          version_int = Integer(version_value, exception: false)
 
-                        if version_value.is_a?(Integer) || version_int&.positive?
-                          "QUICKHELP v#{version_value}"
-                        elsif header.version.is_a?(Symbol)
-                          header.version.to_s.upcase.sub("WINHELP", "WinHelp ")
-                        else
-                          header.version.to_s
-                        end
-                      end
+          if version_value.is_a?(Integer) || version_int&.positive?
+            "QUICKHELP v#{version_value}"
+          elsif header.version.is_a?(Symbol)
+            header.version.to_s.upcase.sub("WINHELP", "WinHelp ")
+          else
+            header.version.to_s
+          end
+        end
         puts "HLP File: #{file}"
         puts "Format: #{format_name || 'unknown'}"
         puts "\nFiles:"

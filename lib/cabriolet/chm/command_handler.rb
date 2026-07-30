@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 module Cabriolet
   module CHM
     # Command handler for CHM (Compiled HTML Help) format

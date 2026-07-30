@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 module Cabriolet
   module Models
     # Folder represents a compressed data stream within a cabinet

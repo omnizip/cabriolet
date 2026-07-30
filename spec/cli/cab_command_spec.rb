@@ -12,19 +12,19 @@ RSpec.describe Cabriolet::CLI, "CAB commands" do
   # Helper method to invoke Thor commands with options
   def invoke_command(command, *args, options: {})
     cli.options = Thor::CoreExt::HashWithIndifferentAccess.new(options)
-    # Use send to call run_dispatcher directly, bypassing Thor's invoke mechanism
-    # which doesn't properly pass options through to command methods
+    # Call run_dispatcher directly, bypassing Thor's invoke mechanism, which
+    # doesn't properly pass options through to command methods.
     # Special handling for create command which has pre-processing logic
     if command == :create
       output = args.first
       files = args[1..]
       # For create command, we need to call the Thor method directly
       # because it has special pre-processing logic (normalize_create_options, detect_format_from_output)
-      cli.public_send(:create, output, *files)
+      cli.create(output, *files)
     else
       first_arg = args.first
       remaining_args = args[1..] || []
-      cli.public_send(:run_dispatcher, command, first_arg, *remaining_args, **options)
+      cli.run_dispatcher(command, first_arg, *remaining_args, **options)
     end
   end
 

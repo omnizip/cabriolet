@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 module Cabriolet
   module CAB
     # Command handler for CAB (Microsoft Cabinet) format

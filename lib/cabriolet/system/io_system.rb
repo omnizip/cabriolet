@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 module Cabriolet
   module System
     # IOSystem provides an abstraction layer for file I/O operations,

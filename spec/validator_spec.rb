@@ -71,8 +71,14 @@ RSpec.describe Cabriolet::Validator do
     end
 
     it "handles unreadable files" do
+      # Windows chmod only toggles the read-only attribute, so 0o000 leaves
+      # the file readable and no error is recorded.
+      unless Cabriolet::Platform.supports_unix_permissions?
+        skip "Unix permissions not supported on Windows"
+      end
+
       Tempfile.create(["unreadable", ".cab"]) do |f|
-        f.write("MSCF" + "\x00" * 32)
+        f.write("MSCF#{"\x00" * 32}")
         f.close
         File.chmod(0o000, f.path)
 

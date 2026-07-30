@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 module Cabriolet
   module SZDD
     # Command handler for SZDD (LZSS-compressed) format

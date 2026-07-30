@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 module Cabriolet
   module LIT
     # Command handler for LIT (Microsoft Reader eBook) format
