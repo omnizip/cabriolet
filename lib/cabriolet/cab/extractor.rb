@@ -68,7 +68,11 @@ module Cabriolet
         filelen
       end
 
-      # Reset extraction state (used in salvage mode to recover from errors)
+      # Reset extraction state
+      #
+      # Called unconditionally after every extract_all, and in salvage mode to
+      # recover from errors. Any field cleared here must also be checked by
+      # #idle?, which reports the same state.
       def reset_state
         @current_input&.close
         @current_input = nil
@@ -76,6 +80,17 @@ module Cabriolet
         @current_decomp = nil
         @current_folder = nil
         @current_offset = 0
+      end
+
+      # Whether the extractor has no folder currently open for extraction
+      #
+      # Mirrors the fields #reset_state clears; keep the two in step.
+      #
+      # @return [Boolean] true when no input, decompressor, folder or stream
+      #   offset is held
+      def idle?
+        @current_input.nil? && @current_decomp.nil? && @current_folder.nil? &&
+          @current_offset.zero?
       end
 
       # Extract all files from a cabinet
