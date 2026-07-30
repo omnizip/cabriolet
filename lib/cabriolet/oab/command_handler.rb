@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 module Cabriolet
   module OAB
     # Command handler for OAB (Outlook Offline Address Book) format

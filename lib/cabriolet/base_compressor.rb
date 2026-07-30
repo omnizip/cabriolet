@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 module Cabriolet
   # Abstract base class for all format compressors
   #

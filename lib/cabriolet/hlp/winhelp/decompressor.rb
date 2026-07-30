@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 module Cabriolet
   module HLP
     module WinHelp
@@ -187,6 +186,5 @@ module Cabriolet
         def close(_header); end
       end
     end
-
   end
 end

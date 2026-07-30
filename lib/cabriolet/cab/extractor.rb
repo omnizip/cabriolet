@@ -247,7 +247,6 @@ module Cabriolet
         skip_bytes = file_offset - @current_offset
         null_output = System::MemoryHandle.new("", Constants::MODE_WRITE)
 
-
         begin
           @current_decomp.decompress_to(null_output, skip_bytes)
         rescue DecompressionError
@@ -532,7 +531,8 @@ _filelen)
         end
 
         public
-      def calculate_checksum(data, initial = 0)
+
+        def calculate_checksum(data, initial = 0)
           Checksum.calculate(data, initial)
         end
       end

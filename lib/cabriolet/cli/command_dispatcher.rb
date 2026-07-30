@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 module Cabriolet
   module Commands
     # Unified command dispatcher that routes commands to format-specific handlers
@@ -19,6 +18,7 @@ module Cabriolet
     #
     class CommandDispatcher
       attr_reader :format_override, :verbose
+
       # Initialize the command dispatcher
       #
       # @param options [Hash] Configuration options

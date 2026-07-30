@@ -375,6 +375,7 @@ module Cabriolet
       # @param file_length [Integer] Total file length
       # @return [Integer, nil] Offset of cabinet in file, or nil
       public
+
       def find_cabinet_in_buffer(buf, length, base_offset, _handle, _filename,
 file_length)
         state = 0
@@ -471,6 +472,7 @@ file_length)
       # @param file_length [Integer] Total file length
       # @return [Boolean] true if looks valid
       public
+
       def validate_cabinet_signature(foffset_u32, cablen_u32, caboff,
 file_length)
         # Files offset must be less than cabinet length

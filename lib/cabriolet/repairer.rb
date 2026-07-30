@@ -139,7 +139,6 @@ module Cabriolet
     end
 
     def rebuild_cab(files, output_path)
-
       compressor = CAB::Compressor.new(
         output: output_path,
         compression: :mszip, # Use safe compression

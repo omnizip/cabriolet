@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 module Cabriolet
   module LIT
     # Builds complete LIT structure from file data

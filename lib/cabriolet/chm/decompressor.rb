@@ -1,14 +1,12 @@
 # frozen_string_literal: true
 
-
 module Cabriolet
   module CHM
     # Decompressor for CHM (Compiled HTML Help) files
     class Decompressor
-      attr_reader :chm
       LZX_FRAME_SIZE = 32_768
 
-      attr_reader :io_system, :chm
+      attr_reader :chm, :io_system
 
       def initialize(io_system = nil, algorithm_factory = nil)
         @io_system = io_system || System::IOSystem.new
@@ -416,7 +414,7 @@ module Cabriolet
       # @return [Array<Hash>] Entries with :name and :chunk
       def parse_pmgi_entries(chunk)
         entries = []
-        pos = 8  # Skip signature (4) + quickref_size (4)
+        pos = 8 # Skip signature (4) + quickref_size (4)
         chunk_end = chunk.length
 
         while pos < chunk_end

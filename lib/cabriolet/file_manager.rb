@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 module Cabriolet
   # Manages collection of files for archive creation
   #
@@ -15,6 +14,7 @@ module Cabriolet
   #   manager.each { |entry| puts entry.archive_path }
   class FileManager
     attr_reader :entries
+
     include Enumerable
 
     # Initialize empty file manager

@@ -29,6 +29,7 @@ module Cabriolet
   #   end
   class Plugin
     attr_reader :manager
+
     # Initialize a new plugin
     #
     # @param manager [PluginManager] The plugin manager instance
@@ -160,8 +161,6 @@ module Cabriolet
     def cleanup
       # Default implementation does nothing
     end
-
-
 
     # Register a compression or decompression algorithm
     #

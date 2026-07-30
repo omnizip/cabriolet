@@ -192,21 +192,24 @@ RSpec.describe Cabriolet::CAB::Decompressor, "#search" do
       it "validates reasonable cabinet parameters" do
         # foffset < cablen, both within file bounds
         result = decompressor.validate_cabinet_signature(
-                                   100, 1000, 0, 2000)
+          100, 1000, 0, 2000
+        )
         expect(result).to be true
       end
 
       it "rejects invalid cabinet parameters" do
         # foffset >= cablen
         result = decompressor.validate_cabinet_signature(
-                                   1000, 100, 0, 2000)
+          1000, 100, 0, 2000
+        )
         expect(result).to be false
       end
 
       it "rejects parameters outside file bounds" do
         # offset + cablen > file_length + 32
         result = decompressor.validate_cabinet_signature(
-                                   100, 10_000, 0, 1000)
+          100, 10_000, 0, 1000
+        )
         expect(result).to be false
       end
 
@@ -214,7 +217,8 @@ RSpec.describe Cabriolet::CAB::Decompressor, "#search" do
         decompressor.salvage = true
         # Would normally be rejected, but salvage mode allows it
         result = decompressor.validate_cabinet_signature(
-                                   100, 10_000, 0, 1000)
+          100, 10_000, 0, 1000
+        )
         # In salvage mode, length validation is relaxed
         expect([true, false]).to include(result)
       end
@@ -246,7 +250,8 @@ RSpec.describe Cabriolet::CAB::Decompressor, "#search" do
       buf[116] = 50   # foffset LSB = 50 (< cablen, valid)
 
       result = decompressor.find_cabinet_in_buffer(
-                                 buf, 300, 0, nil, nil, 500)
+        buf, 300, 0, nil, nil, 500
+      )
 
       expect(result).to eq(100),
                         "find_cabinet_in_buffer should skip invalid MSCF at offset 0 " \
@@ -262,7 +267,8 @@ RSpec.describe Cabriolet::CAB::Decompressor, "#search" do
       buf[16] = 100
 
       result = decompressor.find_cabinet_in_buffer(
-                                 buf, 200, 0, nil, nil, 500)
+        buf, 200, 0, nil, nil, 500
+      )
       expect(result).to be_nil
     end
 
@@ -275,7 +281,8 @@ RSpec.describe Cabriolet::CAB::Decompressor, "#search" do
       buf[16] = 50 # foffset
 
       result = decompressor.find_cabinet_in_buffer(
-                                 buf, 200, 0, nil, nil, 500)
+        buf, 200, 0, nil, nil, 500
+      )
       expect(result).to eq(0)
     end
 
@@ -298,7 +305,8 @@ RSpec.describe Cabriolet::CAB::Decompressor, "#search" do
       buf[216] = 50 # foffset = 50 (< cablen)
 
       result = decompressor.find_cabinet_in_buffer(
-                                 buf, 500, 0, nil, nil, 1000)
+        buf, 500, 0, nil, nil, 1000
+      )
       expect(result).to eq(200)
     end
   end

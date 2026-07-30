@@ -283,7 +283,7 @@ RSpec.describe Cabriolet::Decompressors::Quantum do
 
       # Access private method to test error condition
       expect do
-        quantum.copy_match( 10_000, 100)
+        quantum.copy_match(10_000, 100)
       end.to raise_error(Cabriolet::DecompressionError, /beyond window/)
     end
   end

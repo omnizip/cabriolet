@@ -72,7 +72,7 @@ RSpec.describe Cabriolet::Validator do
 
     it "handles unreadable files" do
       Tempfile.create(["unreadable", ".cab"]) do |f|
-        f.write("MSCF" + "\x00" * 32)
+        f.write("MSCF" + ("\x00" * 32))
         f.close
         File.chmod(0o000, f.path)
 

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 module Cabriolet
   module Compressors
     # MSZIP handles MSZIP (DEFLATE) compression

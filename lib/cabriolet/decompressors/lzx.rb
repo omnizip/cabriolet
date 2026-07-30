@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 module Cabriolet
   module Decompressors
     # LZX handles LZX compressed data
@@ -88,17 +87,9 @@ module Cabriolet
         33_161_216, 33_292_288, 33_423_360
       ].freeze
 
-      attr_reader :window_bits, :reset_interval, :output_length, :is_delta
-      attr_reader :window_size, :num_offsets, :r0, :r1, :r2,
-                   :block_type, :block_length, :block_remaining,
-                   :header_read, :intel_filesize, :intel_started,
-                   :window_posn, :frame_posn, :frame, :offset,
-                   :pretree_lengths, :maintree_lengths, :length_lengths, :aligned_lengths,
-                   :pretree, :maintree, :length_tree, :aligned_tree,
-                   :window, :bitstream, :pending_frame_data
-      attr_writer :header_read, :intel_filesize, :frame_posn, :window_posn,
-                   :frame, :offset, :window, :block_type, :block_remaining,
-                   :block_length, :output
+      attr_accessor :block_type, :block_length, :block_remaining, :header_read, :intel_filesize, :window_posn, :frame_posn, :frame, :offset, :window
+      attr_reader :window_bits, :reset_interval, :output_length, :is_delta, :window_size, :num_offsets, :r0, :r1, :r2, :intel_started, :pretree_lengths, :maintree_lengths, :length_lengths, :aligned_lengths, :pretree, :maintree, :length_tree, :aligned_tree, :bitstream, :pending_frame_data
+      attr_writer :output
 
       # Initialize LZX decompressor
       #

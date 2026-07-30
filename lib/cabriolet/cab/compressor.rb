@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 module Cabriolet
   module CAB
     # Compressor creates CAB files from source files
@@ -143,7 +142,6 @@ module Cabriolet
 
       # Compress files using parallel workers via Fractor
       def compress_files_parallel(file_infos)
-
         compression_method = @compression_method || compression_type_value
 
         # Create work items for each file
