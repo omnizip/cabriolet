@@ -1,4 +1,4 @@
-# TODO 21: Extract CAB extractor extraction state into a state object
+# TODO 22: Extract CAB extractor extraction state into a state object
 
 ## Priority: P2 (duplication, silent-drift risk)
 
