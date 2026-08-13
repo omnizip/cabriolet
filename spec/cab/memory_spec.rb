@@ -163,6 +163,12 @@ RSpec.describe "Cabriolet Memory Management" do
         cabinet = decompressor.search(lzx_cab) || decompressor.open(lzx_cab)
         extractor = Cabriolet::CAB::Extractor.new(decompressor.io_system,
                                                   decompressor)
+        created = []
+        allow(decompressor).to(
+          receive(:create_decompressor).and_wrap_original do |original, *args|
+            original.call(*args).tap { |d| created << d }
+          end,
+        )
 
         Dir.mktmpdir do |tmpdir|
           extractor.extract_all(cabinet, tmpdir)
@@ -170,6 +176,9 @@ RSpec.describe "Cabriolet Memory Management" do
           # Some test files may be intentionally malformed
         end
 
+        # The rescue above swallows a malformed fixture, so assert the run
+        # actually built state before claiming it was released.
+        expect(created).not_to be_empty
         # After extraction, reset_state should have released all extraction state
         expect(extractor).to be_idle
       end
@@ -186,6 +195,12 @@ RSpec.describe "Cabriolet Memory Management" do
         cabinet = decompressor.search(mixed_cab) || decompressor.open(mixed_cab)
         extractor = Cabriolet::CAB::Extractor.new(decompressor.io_system,
                                                   decompressor)
+        created = []
+        allow(decompressor).to(
+          receive(:create_decompressor).and_wrap_original do |original, *args|
+            original.call(*args).tap { |d| created << d }
+          end,
+        )
 
         Dir.mktmpdir do |tmpdir|
           extractor.extract_all(cabinet, tmpdir)
@@ -193,6 +208,7 @@ RSpec.describe "Cabriolet Memory Management" do
           # Some test files may be intentionally malformed
         end
 
+        expect(created).not_to be_empty
         expect(extractor).to be_idle
       end
     end
