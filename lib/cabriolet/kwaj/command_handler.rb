@@ -8,25 +8,6 @@ module Cabriolet
     # wrapping the existing KWAJ::Decompressor and KWAJ::Compressor classes.
     #
     class CommandHandler < Commands::BaseCommandHandler
-      # List KWAJ file information
-      #
-      # For KWAJ files, list displays detailed file information
-      # rather than a file listing (single file archive).
-      #
-      # @param file [String] Path to the KWAJ file
-      # @param options [Hash] Additional options (unused)
-      # @return [void]
-      def list(file, _options = {})
-        validate_file_exists(file)
-
-        decompressor = Decompressor.new
-        header = decompressor.open(file)
-
-        display_kwaj_info(header, file)
-
-        decompressor.close(header)
-      end
-
       # Extract KWAJ compressed file
       #
       # Extracts/decompresses the KWAJ file to its original form.
@@ -114,46 +95,29 @@ module Cabriolet
         puts "Compressed #{file} to #{output} (#{bytes} bytes, #{compression} compression)"
       end
 
-      # Display detailed KWAJ file information
-      #
-      # @param file [String] Path to the KWAJ file
-      # @param options [Hash] Additional options (unused)
-      # @return [void]
-      def info(file, _options = {})
-        validate_file_exists(file)
+      private
 
-        decompressor = Decompressor.new
-        header = decompressor.open(file)
-
-        display_kwaj_info(header, file)
-
-        decompressor.close(header)
+      def decompressor_class
+        Decompressor
       end
 
-      # Test KWAJ file integrity
-      #
-      # Verifies the KWAJ file structure.
-      #
-      # @param file [String] Path to the KWAJ file
-      # @param options [Hash] Additional options (unused)
-      # @return [void]
-      def test(file, _options = {})
-        validate_file_exists(file)
+      # KWAJ holds a single compressed file, so listing it is the same as
+      # describing it.
+      def render_listing(session, file, _options)
+        render_info(session, file)
+      end
 
-        decompressor = Decompressor.new
-        header = decompressor.open(file)
+      def render_info(session, file)
+        display_kwaj_info(session.archive, file)
+      end
 
-        puts "Testing #{file}..."
-        validate_integrity(file)
+      def render_test_result(session)
+        header = session.archive
         puts "OK: KWAJ file structure is valid"
         puts "Compression: #{header.compression_name}"
         puts "Data offset: #{header.data_offset} bytes"
         puts "Uncompressed size: #{header.length || 'unknown'} bytes"
-
-        decompressor.close(header)
       end
-
-      private
 
       # Display KWAJ file information
       #

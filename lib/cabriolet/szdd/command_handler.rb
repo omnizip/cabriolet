@@ -8,25 +8,6 @@ module Cabriolet
     # wrapping the existing SZDD::Decompressor and SZDD::Compressor classes.
     #
     class CommandHandler < Commands::BaseCommandHandler
-      # List SZDD file information
-      #
-      # For SZDD files, list displays detailed file information
-      # rather than a file listing (single file archive).
-      #
-      # @param file [String] Path to the SZDD file
-      # @param options [Hash] Additional options (unused)
-      # @return [void]
-      def list(file, _options = {})
-        validate_file_exists(file)
-
-        decompressor = Decompressor.new
-        header = decompressor.open(file)
-
-        display_szdd_info(header, file)
-
-        decompressor.close(header)
-      end
-
       # Extract SZDD compressed file
       #
       # Expands the SZDD file to its original form.
@@ -101,45 +82,28 @@ module Cabriolet
         puts "Compressed #{file} to #{output} (#{bytes} bytes)"
       end
 
-      # Display detailed SZDD file information
-      #
-      # @param file [String] Path to the SZDD file
-      # @param options [Hash] Additional options (unused)
-      # @return [void]
-      def info(file, _options = {})
-        validate_file_exists(file)
+      private
 
-        decompressor = Decompressor.new
-        header = decompressor.open(file)
-
-        display_szdd_info(header, file)
-
-        decompressor.close(header)
+      def decompressor_class
+        Decompressor
       end
 
-      # Test SZDD file integrity
-      #
-      # Verifies the SZDD file structure.
-      #
-      # @param file [String] Path to the SZDD file
-      # @param options [Hash] Additional options (unused)
-      # @return [void]
-      def test(file, _options = {})
-        validate_file_exists(file)
+      # SZDD holds a single compressed file, so listing it is the same as
+      # describing it.
+      def render_listing(session, file, _options)
+        render_info(session, file)
+      end
 
-        decompressor = Decompressor.new
-        header = decompressor.open(file)
+      def render_info(session, file)
+        display_szdd_info(session.archive, file)
+      end
 
-        puts "Testing #{file}..."
-        validate_integrity(file)
+      def render_test_result(session)
+        header = session.archive
         puts "OK: SZDD file structure is valid"
         puts "Format: #{header.format.to_s.upcase}"
         puts "Uncompressed size: #{header.length} bytes"
-
-        decompressor.close(header)
       end
-
-      private
 
       # Display SZDD file information
       #

@@ -8,26 +8,6 @@ module Cabriolet
     # wrapping the existing CHM::Decompressor and CHM::Compressor classes.
     #
     class CommandHandler < Commands::BaseCommandHandler
-      # List CHM file contents
-      #
-      # Displays information about the CHM file including version,
-      # language, and lists all contained files with their sizes.
-      #
-      # @param file [String] Path to the CHM file
-      # @param options [Hash] Additional options (unused)
-      # @return [void]
-      def list(file, _options = {})
-        validate_file_exists(file)
-
-        decompressor = Decompressor.new
-        chm = decompressor.open(file)
-
-        display_header(chm)
-        display_files(chm.all_files)
-
-        decompressor.close
-      end
-
       # Extract files from CHM archive
       #
       # Extracts all non-system files from the CHM file to the
@@ -94,46 +74,28 @@ module Cabriolet
         puts "Created #{output} (#{bytes} bytes, #{files.size} files)"
       end
 
-      # Display detailed CHM file information
-      #
-      # Shows comprehensive information about the CHM structure,
-      # including directory, sections, and files.
-      #
-      # @param file [String] Path to the CHM file
-      # @param options [Hash] Additional options (unused)
-      # @return [void]
-      def info(file, _options = {})
-        validate_file_exists(file)
-
-        decompressor = Decompressor.new
-        chm = decompressor.open(file)
-
-        display_chm_info(chm)
-
-        decompressor.close
-      end
-
-      # Test CHM file integrity
-      #
-      # Verifies the CHM file structure.
-      #
-      # @param file [String] Path to the CHM file
-      # @param options [Hash] Additional options (unused)
-      # @return [void]
-      def test(file, _options = {})
-        validate_file_exists(file)
-
-        decompressor = Decompressor.new
-        chm = decompressor.open(file)
-
-        puts "Testing #{chm.filename}..."
-        validate_integrity(file)
-        puts "OK: CHM file structure is valid (#{chm.all_files.size} files)"
-
-        decompressor.close
-      end
-
       private
+
+      def decompressor_class
+        Decompressor
+      end
+
+      # Show the CHM header followed by its files
+      def render_listing(session, _file, _options)
+        chm = session.archive
+        display_header(chm)
+        display_files(chm.all_files)
+      end
+
+      # Show comprehensive information about the CHM structure
+      def render_info(session, _file)
+        display_chm_info(session.archive)
+      end
+
+      def render_test_result(session)
+        count = session.archive.all_files.size
+        puts "OK: CHM file structure is valid (#{count} files)"
+      end
 
       # Display CHM header information
       #

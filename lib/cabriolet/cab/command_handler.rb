@@ -8,24 +8,6 @@ module Cabriolet
     # wrapping the existing CAB::Decompressor and CAB::Compressor classes.
     #
     class CommandHandler < Commands::BaseCommandHandler
-      # List CAB file contents
-      #
-      # Displays information about the cabinet including set ID, file count,
-      # and lists all contained files with their sizes.
-      #
-      # @param file [String] Path to the CAB file
-      # @param options [Hash] Additional options (unused)
-      # @return [void]
-      def list(file, _options = {})
-        validate_file_exists(file)
-
-        decompressor = Decompressor.new
-        cabinet = decompressor.open(file)
-
-        display_header(cabinet)
-        display_files(cabinet.files)
-      end
-
       # Extract files from CAB archive
       #
       # Extracts all files from the cabinet to the specified output directory.
@@ -78,43 +60,27 @@ module Cabriolet
         puts "Created #{output} (#{bytes} bytes, #{files.size} files)"
       end
 
-      # Display detailed CAB file information
-      #
-      # Shows comprehensive information about the cabinet structure,
-      # including folders, files, and attributes.
-      #
-      # @param file [String] Path to the CAB file
-      # @param options [Hash] Additional options (unused)
-      # @return [void]
-      def info(file, _options = {})
-        validate_file_exists(file)
-
-        decompressor = Decompressor.new
-        cabinet = decompressor.open(file)
-
-        display_cabinet_info(cabinet)
-      end
-
-      # Test CAB file integrity
-      #
-      # Verifies the integrity of the cabinet file structure.
-      # Note: Full integrity testing is not yet implemented.
-      #
-      # @param file [String] Path to the CAB file
-      # @param options [Hash] Additional options (unused)
-      # @return [void]
-      def test(file, _options = {})
-        validate_file_exists(file)
-
-        decompressor = Decompressor.new
-        cabinet = decompressor.open(file)
-
-        puts "Testing #{cabinet.filename}..."
-        validate_integrity(file)
-        puts "OK: All #{cabinet.file_count} files passed integrity check"
-      end
-
       private
+
+      def decompressor_class
+        Decompressor
+      end
+
+      # Show the cabinet header followed by its files
+      def render_listing(session, _file, _options)
+        cabinet = session.archive
+        display_header(cabinet)
+        display_files(cabinet.files)
+      end
+
+      # Show comprehensive information about the cabinet structure
+      def render_info(session, _file)
+        display_cabinet_info(session.archive)
+      end
+
+      def render_test_result(session)
+        puts "OK: All #{session.archive.file_count} files passed integrity check"
+      end
 
       # Display cabinet header information
       #
